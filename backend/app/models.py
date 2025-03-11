@@ -28,7 +28,7 @@ class StuClub(Base):
     __tablename__ = "stuclubs"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)  
+    user_id = Column(String, ForeignKey("users.user_id"), nullable=False)  
     club_code = Column(String, ForeignKey("clubs.club_code"), nullable=False)  
 
     user = relationship("User")
@@ -41,7 +41,7 @@ class AttendanceDate(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     club_code = Column(String, ForeignKey("clubs.club_code"), nullable=False)  
     date = Column(Date, nullable=False)
-    set_by = Column(Integer, ForeignKey("users.id"), nullable=False)  
+    set_by = Column(String, ForeignKey("users.user_id"), nullable=False)  
 
     attendances = relationship("Attendance", back_populates="attendance_date")
 
@@ -50,7 +50,7 @@ class Attendance(Base):
     __tablename__ = "attendance"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)  
+    user_id = Column(String, ForeignKey("users.user_id"), nullable=False)  
     attendance_date_id = Column(Integer, ForeignKey("attendance_dates.id"), nullable=False)  
     status = Column(Boolean, nullable=False, default=False)
     timestamp = Column(DateTime, default=datetime.utcnow)
