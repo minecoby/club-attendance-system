@@ -4,7 +4,7 @@ from app.db import get_db
 from app.variable import *
 from app.schema.user_schema import *
 from app.services.user_service import *
-
+from app.services.service import *
 
 router = APIRouter(
     prefix="/users",

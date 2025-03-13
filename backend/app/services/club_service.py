@@ -1,0 +1,27 @@
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from sqlalchemy.exc import SQLAlchemyError
+from fastapi import HTTPException
+
+from app.models import Club, StuClub
+from app.variable import *
+
+#존재하는 동아리인지 체크
+async def check_club(code: str, db: AsyncSession):
+    data = await db.execute(select(Club).where(Club.club_code == code))
+
+    if data.scalars().first() is None:
+        raise HTTPException(status_code=404, detail="존재하지 않는 동아리코드")
+    return
+
+#동아리 가입
+async def joining_club(user_id: str, code: str, db: AsyncSession):
+    try:
+        new_member = StuClub(user_id= user_id, club_code= code)
+        db.add(new_member)
+        await db.commit()
+        await db.refresh(new_member)
+        return new_member
+
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail="데이터베이스 오류")
