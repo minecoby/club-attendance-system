@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends,WebSocket
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import APIRouter, Depends,WebSocket, Security
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import get_db
 from app.variable import *
@@ -9,7 +9,7 @@ from app.services.service import *
 from datetime import datetime
 from typing import Dict
 from app.models import AttendanceDate
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+security = HTTPBearer()
 
 router = APIRouter(
     prefix="/admin",
@@ -27,7 +27,8 @@ class ClubManager:
 
 
 @router.post("/add_date")
-async def add_date(data: DateListRequest, token: str, db: AsyncSession = Depends(get_db)):
+async def add_date(data: DateListRequest, credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
+    token = credentials.credentials
     user = await get_current_user(token, db)
 
     if not user.is_leader:

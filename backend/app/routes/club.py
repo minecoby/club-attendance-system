@@ -1,10 +1,14 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Security
+from fastapi.security import  HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import get_db
 from app.variable import *
 from app.schema.club_schema import *
 from app.services.club_service import *
 from app.services.service import *
+
+security = HTTPBearer()
+
 
 router = APIRouter(
     prefix="/clubs",
@@ -15,8 +19,9 @@ router = APIRouter(
 
 
 @router.post("/join_club")
-async def join_club(data: JoinForm, token: str, db: AsyncSession = Depends(get_db)):
+async def join_club(data: JoinForm, credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
     #존재하는 동아리인지 체크 
+    token = credentials.credentials
     await check_club(data.club_code,db)
     
     #유저정보 불러오기 
