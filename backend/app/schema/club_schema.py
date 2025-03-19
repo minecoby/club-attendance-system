@@ -2,5 +2,5 @@ from pydantic import BaseModel
 from app.variable import *
 
 
-class JoinForm(BaseModel):
+class ClubForm(BaseModel):
     club_code: str

@@ -25,3 +25,22 @@ async def joining_club(user_id: str, code: str, db: AsyncSession):
 
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail="데이터베이스 오류")
+    
+#유저 동아리 가입여부 확인
+async def check_joining(id:str,code:str, db: AsyncSession):
+    data = await db.execute(select(StuClub).where(StuClub.club_code == code and StuClub.user_id == id))
+    if data.scalars().first() is None:
+        raise HTTPException(status_code=404, detail="동아리가입되지않음")
+    return data
+
+#유저 동아리 탈퇴
+async def club_quit(id:str, code: str , db: AsyncSession):
+    data = await check_joining(id,code,db)
+    try:
+        data = data.scalars().first()
+        db.delete(data)
+        db.commit()
+        return 
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail="데이터베이스 오류")
+    
