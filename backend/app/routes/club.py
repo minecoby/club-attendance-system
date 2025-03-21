@@ -40,13 +40,3 @@ async def quit_club(data: ClubForm, credentials: HTTPAuthorizationCredentials = 
     
     #동아리 탈퇴 
     await club_quit(user.user_id, data.club_code,db)
-
-#가입한 동아리 조회
-@router.get("/my_club")
-async def my_club(credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
-    token = credentials.credentials
-    #유저정보 불러오기
-    user = await get_current_user(token, db)
-
-    #가입한 동아리 목록 불러오기
-    await get_club_info(user.user_id,db)

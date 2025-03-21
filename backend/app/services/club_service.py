@@ -47,6 +47,7 @@ async def club_quit(id:str, code: str , db: AsyncSession):
 #가입한 동아리 목록 조회
 async def get_club_info(id:str, db: AsyncSession):
     data = await db.execute(select(StuClub).where(StuClub.user_id == id))
-    if data.scalars().first() is None:
-        raise HTTPException(status_code=404, detail="동아리가입되지않음")
+    data = data.scalars().all()
+    if data is None:
+        return None
     return data

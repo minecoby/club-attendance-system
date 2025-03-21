@@ -67,3 +67,10 @@ async def create_user_db(data, db: AsyncSession):
 
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail="데이터베이스 오류")
+
+async def get_user_info(id:str, db: AsyncSession):
+    data = await db.execute(select(User).where(User.user_id == id))
+    data = data.scalars().first()
+    if data is None:
+        raise HTTPException(status_code=404, detail="동아리가입되지않음")
+    return {"name": data.name, "id" : data.user_id, "is_leader" : data.is_leader}
