@@ -28,7 +28,6 @@ function LeaderPage() {
                             <li key={member.id} className="attendance-item">
                                 <span className="name">{member.name}</span>
                                 <span className={`status ${member.status}`}>{member.status}</span>
-                                <span className="time">{member.time}</span>
                             </li>
                         ))}
                     </ul>
