@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../styles/SignUp.css';
 
 const SignUp = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     userid: '',
     name: '',
     password: '',
-    isAdmin: false,
+    isLeader: false,
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name === 'isAdmin') {
-      setFormData({ ...formData, isAdmin: value === 'true' });
+    if (name === 'isLeader') {
+      setFormData({ ...formData, isLeader: value === 'true' });
     } else {
       setFormData({ ...formData, [name]: value });
     }
@@ -21,8 +23,15 @@ const SignUp = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log('회원가입 데이터:', formData);
-    // TODO: 백엔드로 데이터 전송 로직 추가
+    
+    const userType = formData.isLeader ? 'leader':'user';
+    localStorage.setItem('usertype', userType);
+
+    navigate('/login');
+
   };
+
+
 
   return (
     <div className="signup-section">
@@ -75,9 +84,9 @@ const SignUp = () => {
                 <label className="radio-label">
                 <input
                     type="radio"
-                    name="isAdmin"
+                    name="isLeader"
                     value="true"
-                    checked={formData.isAdmin === true}
+                    checked={formData.isLeader === true}
                     onChange={handleChange}
                 />
                 리더
@@ -85,9 +94,9 @@ const SignUp = () => {
                 <label className="radio-label">
                     <input
                         type="radio"
-                        name="isAdmin"
+                        name="isLeader"
                         value="false"
-                        checked={formData.isAdmin === false}
+                        checked={formData.isLeader === false}
                         onChange={handleChange}
                     />
                 팀원

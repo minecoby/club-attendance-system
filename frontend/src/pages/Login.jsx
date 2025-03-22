@@ -1,8 +1,10 @@
 import { useState } from "react";
-import {Link} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 import "../styles/Login.css";
 
 function LoginPage() {
+  const navigate = useNavigate();
+
   const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
 
@@ -10,6 +12,15 @@ function LoginPage() {
     e.preventDefault();
 
     console.log("Login attempt:", { userId, password });
+    const userType = localStorage.getItem('usertype');
+    if(userType === 'leader'){
+        navigate('/leaderpage');
+    }
+    else if (userType === 'user'){
+        navigate('/userpage');
+    } else {
+        alert('로그인 실패 또는 잘못된 사용자 유형');
+    }
   };
 
   return (
