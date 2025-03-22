@@ -1,0 +1,50 @@
+.leaderpage-section{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+    background-color: #f4f4f4;
+
+}
+
+.leaderpage-box{
+    flex-direction: column;
+    background-color: white;
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.attendance-section{
+    
+}
+
+.startQR-button {
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    background-color: #4caf50;
+    color: white;
+    cursor: pointer;
+}
+
+.attendance-list {
+    list-style: none;
+    padding: 0;
+}
+
+.attendance-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: 1px solid #ddd;
+}
+
+.attendance-item .status.출석 {
+    color: green;
+}
+
+.attendance-item .status.결석 {
+    color: red;
+}

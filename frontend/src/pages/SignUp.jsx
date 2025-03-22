@@ -31,8 +31,6 @@ const SignUp = () => {
 
   };
 
-
-
   return (
     <div className="signup-section">
         <div className='signup-box'>
