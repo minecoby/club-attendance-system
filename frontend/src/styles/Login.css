@@ -1,0 +1,90 @@
+
+.login-container {
+    background-color: #f4f4f4;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+}
+  
+.login-form {
+    background-color: white;
+    padding: 2.5rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+}
+  
+.login-title {
+    font-size: 1.75rem;
+    font-weight: bold;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    color: #333;
+}
+  
+.input-group {
+    flex-direction: column;
+    margin-bottom: 1.25rem;
+}
+  
+.input-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #555;
+    font-size: 0.95rem;
+    font-weight: bold;
+}
+
+.input-field {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+  
+.input-field:focus {
+    border-color: #f7b137;
+    box-shadow: 0 0 0 3px rgba(247, 177, 55, 0.2);
+}
+  
+.login-button {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #f7b137;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+  
+.login-button:hover {
+    background-color: #eaa82e;
+}
+
+.link-signup{
+    margin-top: 1rem;
+    text-align: center;
+}
+
+.signupto{
+    font-size: 0.90rem;
+    color: #555;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.signupto:hover{
+    color: #f7b137;
+    text-decoration: underline;
+}
+  

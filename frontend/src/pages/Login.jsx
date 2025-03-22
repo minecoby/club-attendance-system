@@ -1,4 +1,6 @@
 import { useState } from "react";
+import {Link} from "react-router-dom";
+import "../styles/Login.css";
 
 function LoginPage() {
   const [userId, setUserId] = useState("");
@@ -6,7 +8,7 @@ function LoginPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // 로그인 처리 로직 (API 요청 등)
+
     console.log("Login attempt:", { userId, password });
   };
 
@@ -46,6 +48,11 @@ function LoginPage() {
         <button type="submit" className="login-button">
           로그인
         </button>
+        <div className="link-signup">
+            <Link to="/signup" className="signupto">
+            회원가입하기
+            </Link>
+        </div>
       </form>
     </div>
   );
