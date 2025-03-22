@@ -1,0 +1,76 @@
+.userpage-section{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+    background-color: #f4f4f4;
+}
+
+.userpage-box{
+    flex-direction: column;
+    background-color: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 10px;
+}
+
+.startQR-button {
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: bold;
+    background-color: #2196f3;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+
+.startQR-button:hover{
+    background-color: #2a8ada;
+}
+
+.attendance-table{
+    border-collapse: separate;
+    border-spacing: 0 12px;
+    margin-top: 20px;
+    font-size: 0.95rem;
+}
+
+.attendance-table th {
+    background-color: #f0f0f0;
+    padding: 16px;
+    text-align: center;
+    border-bottom: 2px solid #ccc;
+    font-size: 18px;
+}
+
+.attendance-table td {
+    background-color: #ffffff;
+    padding: 18px 16px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+
+}
+
+.attendance-list {
+    list-style: none;
+    padding: 5;
+    margin: 5;
+}
+
+.attendance-item {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: center;
+
+}
+
+.status.출석 {
+    color: green;
+}
+
+.status.결석 {
+    color: red;
+}
