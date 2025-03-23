@@ -1,12 +1,24 @@
 
-FROM python:3.10
+
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
 
 WORKDIR /app
 
-# 필요 패키지 복사 및 설치
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+
+
 COPY . .
 
-# 실행
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+CMD bash -c "\
+    rm -rf migrations/versions && \
+    mkdir -p migrations/versions && \
+    alembic revision --autogenerate -m 'initial schema' && \
+    alembic upgrade head && \
+    uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
