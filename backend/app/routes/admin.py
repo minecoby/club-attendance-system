@@ -1,26 +1,75 @@
-from fastapi import APIRouter, Depends,WebSocket, Security
+from fastapi import APIRouter, Depends,WebSocket, Security, Path, WebSocketDisconnect
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import get_db
 from app.variable import *
 from app.schema.admin_schema import *
 from app.services.admin_service import *
+from app.services.club_service import get_club_info
 from app.services.service import *
 from datetime import datetime
 from typing import Dict
 from app.models import AttendanceDate
+
+import asyncio
+import random
+import string
 security = HTTPBearer()
 
 router = APIRouter(
     prefix="/admin",
 )
 
-class ClubManager:
+class AttendanceWebSocketManager:
     def __init__(self):
-        self.clubs: Dict[str, WebSocket] = {}
+        self.attendance_codes = {}
+
+    def generate_random_code(self, length=6) -> str:
+        return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
+
+    async def handle_connection(self, websocket: WebSocket, date: str, db: AsyncSession = Depends(get_db)):
+        await websocket.accept()
+        try:
+            token_msg = await websocket.receive_text()
+            if not token_msg.startswith("Bearer "):
+                await websocket.send_text("유효하지 않은 토큰.'Bearer <token>'")
+                await websocket.close()
+                return
+            token = token_msg.split("Bearer ")[1]
+            user_info = await get_current_user(token,db)
+
+            if not user_info.is_leader:
+                await websocket.send_text("허가된 사용자가 아닙니다.")
+                await websocket.close()
+                return
+
+            club_code = await get_club_info(user_info.user_id, db)
+            print(f"[클럽 코드] {club_code}")
+
+            while True:
+                code = self.generate_random_code()
+                self.attendance_codes[club_code] = {
+                    "code": code,
+                    "accepted": False,
+                    "date": date
+                }
+
+                print(f"[출석코드] {club_code} → {self.attendance_codes[club_code]}")
+                await websocket.send_json(self.attendance_codes[club_code])
+                await asyncio.sleep(5)
+
+        except WebSocketDisconnect:
+            print(f"[연결 종료]")
+        except Exception as e:
+            print(f"[에러] {e}")
+            await websocket.close()
 
 
+attendance_ws = AttendanceWebSocketManager()
 
+@router.websocket("/attendance/{date}/ws")
+async def websocket_attendance(websocket: WebSocket, date: str):
+    await attendance_ws.handle_connection(websocket, date)
 
 
 
