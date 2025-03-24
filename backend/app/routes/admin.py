@@ -48,6 +48,7 @@ class AttendanceWebSocketManager:
                     return
 
                 club_code = await get_club_admin(user_info.user_id, db)
+                print(club_code)
 
 
             self.attendance_codes[club_code] = {

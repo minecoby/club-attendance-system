@@ -57,4 +57,4 @@ async def get_club_admin(id:str, db: AsyncSession):
     data = data.scalars().first()
     if data is None:
         return None
-    return data
+    return data.club_code
