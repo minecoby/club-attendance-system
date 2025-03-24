@@ -49,3 +49,16 @@ async def add_date(data: DateListRequest, credentials: HTTPAuthorizationCredenti
 
     await db.commit()  
     return {"message": f"데이터가 정상적으로 추가되었습니다.", "dates": data.dates}
+
+
+
+@router.get("/show_attendance/{date}")
+async def show_attendance(date: str, credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
+    token = credentials.credentials
+    user = await get_current_user(token, db)
+    if user.is_leader != True:
+        raise HTTPException(status_code=400, detail="허가되지 않은 사용자입니다.")
+    await load_attendance(user, date, db)
+
+    
+    
