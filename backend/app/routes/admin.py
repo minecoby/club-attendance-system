@@ -145,3 +145,10 @@ async def show_attendance(date: str, credentials: HTTPAuthorizationCredentials =
 
     
     
+@router.delete("/kick_user")
+async def kick_user(data: KickForm, credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
+    token = credentials.credentials
+    user = await get_current_user(token, db)
+    if user.is_leader != True:
+        raise HTTPException(status_code=400, detail="허가되지 않은 사용자입니다.")
+    await kick_user_from_club(data.user_id, db)

@@ -1,10 +1,11 @@
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import select, join
 from app.models import StuClub,Attendance,AttendanceDate,User
 from datetime import datetime
-
+from app.services.club_service import check_joining
 
 
 async def get_leader_club_code(user_id: str, db: AsyncSession) -> str:
@@ -58,3 +59,14 @@ async def load_attendance(user, date, db: AsyncSession):
         }
         for r in records
     ]
+
+
+async def kick_user_from_club(id: str,code:str ,db: AsyncSession):
+    data = await check_joining(id,code,db)
+    try:
+        data = data.scalars().first()
+        db.delete(data)
+        db.commit()
+        return 
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail="데이터베이스 오류")
