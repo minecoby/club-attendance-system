@@ -151,4 +151,5 @@ async def kick_user(data: KickForm, credentials: HTTPAuthorizationCredentials = 
     user = await get_current_user(token, db)
     if user.is_leader != True:
         raise HTTPException(status_code=400, detail="허가되지 않은 사용자입니다.")
-    await kick_user_from_club(data.user_id, db)
+    club_code = await get_leader_club_code(user.user_id, db)
+    await kick_user_from_club(data.user_id,club_code, db)
