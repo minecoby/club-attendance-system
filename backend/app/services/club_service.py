@@ -51,3 +51,10 @@ async def get_club_info(id:str, db: AsyncSession):
     if data is None:
         return None
     return data
+
+async def get_club_admin(id:str, db: AsyncSession):
+    data = await db.execute(select(StuClub).where(StuClub.user_id == id))
+    data = data.scalars().first()
+    if data is None:
+        return None
+    return data
