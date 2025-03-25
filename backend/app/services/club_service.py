@@ -17,6 +17,9 @@ async def check_club(code: str, db: AsyncSession):
 #동아리 가입
 async def joining_club(user_id: str, code: str, db: AsyncSession):
     try:
+        is_join = await check_joining(user_id,code)
+        if is_join:
+            raise HTTPException(status_code=409, detail="이미 가입한 동아리입니다.")
         new_member = StuClub(user_id= user_id, club_code= code)
         db.add(new_member)
         await db.commit()
