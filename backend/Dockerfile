@@ -17,8 +17,5 @@ COPY . .
 
 
 CMD bash -c "\
-    rm -rf migrations/versions && \
-    mkdir -p migrations/versions && \
-    alembic revision --autogenerate -m 'initial schema' && \
     alembic upgrade head && \
     uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"

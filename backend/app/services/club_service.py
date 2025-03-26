@@ -17,6 +17,7 @@ async def check_club(code: str, db: AsyncSession):
 #동아리 가입
 async def joining_club(user_id: str, code: str, db: AsyncSession):
     try:
+        await join_duplicate(user_id,code,db)
         new_member = StuClub(user_id= user_id, club_code= code)
         db.add(new_member)
         await db.commit()
@@ -28,10 +29,15 @@ async def joining_club(user_id: str, code: str, db: AsyncSession):
     
 #유저 동아리 가입여부 확인
 async def check_joining(id:str,code:str, db: AsyncSession):
-    data = await db.execute(select(StuClub).where(StuClub.club_code == code and StuClub.user_id == id))
+    data = await db.execute(select(StuClub).where(StuClub.club_code == code, StuClub.user_id == id))
     if data.scalars().first() is None:
         raise HTTPException(status_code=404, detail="동아리가입되지않음")
     return data
+async def join_duplicate(id:str,code:str, db: AsyncSession):
+    data = await db.execute(select(StuClub).where(StuClub.club_code == code, StuClub.user_id == id))
+    if data.scalars().one_or_none() is not None:
+        raise HTTPException(status_code=409, detail="이미 가입한 동아리입니다.")
+    return
 
 #유저 동아리 탈퇴
 async def club_quit(id:str, code: str , db: AsyncSession):

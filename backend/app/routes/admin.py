@@ -9,9 +9,11 @@ from app.services.club_service import get_club_admin
 from app.services.service import *
 from datetime import datetime
 from app.models import AttendanceDate
-
 import asyncio
 import random
+
+
+
 security = HTTPBearer()
 
 router = APIRouter(
@@ -48,9 +50,10 @@ class AttendanceWebSocketManager:
                     return
 
                 club_code = await get_club_admin(user_info.user_id, db)
-                print(club_code)
-
-
+                if not await check_date(club_code,date):
+                    await websocket.send_text("존재하지않는 출석 날짜입니다.")
+                    await websocket.close()
+                    return
             self.attendance_codes[club_code] = {
                 "code": None,
                 "accepted": False,
@@ -142,10 +145,19 @@ async def show_attendance(date: str, credentials: HTTPAuthorizationCredentials =
     user = await get_current_user(token, db)
     if user.is_leader != True:
         raise HTTPException(status_code=400, detail="허가되지 않은 사용자입니다.")
-    await load_attendance(user, date, db)
+    data = await load_attendance(user, date, db)
+    return data
 
-    
-    
+@router.get("/show_all_attendance")
+async def show_all_attendance(credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
+    token = credentials.credentials
+    user = await get_current_user(token, db)
+    if user.is_leader != True:
+        raise HTTPException(status_code=400, detail="허가되지 않은 사용자입니다.")
+    club_code = await get_leader_club_code(user.user_id,db)
+    data = await load_full_attendance(club_code, db)
+    return data
+
 @router.delete("/kick_user")
 async def kick_user(data: KickForm, credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
     token = credentials.credentials
@@ -154,3 +166,21 @@ async def kick_user(data: KickForm, credentials: HTTPAuthorizationCredentials = 
         raise HTTPException(status_code=400, detail="허가되지 않은 사용자입니다.")
     club_code = await get_leader_club_code(user.user_id, db)
     await kick_user_from_club(data.user_id,club_code, db)
+
+#엑셀파일로 변환
+@router.get("/export_attendance")
+async def export_attendance_excel(credentials: HTTPAuthorizationCredentials = Security(security),db: AsyncSession = Depends(get_db)):
+    token = credentials.credentials
+    user = await get_current_user(token, db)
+    if user.is_leader != True:
+        raise HTTPException(status_code=400, detail="허가되지 않은 사용자입니다.")
+    club_code = await get_leader_club_code(user.user_id,db)
+    data, date_columns = await load_full_attendance(club_code, db)
+    output,encoded_filename = await export_excel(data,date_columns,club_code)
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}"
+        }
+    )
