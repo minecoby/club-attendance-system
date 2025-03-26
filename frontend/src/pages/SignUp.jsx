@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/SignUp.css';
+import hiCat from '../assets/hiCat.jpg';
+import lovingYou from '../assets/lovingYou.jpg';
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -8,31 +10,26 @@ const SignUp = () => {
     userid: '',
     name: '',
     password: '',
-    isLeader: false,
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name === 'isLeader') {
-      setFormData({ ...formData, isLeader: value === 'true' });
-    } else {
-      setFormData({ ...formData, [name]: value });
-    }
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log('회원가입 데이터:', formData);
-    
-    const userType = formData.isLeader ? 'leader':'user';
-    localStorage.setItem('usertype', userType);
 
     navigate('/login');
 
   };
 
   return (
-    <div className="signup-section">
+    <div className="signup-container">
+        <div className='img-section'>
+            <img src={lovingYou} alt='가입 축하' className='signup-img'/>
+        </div>
         <div className='signup-box'>
             <h2 className="signup-title">회원가입</h2>
         
@@ -75,35 +72,9 @@ const SignUp = () => {
                 required
             />
             </div>
-
-            <div className="form-field">
-            <label className="form-label">역할</label>
-            <div className="radio-options">
-                <label className="radio-label">
-                <input
-                    type="radio"
-                    name="isLeader"
-                    value="true"
-                    checked={formData.isLeader === true}
-                    onChange={handleChange}
-                />
-                리더
-                </label>
-                <label className="radio-label">
-                    <input
-                        type="radio"
-                        name="isLeader"
-                        value="false"
-                        checked={formData.isLeader === false}
-                        onChange={handleChange}
-                    />
-                팀원
-                </label>
-            </div>
-            </div>
-            <button type="submit" className="submit-button">회원가입</button>
             </form>
-
+            <button type="submit" className="submit-button" onClick={handleSubmit}>회원가입하기</button>
+        
         </div>
     </div>
   );

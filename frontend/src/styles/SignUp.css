@@ -1,19 +1,41 @@
-.signup-section {
-  background-color: #f4f4f4;
-  min-height: 100vh;
+.signup-container {
   display: flex;
-  align-items: center;
+  flex-direction: row;
   justify-content: center;
-  padding: 40px;
+  align-items: center;
+  background-color: white;
+  box-sizing: border-box;
+  padding: 2rem;
+  overflow: hidden;
+}
+
+.img-section{
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  background-color: #f4f4f4;
+}
+
+.signup-img{
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
 }
 
 .signup-box {
   background-color: #ffffff;
   padding: 2.5rem;
   border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   width: 100%;
   max-width: 420px;
+  flex-direction: column;
+}
+
+.signup-form{
+  padding: 1rem 0;
+  flex-direction: column;
 }
 
 .signup-title {
@@ -69,10 +91,13 @@
 
 .submit-button {
   width: 100%;
+  margin-top: 1.5rem;
   padding: 0.75rem;
+
   background-color: #f7b137;
   border: none;
   border-radius: 8px;
+
   color: white;
   font-size: 1.1rem;
   font-weight: bold;
@@ -82,4 +107,13 @@
 
 .submit-button:hover {
   background-color: #eaa82e;
+}
+
+@media (max-width: 738px) {
+.signup-container{
+    flex-direction: column;
+  }
+  .img-section{
+    display: none;
+  }
 }

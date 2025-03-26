@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {Link, useNavigate} from "react-router-dom";
 import "../styles/Login.css";
+import kungya from '../assets/kungya.jpg';
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -24,7 +25,11 @@ function LoginPage() {
   };
 
   return (
-    <div className="login-container">
+    <div className="login-page">
+      <div className="login-image-section">
+        <img src={kungya} alt = "쿵야" className="login-image" />
+      </div>
+      <div className="login-container">
       <form onSubmit={handleSubmit} className="login-form">
         <h2 className="login-title">로그인</h2>
 
@@ -65,6 +70,7 @@ function LoginPage() {
             </Link>
         </div>
       </form>
+    </div>
     </div>
   );
 }
