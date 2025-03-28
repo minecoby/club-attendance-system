@@ -12,26 +12,20 @@ const Navbar = () => {
 
   return (
     <nav className="navbar">
-      {userType === 'user' && (
-        <>
-          <Link to="/userpage">UserPage</Link>
-          <Link to="/settings">Settings</Link>
-        </>
-      )}
-
-      {userType === 'leader' && (
-        <>
-          <Link to="/leaderpage">LeaderPage</Link>
-          <Link to="/settings">Settings</Link>
-        </>
-      )}
-
-      {!userType && (
-        <>
-          <Link to="/login">Login</Link>
-          <Link to="/signup">SignUp</Link>
-        </>
-      )}
+      <ul className="navbar-menu">
+        {userType === 'leader' && (
+          <>
+            <li><Link to="/leaderpage">Leader Page</Link></li>
+            <li><Link to="/settings">Settings</Link></li>
+          </>
+        )}
+        {!(userType === 'leader') && (
+          <>
+            <li><Link to="/userpage">user Page</Link></li>
+            <li><Link to="/settings">Settings</Link></li>
+          </>
+        )}
+      </ul>
     </nav>
   );
 };
