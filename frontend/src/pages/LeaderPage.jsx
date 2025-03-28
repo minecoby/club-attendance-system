@@ -12,6 +12,15 @@ function LeaderPage() {
         { id: 7, name: "000", status: "출석"},
         { id: 8, name: "aaa", status: "출석"},
         { id: 9, name: "rxt", status: "결석" },
+        { id: 1, name: "030", status: "출석"},
+        { id: 2, name: "aba", status: "출석"},
+        { id: 3, name: "rwr", status: "결석" },
+        { id: 4, name: "0ㄱ0", status: "출석"},
+        { id: 5, name: "aaa", status: "출석"},
+        { id: 6, name: "ror", status: "결석" },
+        { id: 7, name: "000", status: "출석"},
+        { id: 8, name: "aaa", status: "출석"},
+        { id: 9, name: "rxt", status: "결석" },
     ]);
 
     const statusPriority ={
@@ -44,6 +53,7 @@ function LeaderPage() {
             </div>
             <div className="attendance-section">
                 <h2>ooo 동아리 출석부</h2>
+                <div className='attendance-table-wrap'>
                 <table className="attendance-table">
                     <thead>
                         <tr>
@@ -55,7 +65,7 @@ function LeaderPage() {
                     <tbody>
                         {sortedAttendance.map((member, index) => (
                             <tr key={member.id}>
-                                <td>{index + 1}</td>
+                                <td className='index-column'>{index + 1}</td>
                                 <td>{member.name}</td>
                                 <td>
                                     <span className={`status-badge ${member.status}`}>
@@ -66,6 +76,7 @@ function LeaderPage() {
                         ))}
                     </tbody>
                 </table> 
+                </div>
             </div>
         </div>
     );
