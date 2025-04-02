@@ -114,7 +114,7 @@ async def websocket_attendance(websocket: WebSocket, date: str):
 
 
 @router.post("/add_date")
-async def add_date(data: DateListRequest, credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
+async def add_date(data: DateRequest, credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
     token = credentials.credentials
     user = await get_current_user(token, db)
 
@@ -122,41 +122,43 @@ async def add_date(data: DateListRequest, credentials: HTTPAuthorizationCredenti
         raise HTTPException(status_code=403, detail="오로지 관리자권한이 있는사람만 추가가능합니다.")
 
     club_code = await get_leader_club_code(user.user_id, db)
+    
+    #날짜 형식 체크
+    try:
+        date_obj = datetime.strptime(data.date, "%Y-%m-%d").date()  
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"올바르지 않은 형식: {data}")
+    
+    #이미 등록된 날짜인지 체크 및 오류발생
+    is_date = check_date(club_code,data.date)
+    if is_date:
+        raise HTTPException(status_code=409, detail="이미 등록된 날짜입니다.")
 
-    new_dates = []
-    for date_str in data.dates:
-        try:
-            date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()  
-        except ValueError:
-            raise HTTPException(status_code=400, detail=f"올바르지 않은 형식: {date_str}")
-
-        new_date = AttendanceDate(club_code=club_code, date=date_obj, set_by=user.user_id)
-        db.add(new_date)
-        new_dates.append(new_date)
+    #날짜 추가 
+    new_date = AttendanceDate(club_code=club_code, date=date_obj, set_by=user.user_id)
+    db.add(new_date)
 
     await db.commit()  
-    return {"message": f"데이터가 정상적으로 추가되었습니다.", "dates": data.dates}
+    return {"message": f"데이터가 정상적으로 추가되었습니다.", "dates": data.date}
+
 
 
 
 @router.get("/show_attendance/{date}")
-async def show_attendance(date: str, credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
+async def show_attendance(date: str = None, credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
     token = credentials.credentials
     user = await get_current_user(token, db)
     if user.is_leader != True:
         raise HTTPException(status_code=400, detail="허가되지 않은 사용자입니다.")
-    data = await load_attendance(user, date, db)
-    return data
+    if date == None: #날짜를 지정하지않음(전체 출석부 로드) 
+        club_code = await get_leader_club_code(user.user_id,db)
+        data = await load_full_attendance(club_code, db)
+        return data
+    else:
+        data = await load_attendance(user, date, db)
+        return data
 
-@router.get("/show_all_attendance")
-async def show_all_attendance(credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
-    token = credentials.credentials
-    user = await get_current_user(token, db)
-    if user.is_leader != True:
-        raise HTTPException(status_code=400, detail="허가되지 않은 사용자입니다.")
-    club_code = await get_leader_club_code(user.user_id,db)
-    data = await load_full_attendance(club_code, db)
-    return data
+
 
 @router.delete("/kick_user")
 async def kick_user(data: KickForm, credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
