@@ -141,6 +141,16 @@ async def add_date(data: DateRequest, credentials: HTTPAuthorizationCredentials 
     await db.commit()  
     return {"message": f"데이터가 정상적으로 추가되었습니다.", "dates": data.date}
 
+@router.delete("delete_date/{date}")
+async def delete_date(date: str,credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
+    token = credentials.credentials
+    user = await get_current_user(token, db)
+
+    if not user.is_leader:
+        raise HTTPException(status_code=403, detail="오로지 관리자권한이 있는사람만 추가가능합니다.")
+
+    club_code = await get_leader_club_code(user.user_id, db)
+    await delete_date_from_club(club_code,date,db)
 
 
 
