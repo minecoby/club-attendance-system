@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import "../styles/UserPage.css";
+import Navbar from '../components/Navbar';
+
 
 function UserPage() {
     const [attendanceList, setAttendanceList] = useState([
@@ -14,6 +16,9 @@ function UserPage() {
 
     return (
         <div className="userpage-section">
+            <div className='nav'>
+                  <Navbar />
+            </div>
             <div className="QR-section">
                 <h2>출석 레츠끼끼</h2>
                 <button onClick={handleStartQR} className="startQR-button">

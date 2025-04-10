@@ -2,27 +2,38 @@ import { useState } from "react";
 import {Link, useNavigate} from "react-router-dom";
 import "../styles/Login.css";
 import kungya from '../assets/kungya.jpg';
+import axios from 'axios';
 
 function LoginPage() {
   const navigate = useNavigate();
 
-  const [userId, setUserId] = useState("");
+  const [user_id, setUserId] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    console.log("Login attempt:", { userId, password });
-    const userType = localStorage.getItem('usertype');
-    if(userType === 'leader'){
-        navigate('/leaderpage');
+    try{
+      const response = await axios.post("http://localhost:8000/users/login",{
+        user_id: user_id,
+        password: password,
+      });
+
+      const {access_token, usertype} = response.data;
+
+      localStorage.setItem("token", access_token);
+      localStorage.setItem("usertype", usertype);
+
+      if (usertype === 1) { // leader로 수정할 수 있게
+        navigate("/leaderpage");
+      } else {
+        navigate("/userpage");
+      } 
+    } catch (error) {
+      console.error("로그인 실패", error);
+      alert("로그인 실패: 아이디 또는 비밀번호를 확인하세요.");
     }
-    else if (userType === 'user'){
-        navigate('/userpage');
-    } else {
-        alert('로그인 실패 또는 잘못된 사용자 유형');
-    }
-  };
+  }
 
   return (
     <div className="login-page">
@@ -34,13 +45,13 @@ function LoginPage() {
         <h2 className="login-title">로그인</h2>
 
         <div className="input-group">
-          <label htmlFor="userid" className="input-label">
+          <label htmlFor="user_id" className="input-label">
             아이디
           </label>
           <input
-            id="userid"
+            id="user_id"
             type="text"
-            value={userId}
+            value={user_id}
             onChange={(e) => setUserId(e.target.value)}
             className="input-field"
             required

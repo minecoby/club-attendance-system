@@ -81,5 +81,5 @@ function LeaderPage() {
         </div>
     );
 }
-
+//leader 전체 날짜 출석부 구현
 export default LeaderPage;
