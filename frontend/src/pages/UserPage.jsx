@@ -4,7 +4,7 @@ import Navbar from '../components/Navbar';
 
 
 function UserPage() {
-    const [attendanceList, setAttendanceList] = useState([
+    const [attendanceList] = useState([
         { id: 1, team: "팀이름", date: "2025-03-21", status: "출석" },
         { id: 2, team: "팀이름", date: "2025-03-20", status: "결석" },
         { id: 3, team: "팀이름", date: "2025-03-19", status: "결석" },

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import "../styles/LeaderPage.css";
 
 function LeaderPage() {
-    const [attendanceList, setAttendanceList] = useState([
+    const [attendanceList] = useState([
         { id: 1, name: "030", status: "출석"},
         { id: 2, name: "aba", status: "출석"},
         { id: 3, name: "rwr", status: "결석" },
