@@ -24,7 +24,7 @@ function LoginPage() {
       localStorage.setItem("token", access_token);
       localStorage.setItem("usertype", usertype);
 
-      if (usertype === 1) { // leader로 수정할 수 있게
+      if (usertype === "leader") { // usertype이 'leader'면 leaderpage로 이동
         navigate("/leaderpage");
       } else {
         navigate("/userpage");

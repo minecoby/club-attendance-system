@@ -1,85 +1,97 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import "../styles/LeaderPage.css";
+import axios from 'axios';
 
 function LeaderPage() {
-    const [attendanceList] = useState([
-        { id: 1, name: "030", status: "출석"},
-        { id: 2, name: "aba", status: "출석"},
-        { id: 3, name: "rwr", status: "결석" },
-        { id: 4, name: "0ㄱ0", status: "출석"},
-        { id: 5, name: "aaa", status: "출석"},
-        { id: 6, name: "ror", status: "결석" },
-        { id: 7, name: "000", status: "출석"},
-        { id: 8, name: "aaa", status: "출석"},
-        { id: 9, name: "rxt", status: "결석" },
-        { id: 1, name: "030", status: "출석"},
-        { id: 2, name: "aba", status: "출석"},
-        { id: 3, name: "rwr", status: "결석" },
-        { id: 4, name: "0ㄱ0", status: "출석"},
-        { id: 5, name: "aaa", status: "출석"},
-        { id: 6, name: "ror", status: "결석" },
-        { id: 7, name: "000", status: "출석"},
-        { id: 8, name: "aaa", status: "출석"},
-        { id: 9, name: "rxt", status: "결석" },
-    ]);
+    const [attendanceList, setAttendanceList] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [today, setToday] = useState("");
 
-    const statusPriority ={
-        "결석": 0,
-        "출석": 1,
-    };
+    useEffect(() => {
+        // 오늘 날짜 구하기 (YYYY-MM-DD)
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${yyyy}-${mm}-${dd}`;
+        setToday(todayStr);
+
+        const fetchAttendance = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const token = localStorage.getItem("token");
+                const response = await axios.get(
+                    `http://localhost:8000/admin/show_attendance/${todayStr}`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                setAttendanceList(response.data);
+            } catch (err) {
+                if (err.response && err.response.status === 404) {
+                    setAttendanceList([]); // 출석기록 없음
+                } else {
+                    setError("출석 데이터를 불러오는 중 오류가 발생했습니다.");
+                }
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchAttendance();
+    }, []);
 
     const handleStartQR = () => {
-        alert("QR 출석 시작");
+        alert("QR 출석 시작 (구현 필요)");
     };
 
-    const sortedAttendance = [...attendanceList].sort((a, b) => {
-        const priorityA = statusPriority[a.status];
-        const priorityB = statusPriority[b.status];
-    
-        if (priorityA !== priorityB) {
-            return priorityA - priorityB; // 1차 기준: 상태 우선순위
-        } else {
-            return a.name.localeCompare(b.name); // 2차 기준: 이름 알파벳순
-        }
-    });
-    
     return (
         <div className="leader-page">
-            <div className='QR-section'>
-                <h2>QR코드로 출석하기</h2>
-                <button onClick={handleStartQR} className="startQR-button">
-                        출석 시작 (QR 생성)
+            <div className="leader-header-card">
+                <div className="leader-header-left">
+                    <div className="leader-date-label">오늘 날짜</div>
+                    <div className="leader-date-value">{today}</div>
+                </div>
+                <button onClick={handleStartQR} className="startQR-button leader-qr-btn">
+                    출석 시작 (QR 생성)
                 </button>
             </div>
             <div className="attendance-section">
-                <h2>ooo 동아리 출석부</h2>
+                <h2 className="attendance-title">오늘 출석부</h2>
                 <div className='attendance-table-wrap'>
-                <table className="attendance-table">
-                    <thead>
-                        <tr>
-                            <th>No</th>
-                            <th>팀원</th>
-                            <th>출석 상태</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {sortedAttendance.map((member, index) => (
-                            <tr key={member.id}>
-                                <td className='index-column'>{index + 1}</td>
-                                <td>{member.name}</td>
-                                <td>
-                                    <span className={`status-badge ${member.status}`}>
-                                        {member.status}
-                                    </span>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table> 
+                    {loading ? (
+                        <div className="attendance-message loading">로딩 중...</div>
+                    ) : error ? (
+                        <div className="attendance-message error">{error}</div>
+                    ) : attendanceList.length === 0 ? (
+                        <div className="attendance-message empty">출석기록이 없습니다.</div>
+                    ) : (
+                        <table className="attendance-table">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>팀원</th>
+                                    <th>출석 상태</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {attendanceList.map((member, index) => (
+                                    <tr key={member.user_id}>
+                                        <td className='index-column'>{index + 1}</td>
+                                        <td>{member.name}</td>
+                                        <td>
+                                            <span className={`status-badge ${member.status === true ? "출석" : "결석"}`}>
+                                                {member.status === true ? "출석" : "결석"}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
             </div>
         </div>
     );
 }
-//leader 전체 날짜 출석부 구현
+
 export default LeaderPage;

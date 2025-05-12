@@ -1,56 +1,107 @@
 .leader-page {
-    padding: 40px;
+    padding: 40px 0;
     background-color: #f7f9fb;
     min-height: 100vh;
     width: 100vw;
     box-sizing: border-box;
-}
-.QR-section,
-.attendance-section{
-    margin-left: 2rem;
-}
-.QR-section {
-    margin-bottom: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
-.startQR-button {
-    padding: 12px 28px;
-    font-size: 16px;
-    background-color: #007bff;
-    color: white;
+.leader-header-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fff;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+    border-radius: 18px;
+    padding: 32px 40px;
+    width: 90%;
+    max-width: 700px;
+    margin-bottom: 36px;
+    gap: 32px;
+}
+
+.leader-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.leader-date-label {
+    font-size: 1.1rem;
+    color: #888;
+    font-weight: 500;
+}
+
+.leader-date-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #222;
+    letter-spacing: 1px;
+}
+
+.leader-qr-btn {
+    padding: 14px 36px;
+    font-size: 1.15rem;
+    background: linear-gradient(90deg, #007bff 60%, #4fc3f7 100%);
+    color: #fff;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     font-weight: bold;
     cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,123,255,0.08);
+    transition: background 0.2s, box-shadow 0.2s;
+}
+.leader-qr-btn:hover {
+    background: linear-gradient(90deg, #0056b3 60%, #039be5 100%);
+    box-shadow: 0 4px 16px rgba(0,123,255,0.15);
 }
 
-.startQR-button:hover{
-    background-color: #0570e2;
+.attendance-section {
+    width: 90%;
+    max-width: 700px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+    padding: 32px 28px 40px 28px;
 }
 
-.attendance-section h2 {
-    margin-bottom: 20px;
+.attendance-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 24px;
+    color: #222;
+    text-align: left;
 }
 
-.attendance-table-wrap{
+.attendance-table-wrap {
     max-height: 450px;
     overflow-y: auto;
     border-radius: 8px;
+    background: #f8fafc;
+    padding: 12px 0;
 }
 
 .attendance-table {
     table-layout: fixed;
     border-collapse: collapse;
     width: 100%;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
 }
 
 .attendance-table th,
 .attendance-table td {
-  padding: 14px;
+  padding: 14px 0;
   text-align: center;
-  border-bottom: 1px solid #eee;
-  background-color: #fff;
+  border-bottom: 1px solid #f0f0f0;
   font-weight: 500;
+  font-size: 1.08rem;
 }
 
 .attendance-table th {
@@ -58,25 +109,47 @@
   top: 0;
   background-color: #f5f5f5;
   z-index: 1;
+  color: #007bff;
+  font-size: 1.1rem;
 }
 
 .index-column {
     width: 60px;
-    table-layout: fixed;
     text-align: center;
 }
 
 .status-badge {
-    padding: 6px 16px;
+    padding: 7px 20px;
     border-radius: 20px;
     font-weight: bold;
     color: white;
+    font-size: 1.05rem;
+    letter-spacing: 1px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
 }
 
 .status-badge.출석 {
-    background-color: #28a745;
+    background: linear-gradient(90deg, #28a745 60%, #43e97b 100%);
 }
 
 .status-badge.결석 {
-    background-color: #dc3545;
+    background: linear-gradient(90deg, #dc3545 60%, #ff758c 100%);
+}
+
+.attendance-message {
+    text-align: center;
+    font-size: 1.15rem;
+    padding: 32px 0 24px 0;
+    color: #888;
+    font-weight: 500;
+}
+.attendance-message.error {
+    color: #dc3545;
+    font-weight: bold;
+}
+.attendance-message.loading {
+    color: #007bff;
+}
+.attendance-message.empty {
+    color: #aaa;
 }
