@@ -162,8 +162,8 @@ async def show_attendance(date: str = None, credentials: HTTPAuthorizationCreden
         raise HTTPException(status_code=400, detail="허가되지 않은 사용자입니다.")
     if date == None: #날짜를 지정하지않음(전체 출석부 로드) 
         club_code = await get_leader_club_code(user.user_id,db)
-        data = await load_full_attendance(club_code, db)
-        return data
+        data, date_columns = await load_full_attendance(club_code, db)
+        return [data, date_columns]  # 날짜 리스트도 함께 반환
     else:
         data = await load_attendance(user, date, db)
         return data
