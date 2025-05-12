@@ -26,10 +26,11 @@ async def create_user(data: SigninForm, db: AsyncSession = Depends(get_db)):
 
 @router.post("/login")
 async def login(data: LoginForm, db: AsyncSession = Depends(get_db)):
-    await get_user(data, db)
+    user = await get_user(data, db)
     access_token = create_access_token(data={"sub": data.user_id})
     refresh_token = create_refresh_token(data={"sub": data.user_id})
-    return {"로그인여부" : "성공" ,"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+    usertype = "leader" if user.is_leader else "user"
+    return {"로그인여부" : "성공" ,"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer", "usertype": usertype}
 
 @router.get("/get_mydata")
 async def get_mydata(credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
