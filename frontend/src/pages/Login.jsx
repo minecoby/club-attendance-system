@@ -24,11 +24,11 @@ function LoginPage() {
       localStorage.setItem("token", access_token);
       localStorage.setItem("usertype", usertype);
 
-      if (usertype === 1) { // leader로 수정할 수 있게
+      if (usertype === "leader") {
         navigate("/leaderpage");
-      } else {
+      } else if (usertype === "user") {
         navigate("/userpage");
-      } 
+      }
     } catch (error) {
       console.error("로그인 실패", error);
       alert("로그인 실패: 아이디 또는 비밀번호를 확인하세요.");
