@@ -1,5 +1,5 @@
 backend/alembic.ini
-backend/migrations/
+backend/alembic/
 backend/.env
 backend/app/__pycache__/
 backend/app/routes/__pycache__/
