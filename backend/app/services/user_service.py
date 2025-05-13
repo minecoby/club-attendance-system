@@ -74,3 +74,25 @@ async def get_user_info(id:str, db: AsyncSession):
     if data is None:
         raise HTTPException(status_code=404, detail="동아리가입되지않음")
     return {"name": data.name, "id" : data.user_id, "is_leader" : data.is_leader}
+
+async def update_user_info(user_id: str, name: str, db: AsyncSession):
+    result = await db.execute(select(User).where(User.user_id == user_id))
+    db_user = result.scalar_one_or_none()
+    if db_user is None:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+    db_user.name = name
+    await db.commit()
+    await db.refresh(db_user)
+    return db_user
+
+async def change_user_password(user_id: str, old_password: str, new_password: str, db: AsyncSession):
+    result = await db.execute(select(User).where(User.user_id == user_id))
+    db_user = result.scalar_one_or_none()
+    if db_user is None:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+    if not verify_password(old_password, db_user.password):
+        raise HTTPException(status_code=400, detail="기존 비밀번호가 일치하지 않습니다.")
+    db_user.password = hash_password(new_password)
+    await db.commit()
+    await db.refresh(db_user)
+    return db_user

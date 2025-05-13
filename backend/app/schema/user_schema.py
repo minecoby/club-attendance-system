@@ -12,3 +12,10 @@ class LoginForm(User):
     
 class LeaderForm(User):
     is_leader: bool = False 
+
+class UpdateUserForm(BaseModel):
+    name: str
+
+class ChangePasswordForm(BaseModel):
+    old_password: str
+    new_password: str
