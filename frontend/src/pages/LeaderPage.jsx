@@ -57,13 +57,14 @@ function LeaderPage() {
                 const token = localStorage.getItem("token");
                 let response;
                 if (selectedDate === "") {
-                    // 전체 출석부
+                    // 전체 출석부: date에 'None'을 넣어서 요청
                     response = await axios.get(
-                        `http://localhost:8000/admin/show_attendance/`,
+                        `http://localhost:8000/admin/show_attendance/None`,
                         { headers: { Authorization: `Bearer ${token}` } }
                     );
                     // response.data: [출석데이터, 날짜리스트]
                     setAttendanceList(response.data[0]);
+                    setDateList(response.data[1]);
                 } else {
                     // 날짜별 출석부
                     response = await axios.get(
@@ -214,7 +215,34 @@ function LeaderPage() {
                         <div className="attendance-message error">{error}</div>
                     ) : attendanceList.length === 0 ? (
                         <div className="attendance-message empty">출석기록이 없습니다.</div>
+                    ) : selectedDate === "" ? (
+                        // 전체 출석부 테이블
+                        <table className="attendance-table">
+                            <thead>
+                                <tr>
+                                    <th>이름</th>
+                                    {dateList.map(date => (
+                                        <th key={date}>{date}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {attendanceList.map(user => (
+                                    <tr key={user.user_id}>
+                                        <td>{user.name}</td>
+                                        {dateList.map(date => (
+                                            <td key={date}>
+                                                <span className={`status-badge ${user[date] === true ? "출석" : "결석"}`}>
+                                                    {user[date] === true ? "출석" : "결석"}
+                                                </span>
+                                            </td>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     ) : (
+                        // 기존 날짜별 출석부 테이블
                         <table className="attendance-table">
                             <thead>
                                 <tr>

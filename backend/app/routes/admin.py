@@ -155,12 +155,12 @@ async def delete_date(date: str,credentials: HTTPAuthorizationCredentials = Secu
 
 
 @router.get("/show_attendance/{date}")
-async def show_attendance(date: str = None, credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
+async def show_attendance(date, credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
     token = credentials.credentials
     user = await get_current_user(token, db)
     if user.is_leader != True:
         raise HTTPException(status_code=400, detail="허가되지 않은 사용자입니다.")
-    if date == None: #날짜를 지정하지않음(전체 출석부 로드) 
+    if date == "None": #날짜를 지정하지않음(전체 출석부 로드) 
         club_code = await get_leader_club_code(user.user_id,db)
         data, date_columns = await load_full_attendance(club_code, db)
         return [data, date_columns]  # 날짜 리스트도 함께 반환
