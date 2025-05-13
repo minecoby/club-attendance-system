@@ -130,7 +130,7 @@ async def add_date(data: DateRequest, credentials: HTTPAuthorizationCredentials 
         raise HTTPException(status_code=400, detail=f"올바르지 않은 형식: {data}")
     
     #이미 등록된 날짜인지 체크 및 오류발생
-    is_date = check_date(club_code,data.date)
+    is_date = await check_date(club_code,data.date)
     if is_date:
         raise HTTPException(status_code=409, detail="이미 등록된 날짜입니다.")
 

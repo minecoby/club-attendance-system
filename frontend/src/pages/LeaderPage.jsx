@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import "../styles/LeaderPage.css";
 import axios from 'axios';
+import QRCode from "react-qr-code";
 
 function LeaderPage() {
     const [attendanceList, setAttendanceList] = useState([]);
@@ -12,6 +13,7 @@ function LeaderPage() {
     const [dropdownOpen, setDropdownOpen] = useState(false); // 드롭다운 상태
     const [qrCode, setQrCode] = useState("");
     const [ws, setWs] = useState(null);
+    const [showQR, setShowQR] = useState(false); // QR코드 표시 여부
 
     useEffect(() => {
         // 오늘 날짜 구하기 (YYYY-MM-DD)
@@ -86,7 +88,6 @@ function LeaderPage() {
     const handleStartQR = async () => {
         const token = localStorage.getItem("token");
         try {
-            // 날짜 추가 API 호출
             await axios.post(
                 "http://localhost:8000/admin/add_date",
                 { date: selectedDate },
@@ -95,7 +96,6 @@ function LeaderPage() {
         } catch (e) {
             // 이미 있으면 무시
         }
-        // 웹소켓 연결
         const socket = new window.WebSocket(`ws://localhost:8000/admin/attendance/${selectedDate}/ws`);
         socket.onopen = () => {
             socket.send("Bearer " + token);
@@ -104,6 +104,7 @@ function LeaderPage() {
             setQrCode(event.data);
         };
         setWs(socket);
+        setShowQR(true); // QR코드 표시
     };
 
     const handleDateClick = (date) => {
@@ -122,6 +123,32 @@ function LeaderPage() {
         setSelectedDate(today);
         setDropdownOpen(false);
     };
+
+    // 출석 데이터 새로고침 함수
+    const reloadAttendance = () => {
+        setSelectedDate(prev => prev); // selectedDate가 바뀌지 않아도 useEffect 트리거
+    };
+
+    // QR 모달 닫기 핸들러
+    const handleCloseQR = () => {
+        if (ws) {
+            ws.close();
+            setWs(null);
+        }
+        setShowQR(false);
+        setQrCode("");
+        reloadAttendance();
+    };
+
+    // 페이지 벗어날 때 웹소켓 종료 및 출석 데이터 새로고침
+    useEffect(() => {
+        return () => {
+            if (ws) {
+                ws.close();
+            }
+            reloadAttendance();
+        };
+    }, []);
 
     return (
         <div className="leader-page">
@@ -170,6 +197,16 @@ function LeaderPage() {
             </div>
             <div className="attendance-section">
                 <h2 className="attendance-title">{selectedDate ? `${selectedDate} 출석부` : "전체 출석부"}</h2>
+                {/* QR코드 모달/카드 */}
+                {showQR && qrCode && (
+                  <div className="qr-modal-bg" onClick={handleCloseQR}>
+                    <div className="qr-modal-card" onClick={e=>e.stopPropagation()}>
+                      <button className="qr-close-btn" onClick={handleCloseQR}>×</button>
+                      <div className="qr-label">QR코드로 출석하세요</div>
+                      <QRCode value={qrCode} size={200} />
+                    </div>
+                  </div>
+                )}
                 <div className='attendance-table-wrap'>
                     {loading ? (
                         <div className="attendance-message loading">로딩 중...</div>
