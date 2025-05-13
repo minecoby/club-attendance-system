@@ -47,17 +47,29 @@ function LeaderPage() {
 
     // 출석부 불러오기
     useEffect(() => {
-        if (!selectedDate) return;
+        if (selectedDate === undefined) return;
         const fetchAttendance = async () => {
             setLoading(true);
             setError(null);
             try {
                 const token = localStorage.getItem("token");
-                const response = await axios.get(
-                    `http://localhost:8000/admin/show_attendance/${selectedDate}`,
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
-                setAttendanceList(response.data);
+                let response;
+                if (selectedDate === "") {
+                    // 전체 출석부
+                    response = await axios.get(
+                        `http://localhost:8000/admin/show_attendance/`,
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    // response.data: [출석데이터, 날짜리스트]
+                    setAttendanceList(response.data[0]);
+                } else {
+                    // 날짜별 출석부
+                    response = await axios.get(
+                        `http://localhost:8000/admin/show_attendance/${selectedDate}`,
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    setAttendanceList(response.data);
+                }
             } catch (err) {
                 if (err.response && err.response.status === 404) {
                     setAttendanceList([]); // 출석기록 없음
@@ -99,39 +111,50 @@ function LeaderPage() {
         setDropdownOpen(false);
     };
 
+    // 전체 출석부 보기 버튼 클릭 핸들러
+    const handleAllAttendanceClick = () => {
+        setSelectedDate("");
+        setDropdownOpen(false);
+    };
+
+    // 오늘로 돌아가기 핸들러
+    const handleGoToday = () => {
+        setSelectedDate(today);
+        setDropdownOpen(false);
+    };
+
     return (
         <div className="leader-page">
             <div className="leader-header-card">
                 <div className="leader-header-left">
                     <div className="leader-date-label">출석 날짜</div>
-                    <div className="leader-date-value" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {selectedDate}
-                        <button
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2em' }}
-                            onClick={() => setDropdownOpen((v) => !v)}
-                            aria-label="날짜 선택 드롭다운 열기"
-                        >
-                            {dropdownOpen ? '▲' : '▼'}
+                    <div className="leader-date-controls">
+                        <div className="leader-date-value">
+                            {selectedDate ? selectedDate : "전체"}
+                            <button
+                                className="dropdown-btn"
+                                onClick={() => setDropdownOpen((v) => !v)}
+                                aria-label="날짜 선택 드롭다운 열기"
+                            >
+                                {dropdownOpen ? '▲' : '▼'}
+                            </button>
+                        </div>
+                        <button className="all-attendance-btn" onClick={handleAllAttendanceClick}>
+                            전체 출석부
+                        </button>
+                        <button className="today-btn" onClick={handleGoToday} disabled={selectedDate === today}>
+                            오늘로 돌아가기
                         </button>
                     </div>
                     {dropdownOpen && (
-                        <div style={{
-                            position: 'absolute',
-                            background: '#fff',
-                            border: '1px solid #ddd',
-                            borderRadius: '8px',
-                            marginTop: '8px',
-                            zIndex: 10,
-                            minWidth: '120px',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
-                        }}>
+                        <div className="date-dropdown">
                             {dateList.length === 0 ? (
-                                <div style={{ padding: '10px', color: '#888' }}>날짜 없음</div>
+                                <div className="date-dropdown-empty">날짜 없음</div>
                             ) : (
                                 dateList.map((date) => (
                                     <div
                                         key={date}
-                                        style={{ padding: '10px', cursor: 'pointer', background: selectedDate === date ? '#f0f8ff' : '#fff' }}
+                                        className={`date-dropdown-item${selectedDate === date ? ' selected' : ''}`}
                                         onClick={() => handleDateClick(date)}
                                     >
                                         {date}
@@ -146,7 +169,7 @@ function LeaderPage() {
                 </button>
             </div>
             <div className="attendance-section">
-                <h2 className="attendance-title">{selectedDate} 출석부</h2>
+                <h2 className="attendance-title">{selectedDate ? `${selectedDate} 출석부` : "전체 출석부"}</h2>
                 <div className='attendance-table-wrap'>
                     {loading ? (
                         <div className="attendance-message loading">로딩 중...</div>
