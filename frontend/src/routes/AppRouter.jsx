@@ -5,6 +5,7 @@ import UserPage from "../pages/UserPage";
 import LeaderPage from "../pages/LeaderPage";
 import Settings from "../pages/Settings";
 import Navbar from "../components/Navbar";
+import QRAttendancePage from "../pages/QRAttendancePage";
 
 const AppRouter = () => {
   const location = useLocation();
@@ -21,6 +22,7 @@ const AppRouter = () => {
     <Route path="/userpage" element={<UserPage />} />
     <Route path="/leaderpage" element={<LeaderPage />} />
     <Route path="/settings" element={<Settings />} />
+    <Route path="/qr-attendance" element={<QRAttendancePage />} />
   </Routes>
   </>);
 };

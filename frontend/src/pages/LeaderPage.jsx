@@ -152,9 +152,14 @@ function LeaderPage() {
 
     // QR/코드 모달 닫기 핸들러
     const handleCloseQR = () => {
-        if (ws) {
-            ws.close();
-            setWs(null);
+        if (window.confirm("정말로 출석을 종료하시겠습니까?")) {
+            if (ws) {
+                ws.close();
+                setWs(null);
+            }
+            setShowQR(false);
+            setQrCode("");
+            reloadAttendance();
         }
         setShowQR(false);
         setQrCode("");
