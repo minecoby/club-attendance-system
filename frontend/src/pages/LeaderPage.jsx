@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import "../styles/LeaderPage.css";
 import axios from 'axios';
 import QRCode from "react-qr-code";
+import AlertModal from '../components/AlertModal';
 
 function LeaderPage() {
     const [attendanceList, setAttendanceList] = useState([]);
@@ -17,6 +18,7 @@ function LeaderPage() {
     const [showCode, setShowCode] = useState(false); // 코드 출석 표시 여부
     const [fixedCode, setFixedCode] = useState(""); // 고정 코드 값
     const [modalMode, setModalMode] = useState("qr"); // 'qr' 또는 'code'
+    const [alert, setAlert] = useState({ show: false, type: 'info', message: '', confirm: false, onConfirm: null });
 
     useEffect(() => {
         // 오늘 날짜 구하기 (YYYY-MM-DD)
@@ -146,27 +148,38 @@ function LeaderPage() {
             ws.send("code_attendance_accepted");
             setModalMode("code");
         } else {
-            alert("QR 출석이 시작된 후에만 코드 출석으로 전환할 수 있습니다.");
+            setAlert({ show: true, type: 'error', message: 'QR 출석이 시작된 후에만 코드 출석으로 전환할 수 있습니다.', confirm: false, onConfirm: null });
         }
     };
 
     // QR/코드 모달 닫기 핸들러
     const handleCloseQR = () => {
-        if (window.confirm("정말로 출석을 종료하시겠습니까?")) {
-            if (ws) {
-                ws.close();
-                setWs(null);
+        setAlert({
+            show: true,
+            type: 'info',
+            message: '정말로 출석을 종료하시겠습니까?',
+            confirm: true,
+            onConfirm: () => {
+                if (ws) {
+                    ws.close();
+                    setWs(null);
+                }
+                setShowQR(false);
+                setQrCode("");
+                setShowCode(false);
+                setFixedCode("");
+                setModalMode("qr");
+                reloadAttendance();
             }
-            setShowQR(false);
-            setQrCode("");
-            reloadAttendance();
-        }
-        setShowQR(false);
-        setQrCode("");
-        setShowCode(false);
-        setFixedCode("");
-        setModalMode("qr");
-        reloadAttendance();
+        });
+    };
+
+    const handleCloseAlert = () => {
+        setAlert({ ...alert, show: false });
+    };
+    const handleConfirmAlert = () => {
+        if (alert.onConfirm) alert.onConfirm();
+        setAlert({ ...alert, show: false });
     };
 
     // 페이지 벗어날 때 웹소켓 종료 및 출석 데이터 새로고침
@@ -197,6 +210,14 @@ function LeaderPage() {
 
     return (
         <div className="leader-page">
+            <AlertModal
+                show={alert.show}
+                type={alert.type}
+                message={alert.message}
+                onClose={handleCloseAlert}
+                confirm={alert.confirm}
+                onConfirm={handleConfirmAlert}
+            />
             <div className="leader-header-card">
                 <div className="leader-header-left">
                     <div className="leader-date-label">출석 날짜</div>

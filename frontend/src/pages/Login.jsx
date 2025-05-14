@@ -3,12 +3,14 @@ import {Link, useNavigate} from "react-router-dom";
 import "../styles/Login.css";
 import kungya from '../assets/kungya.jpg';
 import axios from 'axios';
+import AlertModal from '../components/AlertModal';
 
 function LoginPage() {
   const navigate = useNavigate();
 
   const [user_id, setUserId] = useState("");
   const [password, setPassword] = useState("");
+  const [alert, setAlert] = useState({ show: false, type: 'error', message: '' });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,12 +33,17 @@ function LoginPage() {
       }
     } catch (error) {
       console.error("로그인 실패", error);
-      alert("로그인 실패: 아이디 또는 비밀번호를 확인하세요.");
+      setAlert({ show: true, type: 'error', message: "로그인 실패: 아이디 또는 비밀번호를 확인하세요." });
     }
   }
 
+  const handleCloseAlert = () => {
+    setAlert({ ...alert, show: false });
+  };
+
   return (
     <div className="login-page">
+      <AlertModal show={alert.show} type={alert.type} message={alert.message} onClose={handleCloseAlert} />
       <div className="login-image-section">
         <img src={kungya} alt = "쿵야" className="login-image" />
       </div>

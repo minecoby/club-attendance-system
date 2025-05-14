@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios'; 
 import '../styles/SignUp.css';
 import lovingYou from '../assets/lovingYou.jpg';
+import AlertModal from '../components/AlertModal';
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ const SignUp = () => {
     password: '',
     name: '',
   });
+  const [alert, setAlert] = useState({ show: false, type: 'info', message: '', after: null });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -22,16 +24,21 @@ const SignUp = () => {
 
     try {
       await axios.post("http://localhost:8000/users/signin", formData);
-      alert("회원가입 완료!");
-      navigate('/login');
+      setAlert({ show: true, type: 'success', message: '회원가입 완료!', after: () => navigate('/login') });
     } catch (err) {
       console.error("회원가입 실패:", err);
-      alert("회원가입에 실패했습니다.");
+      setAlert({ show: true, type: 'error', message: '회원가입에 실패했습니다.', after: null });
     }
+  };
+
+  const handleCloseAlert = () => {
+    setAlert({ ...alert, show: false });
+    if (alert.after) alert.after();
   };
 
   return (
     <div className="signup-container">
+      <AlertModal show={alert.show} type={alert.type} message={alert.message} onClose={handleCloseAlert} />
       <div className='img-section'>
         <img src={lovingYou} alt='가입 축하' className='signup-img' />
       </div>

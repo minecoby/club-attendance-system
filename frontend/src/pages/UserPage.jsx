@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import "../styles/UserPage.css";
 import Navbar from '../components/Navbar';
-
+import AlertModal from '../components/AlertModal';
 
 function UserPage() {
     const [attendanceList] = useState([
@@ -12,6 +12,7 @@ function UserPage() {
     ]);
     const [showCodeModal, setShowCodeModal] = useState(false);
     const [attendanceCode, setAttendanceCode] = useState("");
+    const [alert, setAlert] = useState({ show: false, type: 'info', message: '' });
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -49,12 +50,17 @@ function UserPage() {
     const handleSubmitCode = (e) => {
         e.preventDefault();
         // TODO: 백엔드 출석 API 호출
-        alert(`입력한 코드: ${attendanceCode}`);
+        setAlert({ show: true, type: 'info', message: `입력한 코드: ${attendanceCode}` });
         handleCloseCodeModal();
+    };
+
+    const handleCloseAlert = () => {
+        setAlert({ ...alert, show: false });
     };
 
     return (
         <div className="userpage-section">
+            <AlertModal show={alert.show} type={alert.type} message={alert.message} onClose={handleCloseAlert} />
             <div className='nav'>
                   <Navbar />
             </div>

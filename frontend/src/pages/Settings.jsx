@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import '../styles/Settings.css';
+import AlertModal from '../components/AlertModal';
 
 function Settings() {
     // 사용자 정보 상태
@@ -17,6 +18,7 @@ function Settings() {
     const [registeredClub, setRegisteredClub] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPasswordForm, setShowPasswordForm] = useState(false);
+    const [alert, setAlert] = useState({ show: false, type: 'info', message: '' });
 
     // 사용자 정보 불러오기
     useEffect(() => {
@@ -36,7 +38,7 @@ function Settings() {
                     setRegisteredClub(res.data.club_data.map(c => c.club_code).join(', '));
                 }
             } catch (err) {
-                alert('사용자 정보를 불러오지 못했습니다.');
+                setAlert({ show: true, type: 'error', message: '사용자 정보를 불러오지 못했습니다.' });
             }
         };
         fetchUser();
@@ -51,9 +53,9 @@ function Settings() {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setUserInfo(prev => ({ ...prev, name: newName }));
-            alert('이름이 변경되었습니다.');
+            setAlert({ show: true, type: 'success', message: '이름이 변경되었습니다.' });
         } catch (err) {
-            alert('이름 변경 실패');
+            setAlert({ show: true, type: 'error', message: '이름 변경 실패' });
         } finally {
             setLoading(false);
         }
@@ -62,7 +64,7 @@ function Settings() {
     // 비밀번호 변경
     const handleChangePassword = async () => {
         if (!oldPassword || !newPassword) {
-            alert('기존 비밀번호와 새 비밀번호를 모두 입력하세요.');
+            setAlert({ show: true, type: 'error', message: '기존 비밀번호와 새 비밀번호를 모두 입력하세요.' });
             return;
         }
         try {
@@ -77,9 +79,9 @@ function Settings() {
             setOldPassword('');
             setNewPassword('');
             setShowPasswordForm(false);
-            alert('비밀번호가 변경되었습니다.');
+            setAlert({ show: true, type: 'success', message: '비밀번호가 변경되었습니다.' });
         } catch (err) {
-            alert('비밀번호 변경 실패: ' + (err.response?.data?.detail || ''));
+            setAlert({ show: true, type: 'error', message: '비밀번호 변경 실패: ' + (err.response?.data?.detail || '') });
         } finally {
             setLoading(false);
         }
@@ -96,9 +98,9 @@ function Settings() {
             });
             setRegisteredClub(clubCode);
             setClubCode('');
-            alert('동아리 코드가 등록되었습니다.');
+            setAlert({ show: true, type: 'success', message: '동아리 코드가 등록되었습니다.' });
         } catch (err) {
-            alert('동아리 코드 등록 실패: ' + (err.response?.data?.detail || ''));
+            setAlert({ show: true, type: 'error', message: '동아리 코드 등록 실패: ' + (err.response?.data?.detail || '') });
         } finally {
             setLoading(false);
         }
@@ -113,11 +115,16 @@ function Settings() {
 
     // 회원탈퇴(추가 구현 필요)
     const handleWithdraw = () => {
-        alert('회원탈퇴 기능은 추후 구현 예정입니다.');
+        setAlert({ show: true, type: 'info', message: '회원탈퇴 기능은 추후 구현 예정입니다.' });
+    };
+
+    const handleCloseAlert = () => {
+        setAlert({ ...alert, show: false });
     };
 
     return (
         <div className="setting-section">
+            <AlertModal show={alert.show} type={alert.type} message={alert.message} onClose={handleCloseAlert} />
             <h2>설정</h2>
             {/* 사용자 정보 관리 */}
             <section className="setting-block">
