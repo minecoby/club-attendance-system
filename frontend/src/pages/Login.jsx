@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {Link, useNavigate} from "react-router-dom";
 import "../styles/Login.css";
 import kungya from '../assets/kungya.jpg';
@@ -11,6 +11,18 @@ function LoginPage() {
   const [user_id, setUserId] = useState("");
   const [password, setPassword] = useState("");
   const [alert, setAlert] = useState({ show: false, type: 'error', message: '' });
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const usertype = localStorage.getItem("usertype");
+    if (token && usertype) {
+      if (usertype === "leader") {
+        navigate("/leaderpage");
+      } else if (usertype === "user") {
+        navigate("/userpage");
+      }
+    }
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
