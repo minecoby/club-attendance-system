@@ -130,15 +130,17 @@ function LeaderPage() {
         setSelectedDate(prev => prev); // selectedDate가 바뀌지 않아도 useEffect 트리거
     };
 
-    // QR 모달 닫기 핸들러
+    // QR/코드 모달 닫기 핸들러
     const handleCloseQR = () => {
-        if (ws) {
-            ws.close();
-            setWs(null);
+        if (window.confirm("정말로 출석을 종료하시겠습니까?")) {
+            if (ws) {
+                ws.close();
+                setWs(null);
+            }
+            setShowQR(false);
+            setQrCode("");
+            reloadAttendance();
         }
-        setShowQR(false);
-        setQrCode("");
-        reloadAttendance();
     };
 
     // 페이지 벗어날 때 웹소켓 종료 및 출석 데이터 새로고침

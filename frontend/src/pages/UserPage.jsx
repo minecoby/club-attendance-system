@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import "../styles/UserPage.css";
 import Navbar from '../components/Navbar';
 
@@ -9,9 +10,47 @@ function UserPage() {
         { id: 2, team: "팀이름", date: "2025-03-20", status: "결석" },
         { id: 3, team: "팀이름", date: "2025-03-19", status: "결석" },
     ]);
+    const [showCodeModal, setShowCodeModal] = useState(false);
+    const [attendanceCode, setAttendanceCode] = useState("");
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        // club_code를 미리 받아서 localStorage에 저장
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        fetch("http://localhost:8000/users/get_mydata", {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.club_data && data.club_data.length > 0) {
+                localStorage.setItem("club_code", data.club_data[0].club_code);
+            }
+        });
+    }, []);
 
     const handleStartQR = () => {
-        alert("QR");
+        navigate('/qr-attendance'); // QR 출석 페이지로 이동
+    };
+
+    const handleOpenCodeModal = () => {
+        setShowCodeModal(true);
+    };
+
+    const handleCloseCodeModal = () => {
+        setShowCodeModal(false);
+        setAttendanceCode("");
+    };
+
+    const handleCodeChange = (e) => {
+        setAttendanceCode(e.target.value);
+    };
+
+    const handleSubmitCode = (e) => {
+        e.preventDefault();
+        // TODO: 백엔드 출석 API 호출
+        alert(`입력한 코드: ${attendanceCode}`);
+        handleCloseCodeModal();
     };
 
     return (
@@ -25,6 +64,27 @@ function UserPage() {
                     QR로 출석하기
                 </button>
             </div>
+
+            {showCodeModal && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <h3>출석 코드 입력</h3>
+                        <form onSubmit={handleSubmitCode}>
+                            <input
+                                type="text"
+                                value={attendanceCode}
+                                onChange={handleCodeChange}
+                                placeholder="출석 코드를 입력하세요"
+                                required
+                            />
+                            <div style={{marginTop: '10px'}}>
+                                <button type="submit">출석하기</button>
+                                <button type="button" onClick={handleCloseCodeModal} style={{marginLeft: '10px'}}>취소</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             <div className="attendance-section">
                 <h2>내 출석부</h2>
