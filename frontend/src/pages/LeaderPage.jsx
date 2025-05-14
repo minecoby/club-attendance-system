@@ -14,6 +14,9 @@ function LeaderPage() {
     const [qrCode, setQrCode] = useState("");
     const [ws, setWs] = useState(null);
     const [showQR, setShowQR] = useState(false); // QR코드 표시 여부
+    const [showCode, setShowCode] = useState(false); // 코드 출석 표시 여부
+    const [fixedCode, setFixedCode] = useState(""); // 고정 코드 값
+    const [modalMode, setModalMode] = useState("qr"); // 'qr' 또는 'code'
 
     useEffect(() => {
         // 오늘 날짜 구하기 (YYYY-MM-DD)
@@ -102,10 +105,17 @@ function LeaderPage() {
             socket.send("Bearer " + token);
         };
         socket.onmessage = (event) => {
-            setQrCode(event.data);
+            if (modalMode === "code") {
+                setFixedCode(event.data);
+            } else {
+                setQrCode(event.data);
+            }
         };
         setWs(socket);
-        setShowQR(true); // QR코드 표시
+        setShowQR(true); // 모달 표시
+        setModalMode("qr");
+        setShowCode(false);
+        setFixedCode("");
     };
 
     const handleDateClick = (date) => {
@@ -130,6 +140,16 @@ function LeaderPage() {
         setSelectedDate(prev => prev); // selectedDate가 바뀌지 않아도 useEffect 트리거
     };
 
+    // 코드 출석 시작 핸들러 (모달 내부에서 QR→코드 전환)
+    const handleStartCode = () => {
+        if (ws) {
+            ws.send("code_attendance_accepted");
+            setModalMode("code");
+        } else {
+            alert("QR 출석이 시작된 후에만 코드 출석으로 전환할 수 있습니다.");
+        }
+    };
+
     // QR/코드 모달 닫기 핸들러
     const handleCloseQR = () => {
         if (window.confirm("정말로 출석을 종료하시겠습니까?")) {
@@ -141,6 +161,12 @@ function LeaderPage() {
             setQrCode("");
             reloadAttendance();
         }
+        setShowQR(false);
+        setQrCode("");
+        setShowCode(false);
+        setFixedCode("");
+        setModalMode("qr");
+        reloadAttendance();
     };
 
     // 페이지 벗어날 때 웹소켓 종료 및 출석 데이터 새로고침
@@ -152,6 +178,22 @@ function LeaderPage() {
             reloadAttendance();
         };
     }, []);
+
+    // 코드 출석 모달을 열기 위한 useEffect
+    useEffect(() => {
+        if (!ws) return;
+        // 코드 출석 모드로 바뀌었을 때, 다음에 오는 코드 메시지를 fixedCode로 설정
+        if (modalMode === "code") {
+            const handleCodeMessage = (event) => {
+                setFixedCode(event.data);
+            };
+            ws.addEventListener("message", handleCodeMessage, { once: true });
+            // cleanup
+            return () => {
+                ws.removeEventListener("message", handleCodeMessage);
+            };
+        }
+    }, [modalMode, ws]);
 
     return (
         <div className="leader-page">
@@ -200,13 +242,24 @@ function LeaderPage() {
             </div>
             <div className="attendance-section">
                 <h2 className="attendance-title">{selectedDate ? `${selectedDate} 출석부` : "전체 출석부"}</h2>
-                {/* QR코드 모달/카드 */}
-                {showQR && qrCode && (
+                {/* QR/코드 모달 (하나의 모달에서 분기) */}
+                {showQR && (
                   <div className="qr-modal-bg" onClick={handleCloseQR}>
                     <div className="qr-modal-card" onClick={e=>e.stopPropagation()}>
                       <button className="qr-close-btn" onClick={handleCloseQR}>×</button>
-                      <div className="qr-label">QR코드로 출석하세요</div>
-                      <QRCode value={qrCode} size={200} />
+                      {modalMode === "qr" && qrCode && (
+                        <>
+                          <div className="qr-label">QR코드로 출석하세요</div>
+                          <QRCode value={qrCode} size={200} />
+                          <button onClick={handleStartCode} style={{marginTop: '24px', background: '#ff9800', color: '#fff', fontWeight: 'bold', border: 'none', borderRadius: '8px', padding: '12px 24px', fontSize: '1.1rem', cursor: 'pointer'}}>코드로 출석하기</button>
+                        </>
+                      )}
+                      {modalMode === "code" && fixedCode && (
+                        <>
+                          <div className="qr-label">아래 코드를 입력하여 출석하세요</div>
+                          <div style={{fontSize: '2.5rem', fontWeight: 'bold', color: '#ff9800', margin: '30px 0'}}>{fixedCode}</div>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}

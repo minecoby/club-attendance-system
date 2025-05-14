@@ -9,6 +9,8 @@ from app.services.service import *
 
 from app.services.club_service import get_club_info
 
+from fastapi import HTTPException
+
 security = HTTPBearer()
 
 router = APIRouter(
@@ -44,3 +46,25 @@ async def get_mydata(credentials: HTTPAuthorizationCredentials = Security(securi
     user_data = await get_user_info(user.user_id,db)
 
     return {"user_data": user_data, "club_data": club_data}
+
+@router.put("/update")
+async def update_user(
+    data: UpdateUserForm,
+    credentials: HTTPAuthorizationCredentials = Security(security),
+    db: AsyncSession = Depends(get_db)
+):
+    token = credentials.credentials
+    user = await get_current_user(token, db)
+    updated_user = await update_user_info(user.user_id, data.name, db)
+    return {"message": "사용자 정보가 수정되었습니다.", "user": {"user_id": updated_user.user_id, "name": updated_user.name}}
+
+@router.put("/change_password")
+async def change_password(
+    data: ChangePasswordForm,
+    credentials: HTTPAuthorizationCredentials = Security(security),
+    db: AsyncSession = Depends(get_db)
+):
+    token = credentials.credentials
+    user = await get_current_user(token, db)
+    await change_user_password(user.user_id, data.old_password, data.new_password, db)
+    return {"message": "비밀번호가 변경되었습니다."}

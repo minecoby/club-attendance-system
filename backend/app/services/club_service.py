@@ -17,13 +17,18 @@ async def check_club(code: str, db: AsyncSession):
 #동아리 가입
 async def joining_club(user_id: str, code: str, db: AsyncSession):
     try:
-        await join_duplicate(user_id,code,db)
+        # 이미 가입된 모든 동아리에서 탈퇴
+        existing = await db.execute(select(StuClub).where(StuClub.user_id == user_id))
+        for stuclub in existing.scalars().all():
+            await db.delete(stuclub)
+        await db.commit()
+        # 중복 가입 방지 (동일 코드)
+        await join_duplicate(user_id, code, db)
         new_member = StuClub(user_id= user_id, club_code= code)
         db.add(new_member)
         await db.commit()
         await db.refresh(new_member)
         return new_member
-
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail="데이터베이스 오류")
     
