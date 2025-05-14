@@ -71,9 +71,7 @@ function UserPage() {
     return (
         <div className="userpage-section">
             <AlertModal show={alert.show} type={alert.type} message={alert.message} onClose={handleCloseAlert} />
-            <div className='nav'>
-                  <Navbar />
-            </div>
+            <Navbar />
             <div className="QR-section">
                 <h2>출석 레츠끼끼</h2>
                 {/* 동아리 선택 카드형 섹션 */}
