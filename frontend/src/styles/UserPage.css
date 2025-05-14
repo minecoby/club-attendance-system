@@ -15,19 +15,54 @@
     margin-bottom: 30px;
 }
 
+.club-select-section {
+    background: linear-gradient(90deg, #f5f8ff 60%, #e3f0fc 100%);
+    border-radius: 14px;
+    box-shadow: 0 2px 12px rgba(79,140,255,0.08);
+    padding: 24px 20px 18px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+}
+
+.club-select-label {
+    font-size: 1.08rem;
+    font-weight: 600;
+    color: #2563eb;
+    margin-right: 8px;
+}
+
+.club-select-dropdown {
+    padding: 8px 14px;
+    border: 1.5px solid #b3d7f6;
+    border-radius: 7px;
+    font-size: 1rem;
+    background: #fff;
+    transition: border 0.2s;
+    min-width: 140px;
+}
+
+.club-select-dropdown:focus {
+    border: 1.5px solid #2563eb;
+}
+
 .startQR-button {
-    padding: 12px 28px;
-    font-size: 16px;
-    background-color: #007bff;
-    color: white;
+    background: linear-gradient(90deg, #4f8cff 60%, #43e97b 100%);
+    color: #fff;
     border: none;
-    border-radius: 8px;
-    font-weight: bold;
+    border-radius: 7px;
+    font-weight: 700;
+    padding: 10px 28px;
+    font-size: 1.08rem;
     cursor: pointer;
+    margin-left: 10px;
+    transition: background 0.18s;
 }
 
 .startQR-button:hover{
-    background-color: #2a8ada;
+    background: linear-gradient(90deg, #2563eb 60%, #28a745 100%);
 }
 
 .attendance-section{

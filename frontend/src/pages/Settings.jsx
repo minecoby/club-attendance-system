@@ -15,7 +15,7 @@ function Settings() {
     const [newPassword, setNewPassword] = useState('');
     // 동아리 코드 등록 상태
     const [clubCode, setClubCode] = useState('');
-    const [registeredClub, setRegisteredClub] = useState('');
+    const [joinedClubs, setJoinedClubs] = useState([]);
     const [loading, setLoading] = useState(false);
     const [showPasswordForm, setShowPasswordForm] = useState(false);
     const [alert, setAlert] = useState({ show: false, type: 'info', message: '' });
@@ -35,7 +35,9 @@ function Settings() {
                 });
                 setNewName(res.data.user_data.name);
                 if (res.data.club_data && res.data.club_data.length > 0) {
-                    setRegisteredClub(res.data.club_data.map(c => c.club_code).join(', '));
+                    setJoinedClubs(res.data.club_data);
+                } else {
+                    setJoinedClubs([]);
                 }
             } catch (err) {
                 setAlert({ show: true, type: 'error', message: '사용자 정보를 불러오지 못했습니다.' });
@@ -96,11 +98,35 @@ function Settings() {
             await axios.post('http://localhost:8000/clubs/join_club', { club_code: clubCode }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setRegisteredClub(clubCode);
+            // 가입 후, 최신 동아리 목록을 다시 불러와서 setJoinedClubs에 반영
+            const res = await axios.get('http://localhost:8000/users/get_mydata', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.data.club_data && res.data.club_data.length > 0) {
+                setJoinedClubs(res.data.club_data);
+            }
+            setAlert({ show: true, type: 'success', message: '동아리에 성공적으로 가입되었습니다!' });
             setClubCode('');
-            setAlert({ show: true, type: 'success', message: '동아리 코드가 등록되었습니다.' });
         } catch (err) {
             setAlert({ show: true, type: 'error', message: '동아리 코드 등록 실패: ' + (err.response?.data?.detail || '') });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // 동아리 탈퇴
+    const handleQuitClub = async (club_code) => {
+        if (!window.confirm("정말로 이 동아리에서 탈퇴하시겠습니까?")) return;
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+            await axios.post('http://localhost:8000/clubs/quit_club', { club_code }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setAlert({ show: true, type: 'success', message: '동아리에서 탈퇴되었습니다.' });
+            setJoinedClubs(prev => prev.filter(c => c.club_code !== club_code));
+        } catch (err) {
+            setAlert({ show: true, type: 'error', message: '동아리 탈퇴 실패: ' + (err.response?.data?.detail || '') });
         } finally {
             setLoading(false);
         }
@@ -170,17 +196,31 @@ function Settings() {
                 )}
             </section>
 
-            {/* 동아리 코드 등록 */}
-            <section className="setting-block">
-                <h3>동아리 코드 등록</h3>
-                <div>
-                    <input type="text" value={clubCode} onChange={e => setClubCode(e.target.value)} placeholder="동아리 코드 입력" disabled={userInfo.is_leader} />
-                    <button className="setting-btn" onClick={handleRegisterClub} disabled={loading || userInfo.is_leader}>등록</button>
+            {/* 동아리 관리 */}
+            <section className="setting-block club-manage-card">
+                <div className="club-manage-title">동아리 관리</div>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+                    <input type="text" value={clubCode} onChange={e => setClubCode(e.target.value)} placeholder="동아리 코드 입력" className="club-manage-input" disabled={userInfo.is_leader} />
+                    <button className="club-manage-btn" onClick={handleRegisterClub} disabled={loading || userInfo.is_leader}>가입</button>
                 </div>
                 {userInfo.is_leader && (
-                    <div style={{color:'#e74c3c', marginTop:'8px', fontSize:'0.97em'}}>리더 계정은 동아리 코드 등록을 할 수 없습니다.</div>
+                    <div style={{color:'#e74c3c', marginTop:'8px', fontSize:'0.97em'}}>리더 계정은 동아리 가입을 할 수 없습니다.</div>
                 )}
-                {registeredClub && <div>등록된 동아리 코드: {registeredClub}</div>}
+                <div className="club-list-wrap">
+                    <h4 style={{marginBottom: 10, color:'#2563eb'}}>가입된 동아리 목록</h4>
+                    {joinedClubs.length === 0 && <div style={{color:'#888'}}>가입된 동아리가 없습니다.</div>}
+                    <ul className="club-list-ul">
+                        {joinedClubs.map(club => (
+                            <li key={club.club_code} className="club-list-li">
+                                <span className="club-name">{club.club_name}</span>
+                                <span className="club-code">({club.club_code})</span>
+                                <button className="club-leave-btn" onClick={() => handleQuitClub(club.club_code)} disabled={loading || userInfo.is_leader}>
+                                    탈퇴
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
             </section>
         </div>
     );
