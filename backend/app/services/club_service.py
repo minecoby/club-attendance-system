@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.exc import SQLAlchemyError
 from fastapi import HTTPException
+from sqlalchemy.orm import joinedload
 
 from app.models import Club, StuClub, Attendance, AttendanceDate
 from app.variable import *
@@ -67,11 +68,18 @@ async def club_quit(id:str, code: str , db: AsyncSession):
     
 #가입한 동아리 목록 조회
 async def get_club_info(id:str, db: AsyncSession):
-    data = await db.execute(select(StuClub).where(StuClub.user_id == id))
-    data = data.scalars().all()
-    if data is None:
-        return None
-    return data
+    result = await db.execute(
+        select(StuClub, Club.club_name)
+        .join(Club, StuClub.club_code == Club.club_code)
+        .where(StuClub.user_id == id)
+    )
+    clubs = result.all()
+    if not clubs:
+        return []
+    return [
+        {"club_code": sc.StuClub.club_code, "club_name": sc.club_name}
+        for sc in clubs
+    ]
 
 async def get_club_admin(id:str, db: AsyncSession):
     data = await db.execute(select(StuClub).where(StuClub.user_id == id))

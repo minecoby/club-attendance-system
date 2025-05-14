@@ -13,24 +13,35 @@ function UserPage() {
     const [showCodeModal, setShowCodeModal] = useState(false);
     const [attendanceCode, setAttendanceCode] = useState("");
     const [alert, setAlert] = useState({ show: false, type: 'info', message: '' });
+    const [clubList, setClubList] = useState([]); // 동아리 목록
+    const [selectedClub, setSelectedClub] = useState(""); // 선택된 동아리
     const navigate = useNavigate();
 
     useEffect(() => {
-        // club_code를 미리 받아서 localStorage에 저장
         const token = localStorage.getItem("token");
         if (!token) return;
-        fetch("http://localhost:8000/users/get_mydata", {
+        fetch("http://localhost:8000/clubs/get_club_info", {
             headers: { Authorization: `Bearer ${token}` }
         })
         .then(res => res.json())
         .then(data => {
-            if (data.club_data && data.club_data.length > 0) {
-                localStorage.setItem("club_code", data.club_data[0].club_code);
+            if (Array.isArray(data) && data.length > 0) {
+                setClubList(data);
+                setSelectedClub(data[0].club_code); // 기본값 첫번째 동아리
             }
         });
     }, []);
 
+    const handleClubChange = (e) => {
+        setSelectedClub(e.target.value);
+    };
+
     const handleStartQR = () => {
+        if (!selectedClub) {
+            setAlert({ show: true, type: 'error', message: '동아리를 선택하세요.' });
+            return;
+        }
+        localStorage.setItem("club_code", selectedClub);
         navigate('/qr-attendance'); // QR 출석 페이지로 이동
     };
 
@@ -49,7 +60,6 @@ function UserPage() {
 
     const handleSubmitCode = (e) => {
         e.preventDefault();
-        // TODO: 백엔드 출석 API 호출
         setAlert({ show: true, type: 'info', message: `입력한 코드: ${attendanceCode}` });
         handleCloseCodeModal();
     };
@@ -66,9 +76,20 @@ function UserPage() {
             </div>
             <div className="QR-section">
                 <h2>출석 레츠끼끼</h2>
-                <button onClick={handleStartQR} className="startQR-button">
-                    QR로 출석하기
-                </button>
+                {/* 동아리 선택 카드형 섹션 */}
+                <div className="club-select-section">
+                    <label htmlFor="club-select" className="club-select-label">동아리 선택:</label>
+                    <select id="club-select" value={selectedClub} onChange={handleClubChange} className="club-select-dropdown">
+                        {clubList.map(club => (
+                            <option key={club.club_code} value={club.club_code}>
+                                {club.club_name}
+                            </option>
+                        ))}
+                    </select>
+                    <button onClick={handleStartQR} className="startQR-button">
+                        QR로 출석하기
+                    </button>
+                </div>
             </div>
 
             {showCodeModal && (
