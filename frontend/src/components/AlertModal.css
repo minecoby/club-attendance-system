@@ -19,7 +19,7 @@
   border-radius: 16px;
   box-shadow: 0 4px 24px rgba(0,0,0,0.18);
   padding: 36px 24px 24px 24px;
-  max-width: 320px;
+  max-width: 400px;
   min-width: 220px;
   text-align: center;
   position: relative;
@@ -50,7 +50,7 @@
 .alert-modal-message {
   margin-bottom: 18px;
   color: #222;
-  font-size: 1.05rem;
+  font-size: 1.00rem;
 }
 
 .alert-modal-close {

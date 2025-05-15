@@ -125,6 +125,8 @@ async def add_date(data: DateRequest, credentials: HTTPAuthorizationCredentials 
     await date_add(data, club_code, user)
     return {"message": f"데이터가 정상적으로 추가되었습니다.", "dates": data.date}
 
+
+
 @router.post("/refresh_date")
 async def refresh(data: DateRequest,credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
     token = credentials.credentials

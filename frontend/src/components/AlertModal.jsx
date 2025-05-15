@@ -24,7 +24,7 @@ function AlertModal({ show, type = 'info', message, onClose, confirm = false, on
     <div className="alert-modal-bg">
       <div className="alert-modal-card">
         <div className="alert-modal-title" style={{ color }}>{title}</div>
-        <div className="alert-modal-message">{message}</div>
+        <div className="alert-modal-message" style={{ whiteSpace: "pre-line" }}>{message}</div>
         {confirm ? (
           <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
             <button className="alert-modal-close" style={{ background: '#007bff' }} onClick={onConfirm}>확인</button>

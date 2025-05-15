@@ -98,8 +98,34 @@ function LeaderPage() {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
         } catch (e) {
-            setError("날짜 추가 중 오류가 발생했습니다."); // 오류 메시지 추가
+            if (e.response && e.response.status === 409) {
+                setAlert({
+                    show: true,
+                    type: 'warning',
+                    message: '이미 출석한 기록이 있는 날짜입니다. \n데이터를 초기화 후 출석을 시작하시겠습니까?',
+                    confirm: true,
+                    onConfirm: async () => {
+                        try {
+                            await axios.post(
+                                "http://localhost:8000/admin/refresh_date",
+                                { date: selectedDate },
+                                { headers: { Authorization: `Bearer ${token}` } }
+                            );
+                            startWebSocket(token);
+                        } catch (refreshError) {
+                            setError("날짜 초기화 중 오류가 발생했습니다.");
+                        }
+                    }
+                });
+            } else {
+                setError("날짜 추가 중 오류가 발생했습니다."); // 오류 메시지 추가
+            }
+            return;
         }
+        startWebSocket(token);
+    };
+
+    const startWebSocket = (token) => {
         const socket = new window.WebSocket(`ws://localhost:8000/admin/attendance/${selectedDate}/ws`);
         socket.onopen = () => {
             socket.send("Bearer " + token);
