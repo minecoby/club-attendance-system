@@ -122,24 +122,23 @@ async def add_date(data: DateRequest, credentials: HTTPAuthorizationCredentials 
         raise HTTPException(status_code=403, detail="오로지 관리자권한이 있는사람만 추가가능합니다.")
 
     club_code = await get_leader_club_code(user.user_id, db)
-    
-    #날짜 형식 체크
-    try:
-        date_obj = datetime.strptime(data.date, "%Y-%m-%d").date()  
-    except ValueError:
-        raise HTTPException(status_code=400, detail=f"올바르지 않은 형식: {data}")
-    
-    #이미 등록된 날짜인지 체크 및 오류발생
-    is_date = await check_date(club_code,data.date)
-    if is_date:
-        raise HTTPException(status_code=409, detail="이미 등록된 날짜입니다.")
-
-    #날짜 추가 
-    new_date = AttendanceDate(club_code=club_code, date=date_obj, set_by=user.user_id)
-    db.add(new_date)
-
-    await db.commit()  
+    await date_add(data, club_code, user)
     return {"message": f"데이터가 정상적으로 추가되었습니다.", "dates": data.date}
+
+
+
+@router.post("/refresh_date")
+async def refresh(data: DateRequest,credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
+    token = credentials.credentials
+    user = await get_current_user(token, db)
+
+    if not user.is_leader:
+        raise HTTPException(status_code=403, detail="오로지 관리자권한이 있는사람만 삭제 및 추가 가능합니다.")
+
+    club_code = await get_leader_club_code(user.user_id, db)
+    await delete_date_from_club(club_code,data.date,db)
+    await date_add(data, club_code, user)
+
 
 @router.delete("delete_date/{date}")
 async def delete_date(date: str,credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
@@ -147,7 +146,7 @@ async def delete_date(date: str,credentials: HTTPAuthorizationCredentials = Secu
     user = await get_current_user(token, db)
 
     if not user.is_leader:
-        raise HTTPException(status_code=403, detail="오로지 관리자권한이 있는사람만 추가가능합니다.")
+        raise HTTPException(status_code=403, detail="오로지 관리자권한이 있는사람만 삭제가능합니다.")
 
     club_code = await get_leader_club_code(user.user_id, db)
     await delete_date_from_club(club_code,date,db)
