@@ -38,19 +38,25 @@ function LeaderPage() {
                 const token = localStorage.getItem("token");
                 // 날짜를 지정하지 않으면 전체 출석부(날짜 목록 포함) 반환
                 const response = await axios.get(
-                    `http://localhost:8000/admin/show_attendance/`,
+                    `http://localhost:8000/admin/show_attendance/None`,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
                 // response.data: [출석데이터, 날짜리스트]
                 if (Array.isArray(response.data) && response.data.length === 2) {
-                    setDateList(response.data[1]);
+                    const dates = response.data[1];
+                    if (!dates.includes(today)) {
+                        dates.push(today); // 오늘 날짜 추가
+                    }
+                    setDateList(dates);
                 }
             } catch (err) {
-                // 무시
+                setError("날짜 목록을 불러오는 중 오류가 발생했습니다."); // 오류 메시지 추가
             }
         };
-        fetchDateList();
-    }, []);
+        if (today) {
+            fetchDateList();
+        }
+    }, [today]);
 
     // 출석부 불러오기
     useEffect(() => {
@@ -100,7 +106,7 @@ function LeaderPage() {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
         } catch (e) {
-            // 이미 있으면 무시
+            setError("날짜 추가 중 오류가 발생했습니다."); // 오류 메시지 추가
         }
         const socket = new window.WebSocket(`ws://localhost:8000/admin/attendance/${selectedDate}/ws`);
         socket.onopen = () => {
@@ -240,7 +246,7 @@ function LeaderPage() {
                         </button>
                     </div>
                     {dropdownOpen && (
-                        <div className="date-dropdown">
+                        <div className="date-dropdown" style={{ position: 'absolute', left: 0 }}>
                             {dateList.length === 0 ? (
                                 <div className="date-dropdown-empty">날짜 없음</div>
                             ) : (

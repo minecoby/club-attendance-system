@@ -68,3 +68,14 @@ async def change_password(
     user = await get_current_user(token, db)
     await change_user_password(user.user_id, data.old_password, data.new_password, db)
     return {"message": "비밀번호가 변경되었습니다."}
+
+# 토큰 유효성 검사
+@router.get("/validate_token")
+async def validate_token(credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
+    token = credentials.credentials
+    try:
+        # 유저 정보 불러오기
+        user = await get_current_user(token, db)
+        return {"message": "토큰이 유효합니다.", "user_id": user.user_id}
+    except HTTPException as e:
+        raise HTTPException(status_code=401, detail="유효하지 않은 토큰입니다.")

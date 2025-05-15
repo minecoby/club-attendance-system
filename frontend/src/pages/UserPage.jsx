@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import "../styles/UserPage.css";
-import Navbar from '../components/Navbar';
 import AlertModal from '../components/AlertModal';
 
 function UserPage() {
@@ -71,7 +70,6 @@ function UserPage() {
     return (
         <div className="userpage-section">
             <AlertModal show={alert.show} type={alert.type} message={alert.message} onClose={handleCloseAlert} />
-            <Navbar />
             <div className="QR-section">
                 <h2>출석 레츠끼끼</h2>
                 {/* 동아리 선택 카드형 섹션 */}
