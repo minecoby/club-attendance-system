@@ -60,30 +60,22 @@ function LeaderPage() {
 
     // 출석부 불러오기
     useEffect(() => {
-        if (selectedDate === undefined) return;
+        if (selectedDate === undefined || selectedDate === "") return;
         const fetchAttendance = async () => {
             setLoading(true);
             setError(null);
             try {
                 const token = localStorage.getItem("token");
-                let response;
-                if (selectedDate === "") {
-                    // 전체 출석부: date에 'None'을 넣어서 요청
-                    response = await axios.get(
-                        `http://localhost:8000/admin/show_attendance/None`,
-                        { headers: { Authorization: `Bearer ${token}` } }
-                    );
-                    // response.data: [출석데이터, 날짜리스트]
-                    setAttendanceList(response.data[0]);
-                    setDateList(response.data[1]);
-                } else {
-                    // 날짜별 출석부
-                    response = await axios.get(
-                        `http://localhost:8000/admin/show_attendance/${selectedDate}`,
-                        { headers: { Authorization: `Bearer ${token}` } }
-                    );
-                    setAttendanceList(response.data);
-                }
+                const response = await axios.get(
+                    `http://localhost:8000/admin/show_attendance/${selectedDate}`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                // 출석 상태가 없는 경우 결석으로 초기화
+                const attendanceData = response.data.map(member => ({
+                    ...member,
+                    status: member.status !== undefined ? member.status : false
+                }));
+                setAttendanceList(attendanceData);
             } catch (err) {
                 if (err.response && err.response.status === 404) {
                     setAttendanceList([]); // 출석기록 없음
@@ -132,7 +124,23 @@ function LeaderPage() {
     };
 
     // 전체 출석부 보기 버튼 클릭 핸들러
-    const handleAllAttendanceClick = () => {
+    const handleAllAttendanceClick = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const token = localStorage.getItem("token");
+            const response = await axios.get(
+                `http://localhost:8000/admin/show_attendance/None`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            // response.data: [출석데이터, 날짜리스트]
+            setAttendanceList(response.data[0]);
+            setDateList(response.data[1]);
+        } catch (err) {
+            setError("전체 출석부를 불러오는 중 오류가 발생했습니다.");
+        } finally {
+            setLoading(false);
+        }
         setSelectedDate("");
         setDropdownOpen(false);
     };

@@ -151,7 +151,6 @@ function Settings() {
     return (
         <div className="setting-section">
             <AlertModal show={alert.show} type={alert.type} message={alert.message} onClose={handleCloseAlert} />
-            <h2>설정</h2>
             {/* 사용자 정보 관리 */}
             <section className="setting-block">
                 <h3>사용자 정보 관리</h3>
@@ -163,8 +162,7 @@ function Settings() {
                     <label>이름: </label>
                     <input type="text" value={newName} onChange={e => setNewName(e.target.value)} />
                     <button className="setting-btn" onClick={handleUpdateUser} disabled={loading}>이름 저장</button>
-                </div>
-                <div>
+
                     <button className="setting-btn" onClick={() => setShowPasswordForm(v => !v)}>
                         비밀번호 변경
                     </button>
