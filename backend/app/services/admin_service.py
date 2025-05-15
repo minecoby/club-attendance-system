@@ -122,7 +122,25 @@ async def check_date(code, date):
             return True
         else:
             return False
+
+async def date_add(data, club_code,user):
+    async for db in get_db():
+        #날짜 형식 체크
+        try:
+            date_obj = datetime.strptime(data.date, "%Y-%m-%d").date()  
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"올바르지 않은 형식: {data}")
         
+        #이미 등록된 날짜인지 체크 및 오류발생
+        is_date = await check_date(club_code,data.date)
+        if is_date:
+            raise HTTPException(status_code=409, detail="이미 등록된 날짜입니다.")
+
+        #날짜 추가 
+        new_date = AttendanceDate(club_code=club_code, date=date_obj, set_by=user.user_id)
+        db.add(new_date)
+
+        await db.commit()  
 # 출석부 전체로드
 async def load_full_attendance(club_code: str, db: AsyncSession):
     date_result = await db.execute(
