@@ -23,8 +23,9 @@
     margin-bottom: 24px;
     display: flex;
     align-items: center;
+    justify-content: center; 
     gap: 18px;
-    flex-wrap: wrap;
+
 }
 
 .club-select-label {
