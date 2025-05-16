@@ -162,11 +162,10 @@
 }
 
 .attendance-table-wrap {
-    max-height: 400px;
-    overflow-y: auto;
     border-radius: 6px;
     background: #f1f3f5;
     padding: 10px 0;
+    overflow-y: visible;
 }
 
 .attendance-table {

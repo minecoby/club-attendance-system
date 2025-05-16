@@ -324,7 +324,7 @@ function LeaderPage() {
                     </div>
                   </div>
                 )}
-                <div className='attendance-table-wrap'>
+                <div className='attendance-table-wrap' style={{ overflow: 'visible' }}>
                     {loading ? (
                         <div className="attendance-message loading">로딩 중...</div>
                     ) : error ? (
