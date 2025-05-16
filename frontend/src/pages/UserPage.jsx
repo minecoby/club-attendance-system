@@ -4,11 +4,7 @@ import "../styles/UserPage.css";
 import AlertModal from '../components/AlertModal';
 
 function UserPage() {
-    const [attendanceList] = useState([
-        { id: 1, team: "팀이름", date: "2025-03-21", status: "출석" },
-        { id: 2, team: "팀이름", date: "2025-03-20", status: "결석" },
-        { id: 3, team: "팀이름", date: "2025-03-19", status: "결석" },
-    ]);
+    const [attendanceList, setAttendanceList] = useState([]); // 출석부 데이터
     const [showCodeModal, setShowCodeModal] = useState(false);
     const [attendanceCode, setAttendanceCode] = useState("");
     const [alert, setAlert] = useState({ show: false, type: 'info', message: '' });
@@ -26,10 +22,25 @@ function UserPage() {
         .then(data => {
             if (Array.isArray(data) && data.length > 0) {
                 setClubList(data);
-                setSelectedClub(data[0].club_code); // 기본값 첫번째 동아리
+                setSelectedClub(data[0].club_code); 
             }
         });
     }, []);
+
+    useEffect(() => {
+        const token = localStorage.getItem("token");
+        if (!token || !selectedClub) return;
+        fetch(`http://localhost:8000/attend/load_myattend/${selectedClub}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (Array.isArray(data)) {
+                const sortedData = data.sort((a, b) => new Date(a.date) - new Date(b.date));
+                setAttendanceList(sortedData);
+            }
+        });
+    }, [selectedClub]);
 
     const handleClubChange = (e) => {
         setSelectedClub(e.target.value);
@@ -120,13 +131,16 @@ function UserPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {attendanceList.map((item) => (
-                            <tr key={item.id}>
-                                <td>{item.team}</td>
-                                <td>{item.date}</td>
-                                <td className={`status ${item.status}`}>{item.status}</td>
-                            </tr>
-                        ))}
+                        {attendanceList.map((item, index) => {
+                            const clubName = clubList.find(club => club.club_code === selectedClub)?.club_name || selectedClub;
+                            return (
+                                <tr key={index}>
+                                    <td>{clubName}</td>
+                                    <td>{item.date}</td>
+                                    <td className={`status ${item.status === true ? '출석' : '결석'}`}>{item.status === true ? '출석' : '결석'}</td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
                 </div>
