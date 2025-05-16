@@ -95,7 +95,7 @@ function QRAttendancePage() {
                             }
                         }
                     );
-                    setMessage('출석 성공!');
+                    setMessage('출석이 완료되었습니다!');
                     setMessageType('success');
                     setShowAlert(true);
                 } catch (err) {
