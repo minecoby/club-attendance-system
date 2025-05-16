@@ -84,7 +84,7 @@ function QRAttendancePage() {
                     const token = localStorage.getItem("token");
                     const clubCode = localStorage.getItem("club_code");
                     await axios.post(
-                        "http://localhost:8000/attend/attendance/check",
+                        "http://localhost:8000/attend/check",
                         {
                             club_code: clubCode,
                             code: decodedText
@@ -148,7 +148,7 @@ function QRAttendancePage() {
             const token = localStorage.getItem("token");
             const clubCode = localStorage.getItem("club_code");
             await axios.post(
-                "http://localhost:8000/attend/attendance/check",
+                "http://localhost:8000/attend/check",
                 {
                     club_code: clubCode,
                     code: attendanceCode

@@ -36,3 +36,29 @@ async def attend_date(user_id: str, date_id, db: AsyncSession):
     )
     db.add(new_attendance)
     await db.commit()
+
+async def load_myattend(club_code, user_id: str, db: AsyncSession):
+    result = await db.execute(
+        select(AttendanceDate)
+        .where(AttendanceDate.club_code == club_code)
+    )
+    dates = result.scalars().all()
+    
+    attendances = []
+    for attendance_date in dates:
+        attendance_result = await db.execute(
+            select(Attendance)
+            .where(Attendance.attendance_date_id == attendance_date.id, Attendance.user_id == user_id)
+        )
+        attendance = attendance_result.scalar_one_or_none()
+        if attendance:
+            attendances.append({
+                "date": attendance_date.date,
+                "status": attendance.status})
+        else:
+            attendances.append({
+                "date": attendance_date.date,
+                "status": None
+            })
+    
+    return attendances

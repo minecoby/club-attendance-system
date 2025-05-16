@@ -8,6 +8,7 @@ from app.services.club_service import *
 from app.services.attend_service import *
 from app.routes.admin import attendance_ws 
 from app.schema.attend_schema import *
+from app.schema.club_schema import *
 import asyncio
 from fastapi_limiter.depends import RateLimiter
 
@@ -17,7 +18,7 @@ router = APIRouter(
     prefix="/attend",
 )
 
-@router.post("/attendance/check", dependencies=[Depends(RateLimiter(times=100, seconds=10))])
+@router.post("/check", dependencies=[Depends(RateLimiter(times=100, seconds=10))])
 async def check_attendance(
     data: AttendanceCheckRequest, credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
     token = credentials.credentials
@@ -40,3 +41,11 @@ async def check_attendance(
     )
 
     return {"message": "출석이 확인되었습니다."}
+
+@router.get("/load_myattend/{club_code}")
+async def load_attend(
+    club_code: str,
+    credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
+    token = credentials.credentials
+    user = await get_current_user(token, db)
+    return await load_myattend(club_code,user.user_id,db)
