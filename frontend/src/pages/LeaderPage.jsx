@@ -249,6 +249,40 @@ function LeaderPage({ language, setLanguage }) {
         }
     }, [modalMode, ws]);
 
+    // 출석부 엑셀 다운로드 함수
+    const handleDownloadExcel = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            const response = await axios.get(
+                `http://localhost:8000/admin/export_attendance`,
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                    responseType: 'blob', // 파일 다운로드를 위해 blob 타입으로 받기
+                }
+            );
+            // 파일명 추출 (Content-Disposition 헤더에서)
+            let filename = 'attendance.xlsx';
+            const disposition = response.headers['content-disposition'];
+            if (disposition) {
+                const match = disposition.match(/filename\*=UTF-8''(.+)/);
+                if (match && match[1]) {
+                    filename = decodeURIComponent(match[1]);
+                }
+            }
+            // blob을 이용해 파일 다운로드
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            setError('출석부 파일 다운로드 중 오류가 발생했습니다.');
+        }
+    };
+
     return (
         <div className="leader-page">
             <AlertModal
@@ -303,7 +337,17 @@ function LeaderPage({ language, setLanguage }) {
                 </button>
             </div>
             <div className="attendance-section">
-                <h2 className="attendance-title">{selectedDate ? `${selectedDate} ${i18n[language].attendanceList || '출석부'}` : (i18n[language].allAttendance || '전체 출석부')}</h2>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                    <h2 className="attendance-title" style={{ margin: 0 }}>
+                        {selectedDate ? `${selectedDate} ${i18n[language].attendanceList || '출석부'}` : (i18n[language].allAttendance || '전체 출석부')}
+                    </h2>
+                    {/* 전체 출석부(날짜 선택 안함)일 때만 다운로드 버튼 노출 */}
+                    {selectedDate === "" && (
+                        <button className="download-excel-btn" onClick={handleDownloadExcel}>
+                            {i18n[language].downloadAttendance || '출석부 다운로드'}
+                        </button>
+                    )}
+                </div>
                 {/* QR/코드 모달 (하나의 모달에서 분기) */}
                 {showQR && (
                   <div className="qr-modal-bg" onClick={handleCloseQR}>
