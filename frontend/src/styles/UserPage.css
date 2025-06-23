@@ -52,7 +52,7 @@
 }
 
 .startQR-button {
-    background: linear-gradient(90deg, var(--primary) 60%, var(--success) 100%);
+    background: var(--primary);
     color: #fff;
     border: none;
     border-radius: 7px;
@@ -65,7 +65,7 @@
 }
 
 .startQR-button:hover{
-    background: linear-gradient(90deg, var(--primary-dark) 60%, var(--success) 100%);
+    background: var(--primary-dark);
 }
 
 .attendance-section{

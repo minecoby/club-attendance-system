@@ -13,17 +13,17 @@ const Navbar = ({ language }) => {
 
   return (
     <nav className="navbar">
-      <div className="navbar-logo">Untoc Attendance</div>
+      <div className="navbar-logo">Hanssup!</div>
       <ul className="navbar-menu">
         {userType === 'leader' && (
           <>
-            <li><Link to="/leaderpage">{i18n[language].leaderPage || 'Leader Page'}</Link></li>
+            <li><Link to="/leaderpage">홈</Link></li>
             <li><Link to="/settings">{i18n[language].settings || 'Settings'}</Link></li>
           </>
         )}
         {!(userType === 'leader') && (
           <>
-            <li><Link to="/userpage">{i18n[language].userPage || 'User Page'}</Link></li>
+            <li><Link to="/userpage">홈</Link></li>
             <li><Link to="/settings">{i18n[language].settings || 'Settings'}</Link></li>
           </>
         )}
