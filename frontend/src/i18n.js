@@ -49,7 +49,7 @@ const i18n = {
     noDate: '날짜 없음',
     startAttendanceQR: '출석 시작 (QR 생성)',
     attendanceList: '출석부',
-    attendWithQR: 'QR코드로 출석하세요',
+    attendWithQR: 'QR코드로 출석하기',
     attendWithCode: '코드로 출석하기',
     inputCodeToAttend: '아래 코드를 입력하여 출석하세요',
     loading: '로딩 중...',

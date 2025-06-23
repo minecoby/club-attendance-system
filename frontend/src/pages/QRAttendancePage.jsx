@@ -76,7 +76,7 @@ function QRAttendancePage({ language, setLanguage }) {
         html5QrCodeRef.current = html5QrCode;
         setQrActive(true);
         html5QrCode.start(
-            { facingMode: "environment" },
+            { facingMode: 'environment' },
             { fps: 10, qrbox: { width: 250, height: 250 } },
             async (decodedText, decodedResult) => {
                 if (!isMounted || qrScanned) return;
@@ -125,13 +125,32 @@ function QRAttendancePage({ language, setLanguage }) {
         };
     }, [mode]);
 
+    // QR카메라 영상이 부모 div를 꽉 채우도록 video 태그에 스타일 적용
+    useEffect(() => {
+        if (mode === 'qr' && qrRef.current) {
+            const observer = new MutationObserver(() => {
+                const video = qrRef.current.querySelector('video');
+                if (video) {
+                    video.style.width = '100%';
+                    video.style.height = '100%';
+                    video.style.objectFit = 'cover';
+                    video.style.borderRadius = '12px';
+                }
+            });
+            observer.observe(qrRef.current, { childList: true, subtree: true });
+            return () => observer.disconnect();
+        }
+    }, [mode]);
+
     // 코드 출석 관련
-    const handleOpenCodeMode = () => {
+    const handleOpenCodeMode = async () => {
+        await stopCamera();
         setMode('code');
         setMessage("");
         setAttendanceCode("");
     };
-    const handleBackToQR = () => {
+    const handleBackToQR = async () => {
+        await stopCamera();
         setMode('qr');
         setMessage("");
         setAttendanceCode("");
@@ -183,7 +202,7 @@ function QRAttendancePage({ language, setLanguage }) {
             <div className="qr-card" style={{ background: 'var(--card-bg)', borderRadius: 18, boxShadow: '0 4px 16px var(--shadow)', padding: 32, marginBottom: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 340, minHeight: 380, justifyContent: 'center' }}>
                 {mode === 'qr' && (
                     <>
-                        <div ref={qrRef} style={{ width: 300, height: 300, borderRadius: 12, overflow: 'hidden', background: '#222', marginBottom: 18 }} />
+                        <div ref={qrRef} style={{ width: 300, height: 300, borderRadius: 12, background: '#222', marginBottom: 18, position: 'relative', maxWidth: '100%' }} />
                         <div style={{ marginTop: 18, display: 'flex', gap: 12, width: '100%', justifyContent: 'center' }}>
                             <button onClick={handleOpenCodeMode} className="startQR-button" style={{ minWidth: 120 }}>
                                 {i18n[language].attendWithCode || '코드로 출석하기'}
