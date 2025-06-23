@@ -3,8 +3,9 @@ import "../styles/LeaderPage.css";
 import axios from 'axios';
 import QRCode from "react-qr-code";
 import AlertModal from '../components/AlertModal';
+import i18n from '../i18n';
 
-function LeaderPage() {
+function LeaderPage({ language, setLanguage }) {
     const [attendanceList, setAttendanceList] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -260,29 +261,29 @@ function LeaderPage() {
             />
             <div className="leader-header-card">
                 <div className="leader-header-left">
-                    <div className="leader-date-label">출석 날짜</div>
+                    <div className="leader-date-label">{i18n[language].attendanceDate || '출석 날짜'}</div>
                     <div className="leader-date-controls">
                         <div className="leader-date-value">
-                            {selectedDate ? selectedDate : "전체"}
+                            {selectedDate ? selectedDate : (i18n[language].all || '전체')}
                             <button
                                 className="dropdown-btn"
                                 onClick={() => setDropdownOpen((v) => !v)}
-                                aria-label="날짜 선택 드롭다운 열기"
+                                aria-label={i18n[language].openDateDropdown || '날짜 선택 드롭다운 열기'}
                             >
                                 {dropdownOpen ? '▲' : '▼'}
                             </button>
                         </div>
                         <button className="all-attendance-btn" onClick={handleAllAttendanceClick}>
-                            전체 출석부
+                            {i18n[language].allAttendance || '전체 출석부'}
                         </button>
                         <button className="today-btn" onClick={handleGoToday} disabled={selectedDate === today}>
-                            오늘로 돌아가기
+                            {i18n[language].goToday || '오늘로 돌아가기'}
                         </button>
                     </div>
                     {dropdownOpen && (
                         <div className="date-dropdown" style={{ position: 'absolute', left: 0 }}>
                             {dateList.length === 0 ? (
-                                <div className="date-dropdown-empty">날짜 없음</div>
+                                <div className="date-dropdown-empty">{i18n[language].noDate || '날짜 없음'}</div>
                             ) : (
                                 dateList.map((date) => (
                                     <div
@@ -298,11 +299,11 @@ function LeaderPage() {
                     )}
                 </div>
                 <button onClick={handleStartQR} className="startQR-button leader-qr-btn">
-                    출석 시작 (QR 생성)
+                    {i18n[language].startAttendanceQR || '출석 시작 (QR 생성)'}
                 </button>
             </div>
             <div className="attendance-section">
-                <h2 className="attendance-title">{selectedDate ? `${selectedDate} 출석부` : "전체 출석부"}</h2>
+                <h2 className="attendance-title">{selectedDate ? `${selectedDate} ${i18n[language].attendanceList || '출석부'}` : (i18n[language].allAttendance || '전체 출석부')}</h2>
                 {/* QR/코드 모달 (하나의 모달에서 분기) */}
                 {showQR && (
                   <div className="qr-modal-bg" onClick={handleCloseQR}>
@@ -310,14 +311,14 @@ function LeaderPage() {
                       <button className="qr-close-btn" onClick={handleCloseQR}>×</button>
                       {modalMode === "qr" && qrCode && (
                         <>
-                          <div className="qr-label">QR코드로 출석하세요</div>
+                          <div className="qr-label">{i18n[language].attendWithQR || 'QR코드로 출석하세요'}</div>
                           <QRCode value={qrCode} size={200} />
-                          <button onClick={handleStartCode} style={{marginTop: '24px', background: '#ff9800', color: '#fff', fontWeight: 'bold', border: 'none', borderRadius: '8px', padding: '12px 24px', fontSize: '1.1rem', cursor: 'pointer'}}>코드로 출석하기</button>
+                          <button onClick={handleStartCode} style={{marginTop: '24px', background: '#ff9800', color: '#fff', fontWeight: 'bold', border: 'none', borderRadius: '8px', padding: '12px 24px', fontSize: '1.1rem', cursor: 'pointer'}}>{i18n[language].attendWithCode || '코드로 출석하기'}</button>
                         </>
                       )}
                       {modalMode === "code" && fixedCode && (
                         <>
-                          <div className="qr-label">아래 코드를 입력하여 출석하세요</div>
+                          <div className="qr-label">{i18n[language].inputCodeToAttend || '아래 코드를 입력하여 출석하세요'}</div>
                           <div style={{fontSize: '2.5rem', fontWeight: 'bold', color: '#ff9800', margin: '30px 0'}}>{fixedCode}</div>
                         </>
                       )}
@@ -326,17 +327,17 @@ function LeaderPage() {
                 )}
                 <div className='attendance-table-wrap' style={{ overflow: 'visible' }}>
                     {loading ? (
-                        <div className="attendance-message loading">로딩 중...</div>
+                        <div className="attendance-message loading">{i18n[language].loading || '로딩 중...'}</div>
                     ) : error ? (
-                        <div className="attendance-message error">{error}</div>
+                        <div className="attendance-message error">{i18n[language].error || error}</div>
                     ) : attendanceList.length === 0 ? (
-                        <div className="attendance-message empty">출석기록이 없습니다.</div>
+                        <div className="attendance-message empty">{i18n[language].noAttendance || '출석기록이 없습니다.'}</div>
                     ) : selectedDate === "" ? (
                         // 전체 출석부 테이블
                         <table className="attendance-table">
                             <thead>
                                 <tr>
-                                    <th>이름</th>
+                                    <th>{i18n[language].name || '이름'}</th>
                                     {dateList.map(date => (
                                         <th key={date}>{date}</th>
                                     ))}
@@ -349,7 +350,7 @@ function LeaderPage() {
                                         {dateList.map(date => (
                                             <td key={date}>
                                                 <span className={`status-badge ${user[date] === true ? "출석" : "결석"}`}>
-                                                    {user[date] === true ? "출석" : "결석"}
+                                                    {user[date] === true ? (i18n[language].attended || '출석') : (i18n[language].absent || '결석')}
                                                 </span>
                                             </td>
                                         ))}
@@ -358,23 +359,21 @@ function LeaderPage() {
                             </tbody>
                         </table>
                     ) : (
-                        // 기존 날짜별 출석부 테이블
+                        // 날짜별 출석부 테이블
                         <table className="attendance-table">
                             <thead>
                                 <tr>
-                                    <th>No</th>
-                                    <th>팀원</th>
-                                    <th>출석 상태</th>
+                                    <th>{i18n[language].name || '이름'}</th>
+                                    <th>{i18n[language].attendanceStatus || '출석 상태'}</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {attendanceList.map((member, index) => (
-                                    <tr key={member.user_id}>
-                                        <td className='index-column'>{index + 1}</td>
-                                        <td>{member.name}</td>
+                                {attendanceList.map(user => (
+                                    <tr key={user.user_id}>
+                                        <td>{user.name}</td>
                                         <td>
-                                            <span className={`status-badge ${member.status === true ? "출석" : "결석"}`}>
-                                                {member.status === true ? "출석" : "결석"}
+                                            <span className={`status-badge ${user.status === true ? "출석" : "결석"}`}>
+                                                {user.status === true ? (i18n[language].attended || '출석') : (i18n[language].absent || '결석')}
                                             </span>
                                         </td>
                                     </tr>

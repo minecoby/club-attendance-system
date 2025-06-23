@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import "../styles/UserPage.css";
 import AlertModal from '../components/AlertModal';
+import i18n from '../i18n';
 
-function UserPage() {
+function UserPage({ language, setLanguage }) {
     const [attendanceList, setAttendanceList] = useState([]); // 출석부 데이터
     const [showCodeModal, setShowCodeModal] = useState(false);
     const [attendanceCode, setAttendanceCode] = useState("");
@@ -84,7 +85,7 @@ function UserPage() {
             <div className="QR-section">
                 {/* 동아리 선택 카드형 섹션 */}
                 <div className="club-select-section">
-                    <label htmlFor="club-select" className="club-select-label">동아리 선택:</label>
+                    <label htmlFor="club-select" className="club-select-label">{i18n[language].selectClub || '동아리 선택:'}</label>
                     <select id="club-select" value={selectedClub} onChange={handleClubChange} className="club-select-dropdown">
                         {clubList.map(club => (
                             <option key={club.club_code} value={club.club_code}>
@@ -93,7 +94,7 @@ function UserPage() {
                         ))}
                     </select>
                     <button onClick={handleStartQR} className="startQR-button">
-                        QR로 출석하기
+                        {i18n[language].startQR || 'QR로 출석하기'}
                     </button>
                 </div>
             </div>
@@ -101,18 +102,18 @@ function UserPage() {
             {showCodeModal && (
                 <div className="modal-overlay">
                     <div className="modal-content">
-                        <h3>출석 코드 입력</h3>
+                        <h3>{i18n[language].inputAttendCode || '출석 코드 입력'}</h3>
                         <form onSubmit={handleSubmitCode}>
                             <input
                                 type="text"
                                 value={attendanceCode}
                                 onChange={handleCodeChange}
-                                placeholder="출석 코드를 입력하세요"
+                                placeholder={i18n[language].inputAttendCodePlaceholder || '출석 코드를 입력하세요'}
                                 required
                             />
                             <div style={{marginTop: '10px'}}>
-                                <button type="submit">출석하기</button>
-                                <button type="button" onClick={handleCloseCodeModal} style={{marginLeft: '10px'}}>취소</button>
+                                <button type="submit">{i18n[language].attend || '출석하기'}</button>
+                                <button type="button" onClick={handleCloseCodeModal} style={{marginLeft: '10px'}}>{i18n[language].cancel || '취소'}</button>
                             </div>
                         </form>
                     </div>
@@ -120,14 +121,14 @@ function UserPage() {
             )}
 
             <div className="attendance-section">
-                <h2>내 출석부</h2>
+                <h2>{i18n[language].myAttendance || '내 출석부'}</h2>
                 <div className='attendance-table-wrapper'>
                 <table className="attendance-table">
                     <thead>
                         <tr>
-                            <th>팀 이름</th>
-                            <th>날짜</th>
-                            <th>출석 상태</th>
+                            <th>{i18n[language].clubName || '팀 이름'}</th>
+                            <th>{i18n[language].date || '날짜'}</th>
+                            <th>{i18n[language].attendanceStatus || '출석 상태'}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -137,7 +138,7 @@ function UserPage() {
                                 <tr key={index}>
                                     <td>{clubName}</td>
                                     <td>{item.date}</td>
-                                    <td className={`status ${item.status === true ? '출석' : '결석'}`}>{item.status === true ? '출석' : '결석'}</td>
+                                    <td className={`status ${item.status === true ? '출석' : '결석'}`}>{item.status === true ? (i18n[language].attended || '출석') : (i18n[language].absent || '결석')}</td>
                                 </tr>
                             );
                         })}

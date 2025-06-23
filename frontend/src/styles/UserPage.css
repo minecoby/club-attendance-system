@@ -1,9 +1,10 @@
 .userpage-section{
     padding: 40px;
-    background-color: #f0f2f5;
+    background-color: var(--bg);
     min-height: 100vh;
     width: 100vw;
     box-sizing: border-box;
+    color: var(--text);
 }
 
 .QR-section,
@@ -16,9 +17,9 @@
 }
 
 .club-select-section {
-    background: linear-gradient(90deg, #f5f8ff 60%, #e3f0fc 100%);
+    background: linear-gradient(90deg, var(--card-bg) 60%, var(--primary-light) 100%);
     border-radius: 14px;
-    box-shadow: 0 2px 12px rgba(79,140,255,0.08);
+    box-shadow: 0 2px 12px var(--primary-light);
     padding: 24px 20px 18px 20px;
     margin-bottom: 24px;
     display: flex;
@@ -31,26 +32,27 @@
 .club-select-label {
     font-size: 1.08rem;
     font-weight: 600;
-    color: #2563eb;
+    color: var(--primary);
     margin-right: 8px;
 }
 
 .club-select-dropdown {
     padding: 8px 14px;
-    border: 1.5px solid #b3d7f6;
+    border: 1.5px solid var(--primary-light);
     border-radius: 7px;
     font-size: 1rem;
-    background: #fff;
-    transition: border 0.2s;
+    background: var(--input-bg);
+    color: var(--text);
+    transition: border 0.2s, background 0.2s, color 0.2s;
     min-width: 140px;
 }
 
 .club-select-dropdown:focus {
-    border: 1.5px solid #2563eb;
+    border: 1.5px solid var(--primary);
 }
 
 .startQR-button {
-    background: linear-gradient(90deg, #4f8cff 60%, #43e97b 100%);
+    background: linear-gradient(90deg, var(--primary) 60%, var(--success) 100%);
     color: #fff;
     border: none;
     border-radius: 7px;
@@ -63,7 +65,7 @@
 }
 
 .startQR-button:hover{
-    background: linear-gradient(90deg, #2563eb 60%, #28a745 100%);
+    background: linear-gradient(90deg, var(--primary-dark) 60%, var(--success) 100%);
 }
 
 .attendance-section{
@@ -73,20 +75,22 @@
 .attendance-table {
     width: 100%;
     border-collapse: collapse;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px var(--shadow);
     border-radius: 8px;
     overflow: hidden;
+    background: var(--table-bg);
+    color: var(--text);
 }
 
 .attendance-table th,
 .attendance-table td {
     padding: 12px 16px;
     text-align: center;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--border);
 }
 
 .attendance-table td {
-    background-color: #fff;
+    background-color: var(--card-bg);
     font-weight: 600;
 }
 
@@ -98,16 +102,51 @@
 
 .attendance-item {
     padding: 10px;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: center;
 
 }
 
 .status.출석 {
-    color: green;
+    color: var(--success);
 }
 
 .status.결석 {
-    color: red;
+    color: var(--absent);
+}
+
+@media (max-width: 600px) {
+  .userpage-section {
+    padding: 10px 2px;
+  }
+  .QR-section,
+  .attendance-section {
+    margin-left: 0;
+  }
+  .club-select-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 16px 6px 12px 6px;
+    min-width: 0;
+  }
+  .club-select-label {
+    font-size: 1rem;
+    margin-right: 0;
+    text-align: center;
+    margin-bottom: 2px;
+  }
+  .club-select-dropdown {
+    min-width: 0;
+    width: 100%;
+    font-size: 0.98rem;
+    padding: 8px 6px;
+  }
+  .startQR-button {
+    width: 100%;
+    margin-left: 0;
+    font-size: 1.01rem;
+    padding: 10px 0;
+  }
 }

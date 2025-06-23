@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import '../styles/Settings.css';
 import AlertModal from '../components/AlertModal';
+import i18n from '../i18n';
 
-function Settings() {
+function Settings({ theme, setTheme, language, setLanguage }) {
     // 사용자 정보 상태
     const [userInfo, setUserInfo] = useState({
         user_id: '',
@@ -19,6 +20,10 @@ function Settings() {
     const [loading, setLoading] = useState(false);
     const [showPasswordForm, setShowPasswordForm] = useState(false);
     const [alert, setAlert] = useState({ show: false, type: 'info', message: '' });
+    // 추가 설정 상태
+    const [notification, setNotification] = useState(true);
+    const [profileImg, setProfileImg] = useState(null);
+    const [profileImgUrl, setProfileImgUrl] = useState('');
 
     // 사용자 정보 불러오기
     useEffect(() => {
@@ -45,6 +50,30 @@ function Settings() {
         };
         fetchUser();
     }, []);
+
+    // 프로필 이미지 미리보기
+    const handleProfileImgChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setProfileImg(file);
+            setProfileImgUrl(URL.createObjectURL(file));
+        }
+    };
+
+    // 테마 토글
+    const handleThemeToggle = () => {
+        setTheme(theme === 'light' ? 'dark' : 'light');
+    };
+
+    // 알림 토글
+    const handleNotificationToggle = () => {
+        setNotification((prev) => !prev);
+    };
+
+    // 언어 변경
+    const handleLanguageChange = (e) => {
+        setLanguage(e.target.value);
+    };
 
     // 이름 변경
     const handleUpdateUser = async () => {
@@ -149,77 +178,108 @@ function Settings() {
     };
 
     return (
-        <div className="setting-section">
+        <div className="settings-root">
             <AlertModal show={alert.show} type={alert.type} message={alert.message} onClose={handleCloseAlert} />
-            {/* 사용자 정보 관리 */}
-            <section className="setting-block">
-                <h3>사용자 정보 관리</h3>
-                <div>
-                    <label>아이디: </label>
-                    <input type="text" value={userInfo.user_id} disabled />
-                </div>
-                <div>
-                    <label>이름: </label>
-                    <input type="text" value={newName} onChange={e => setNewName(e.target.value)} />
-                    <button className="setting-btn" onClick={handleUpdateUser} disabled={loading}>이름 저장</button>
-
-                    <button className="setting-btn" onClick={() => setShowPasswordForm(v => !v)}>
-                        비밀번호 변경
-                    </button>
-                </div>
-                {showPasswordForm && (
-                    <div className="password-change-form">
-                        <div>
-                            <label>기존 비밀번호: </label>
-                            <input type="password" value={oldPassword} onChange={e => setOldPassword(e.target.value)} />
+            <div className="settings-container">
+                {/* 사용자 정보 카드 */}
+                <div className="settings-card">
+                    <div className="settings-card-title">{i18n[language].userInfo}</div>
+                    <div className="settings-card-content">
+                        <div className="settings-row">
+                            <label>{i18n[language].userId}</label>
+                            <input type="text" value={userInfo.user_id} disabled className="settings-input" />
                         </div>
-                        <div>
-                            <label>새 비밀번호: </label>
-                            <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
-                            <button className="setting-btn" onClick={handleChangePassword} disabled={loading}>비밀번호 변경</button>
+                        <div className="settings-row">
+                            <label>{i18n[language].name}</label>
+                            <input type="text" value={newName} onChange={e => setNewName(e.target.value)} className="settings-input" />
+                        </div>
+                        <div className="settings-row">
+                            <button className="settings-btn" onClick={() => setShowPasswordForm(v => !v)}>
+                                {i18n[language].changePassword}
+                            </button>
+                            <button className="settings-btn primary" onClick={handleUpdateUser} disabled={loading}>{i18n[language].saveName}</button>
+                        </div>
+                        {showPasswordForm && (
+                            <div className="settings-password-form">
+                                <div className="settings-row">
+                                    <label>{i18n[language].oldPassword}</label>
+                                    <input type="password" value={oldPassword} onChange={e => setOldPassword(e.target.value)} className="settings-input" />
+                                </div>
+                                <div className="settings-row">
+                                    <label>{i18n[language].newPassword}</label>
+                                    <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="settings-input" />
+                                    <button className="settings-btn primary" onClick={handleChangePassword} disabled={loading}>{i18n[language].changePassword}</button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* 동아리 관리 카드 */}
+                <div className="settings-card">
+                    <div className="settings-card-title">{i18n[language].clubManage}</div>
+                    <div className="settings-card-content">
+                        <div className="settings-row club-register-row">
+                            <input type="text" value={clubCode} onChange={e => setClubCode(e.target.value)} placeholder={i18n[language].inputClubCode} className="settings-input" disabled={userInfo.is_leader} />
+                            <button className="settings-btn primary" onClick={handleRegisterClub} disabled={loading || userInfo.is_leader}>{i18n[language].join}</button>
+                        </div>
+                        {userInfo.is_leader && (
+                            <div className="settings-warning">{i18n[language].leaderNoJoin}</div>
+                        )}
+                        <div className="settings-club-list">
+                            <div className="settings-club-list-title">{i18n[language].joinedClubs}</div>
+                            {joinedClubs.length === 0 && <div className="settings-empty">{i18n[language].noJoinedClub}</div>}
+                            <ul className="settings-club-ul">
+                                {joinedClubs.map(club => (
+                                    <li key={club.club_code} className="settings-club-li">
+                                        <span className="club-name">{club.club_name}</span>
+                                        <span className="club-code">({club.club_code})</span>
+                                        <button className="settings-btn danger small" onClick={() => handleQuitClub(club.club_code)} disabled={loading || userInfo.is_leader}>
+                                            {i18n[language].quit}
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
                     </div>
-                )}
-            </section>
-
-            {/* 계정 관리 */}
-            <section className="setting-block">
-                <h3>계정 관리</h3>
-                <button className="setting-btn" onClick={handleLogout}>로그아웃</button>
-                <button className="setting-btn" onClick={handleWithdraw} disabled={userInfo.is_leader}>
-                    회원탈퇴
-                </button>
-                {userInfo.is_leader && (
-                    <div style={{color:'#e74c3c', marginTop:'8px', fontSize:'0.97em'}}>리더 계정은 회원탈퇴를 할 수 없습니다.</div>
-                )}
-            </section>
-
-            {/* 동아리 관리 */}
-            <section className="setting-block club-manage-card">
-                <div className="club-manage-title">동아리 관리</div>
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
-                    <input type="text" value={clubCode} onChange={e => setClubCode(e.target.value)} placeholder="동아리 코드 입력" className="club-manage-input" disabled={userInfo.is_leader} />
-                    <button className="club-manage-btn" onClick={handleRegisterClub} disabled={loading || userInfo.is_leader}>가입</button>
                 </div>
-                {userInfo.is_leader && (
-                    <div style={{color:'#e74c3c', marginTop:'8px', fontSize:'0.97em'}}>리더 계정은 동아리 가입을 할 수 없습니다.</div>
-                )}
-                <div className="club-list-wrap">
-                    <h4 style={{marginBottom: 10, color:'#2563eb'}}>가입된 동아리 목록</h4>
-                    {joinedClubs.length === 0 && <div style={{color:'#888'}}>가입된 동아리가 없습니다.</div>}
-                    <ul className="club-list-ul">
-                        {joinedClubs.map(club => (
-                            <li key={club.club_code} className="club-list-li">
-                                <span className="club-name">{club.club_name}</span>
-                                <span className="club-code">({club.club_code})</span>
-                                <button className="club-leave-btn" onClick={() => handleQuitClub(club.club_code)} disabled={loading || userInfo.is_leader}>
-                                    탈퇴
-                                </button>
-                            </li>
-                        ))}
-                    </ul>
+
+                {/* 계정 관리 카드 */}
+                <div className="settings-card">
+                    <div className="settings-card-title">{i18n[language].accountManage}</div>
+                    <div className="settings-card-content">
+                        <div className="settings-row">
+                            <button className="settings-btn" onClick={handleLogout}>{i18n[language].logout}</button>
+                            <button className="settings-btn danger" onClick={handleWithdraw} disabled={userInfo.is_leader}>
+                                {i18n[language].withdraw}
+                            </button>
+                        </div>
+                        {userInfo.is_leader && (
+                            <div className="settings-warning">{i18n[language].leaderNoWithdraw}</div>
+                        )}
+                    </div>
                 </div>
-            </section>
+
+                {/* 환경 설정 카드 */}
+                <div className="settings-card">
+                    <div className="settings-card-title">{i18n[language].envSettings}</div>
+                    <div className="settings-card-content">
+                        <div className="settings-row">
+                            <label>{i18n[language].theme}</label>
+                            <button className="settings-btn" onClick={handleThemeToggle}>
+                                {theme === 'light' ? i18n[language].light : i18n[language].dark} {i18n[language].mode}
+                            </button>
+                        </div>
+                        <div className="settings-row">
+                            <label>{i18n[language].language}</label>
+                            <select value={language} onChange={handleLanguageChange} className="settings-input" style={{maxWidth:120}}>
+                                <option value="ko">한국어</option>
+                                <option value="en">English</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

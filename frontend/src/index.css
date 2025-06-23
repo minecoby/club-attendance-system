@@ -1,25 +1,74 @@
 :root {
+  --bg: #f0f2f5;
+  --text: #222;
+  --card-bg: #fff;
+  --primary: #2563eb;
+  --primary-light: #e3eafc;
+  --primary-dark: #4f8cff;
+  --border: #d0d7e2;
+  --input-bg: #f8fbff;
+  --input-focus-bg: #fff;
+  --danger: #e74c3c;
+  --danger-bg: #ffe3e3;
+  --warning: #ff9800;
+  --muted: #aaa;
+  --shadow: 0 6px 32px rgba(37,99,235,0.10), 0 1.5px 8px rgba(0,0,0,0.03);
+  --card-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  --table-bg: #fff;
+  --table-header-bg: #f1f1f1;
+  --table-row-bg: #f6f8fc;
+  --success: #28a745;
+  --absent: #dc3545;
+  --navbar-bg: #fff;
+  --navbar-text: #222;
+  --navbar-logo: #2563eb;
+  --navbar-hover-bg: #e3eafc;
+  --navbar-hover-text: #2563eb;
+}
+.dark {
+  --bg: #181a1b;
+  --text: #e0e6eb;
+  --card-bg: #23272b;
+  --primary: #4f8cff;
+  --primary-light: #23272b;
+  --primary-dark: #2563eb;
+  --border: #33383e;
+  --input-bg: #23272b;
+  --input-focus-bg: #23272b;
+  --danger: #ff7675;
+  --danger-bg: #3d2323;
+  --warning: #ffb347;
+  --muted: #888;
+  --shadow: 0 6px 32px rgba(79,140,255,0.10), 0 1.5px 8px rgba(0,0,0,0.13);
+  --card-shadow: 0 2px 12px rgba(0,0,0,0.18);
+  --table-bg: #23272b;
+  --table-header-bg: #23272b;
+  --table-row-bg: #23272b;
+  --success: #43e97b;
+  --absent: #ff7675;
+  --navbar-bg: rgba(24,26,27,0.97);
+  --navbar-text: #e0e6eb;
+  --navbar-logo: #4f8cff;
+  --navbar-hover-bg: #23272b;
+  --navbar-hover-text: #4f8cff;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 a {
   font-weight: 500;
-  color: #646cff;
+  color: var(--primary);
   text-decoration: inherit;
 }
 a:hover {
-  color: #535bf2;
+  color: var(--primary-dark);
 }
 
 body {
@@ -30,6 +79,8 @@ body {
   justify-content: center;
   min-width: 320px;
   min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
 }
 
 h1 {
@@ -44,12 +95,15 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: var(--primary-light);
+  color: var(--primary);
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: border-color 0.25s, background 0.18s, color 0.18s;
 }
 button:hover {
-  border-color: #646cff;
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
 }
 button:focus,
 button:focus-visible {
@@ -58,19 +112,50 @@ button:focus-visible {
 
 @media (prefers-color-scheme: light) {
   :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
+    --bg: #f0f2f5;
+    --text: #222;
+    --card-bg: #fff;
+    --primary: #2563eb;
+    --primary-light: #e3eafc;
+    --primary-dark: #4f8cff;
+    --border: #d0d7e2;
+    --input-bg: #f8fbff;
+    --input-focus-bg: #fff;
+    --danger: #e74c3c;
+    --danger-bg: #ffe3e3;
+    --warning: #ff9800;
+    --muted: #aaa;
+    --shadow: 0 6px 32px rgba(37,99,235,0.10), 0 1.5px 8px rgba(0,0,0,0.03);
+    --card-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    --table-bg: #fff;
+    --table-header-bg: #f1f1f1;
+    --table-row-bg: #f6f8fc;
+    --success: #28a745;
+    --absent: #dc3545;
   }
 }
 
-html, body, #root {
-  height: 100%;
-  margin: 0;
-  padding: 0;
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #181a1b;
+    --text: #e0e6eb;
+    --card-bg: #23272b;
+    --primary: #4f8cff;
+    --primary-light: #23272b;
+    --primary-dark: #2563eb;
+    --border: #33383e;
+    --input-bg: #23272b;
+    --input-focus-bg: #23272b;
+    --danger: #ff7675;
+    --danger-bg: #3d2323;
+    --warning: #ffb347;
+    --muted: #888;
+    --shadow: 0 6px 32px rgba(79,140,255,0.10), 0 1.5px 8px rgba(0,0,0,0.13);
+    --card-shadow: 0 2px 12px rgba(0,0,0,0.18);
+    --table-bg: #23272b;
+    --table-header-bg: #23272b;
+    --table-row-bg: #23272b;
+    --success: #43e97b;
+    --absent: #ff7675;
+  }
 }

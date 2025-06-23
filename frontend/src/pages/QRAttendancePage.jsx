@@ -3,8 +3,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Html5Qrcode } from 'html5-qrcode';
 import axios from 'axios';
 import '../styles/UserPage.css'; // 모달 스타일 재사용
+import i18n from '../i18n';
 
-function QRAttendancePage() {
+function QRAttendancePage({ language, setLanguage }) {
     const [mode, setMode] = useState('qr'); // 'qr' 또는 'code'
     const [attendanceCode, setAttendanceCode] = useState("");
     const [message, setMessage] = useState("");
@@ -177,18 +178,18 @@ function QRAttendancePage() {
     };
 
     return (
-        <div className="userpage-section" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', background: '#f7f9fb' }}>
-            <h2 style={{ marginTop: 30, marginBottom: 18, fontWeight: 700, fontSize: '1.7rem', color: '#007bff' }}>출석</h2>
-            <div className="qr-card" style={{ background: '#fff', borderRadius: 18, boxShadow: '0 4px 16px rgba(0,0,0,0.10)', padding: 32, marginBottom: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 340, minHeight: 380, justifyContent: 'center' }}>
+        <div className="userpage-section" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', background: 'var(--bg)' }}>
+            <h2 style={{ marginTop: 30, marginBottom: 18, fontWeight: 700, fontSize: '1.7rem', color: 'var(--primary)' }}>{i18n[language].attendance || '출석'}</h2>
+            <div className="qr-card" style={{ background: 'var(--card-bg)', borderRadius: 18, boxShadow: '0 4px 16px var(--shadow)', padding: 32, marginBottom: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 340, minHeight: 380, justifyContent: 'center' }}>
                 {mode === 'qr' && (
                     <>
                         <div ref={qrRef} style={{ width: 300, height: 300, borderRadius: 12, overflow: 'hidden', background: '#222', marginBottom: 18 }} />
                         <div style={{ marginTop: 18, display: 'flex', gap: 12, width: '100%', justifyContent: 'center' }}>
                             <button onClick={handleOpenCodeMode} className="startQR-button" style={{ minWidth: 120 }}>
-                                코드로 출석하기
+                                {i18n[language].attendWithCode || '코드로 출석하기'}
                             </button>
                             <button onClick={handleClose} className="startQR-button" style={{ background: '#6c757d', minWidth: 100 }}>
-                                뒤로가기
+                                {i18n[language].back || '뒤로가기'}
                             </button>
                         </div>
                     </>
@@ -196,27 +197,27 @@ function QRAttendancePage() {
                 {mode === 'code' && (
                     <>
                         <form onSubmit={handleSubmitCode} style={{ width: 260, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                            <h3 style={{ marginBottom: 18, color: '#007bff', fontWeight: 700 }}>출석 코드 입력</h3>
+                            <h3 style={{ marginBottom: 18, color: 'var(--primary)', fontWeight: 700 }}>{i18n[language].inputAttendCode || '출석 코드 입력'}</h3>
                             <input
                                 type="text"
                                 value={attendanceCode}
                                 onChange={handleCodeChange}
-                                placeholder="출석 코드를 입력하세요"
+                                placeholder={i18n[language].inputAttendCodePlaceholder || '출석 코드를 입력하세요'}
                                 required
-                                style={{ fontSize: 18, padding: '10px 12px', borderRadius: 8, border: '1px solid #cfd8dc', width: '100%', marginBottom: 16 }}
+                                style={{ fontSize: 18, padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', width: '100%', marginBottom: 16 }}
                             />
-                            <button type="submit" className="startQR-button" style={{ width: '100%', marginBottom: 10 }}>출석하기</button>
-                            <button type="button" onClick={handleBackToQR} className="startQR-button" style={{ background: '#6c757d', width: '100%' }}>QR로 출석하기</button>
+                            <button type="submit" className="startQR-button" style={{ width: '100%', marginBottom: 10 }}>{i18n[language].attend || '출석하기'}</button>
+                            <button type="button" onClick={handleBackToQR} className="startQR-button" style={{ background: '#6c757d', width: '100%' }}>{i18n[language].attendWithQR || 'QR로 출석하기'}</button>
                         </form>
                     </>
                 )}
             </div>
             {showAlert && (
                 <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.35)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div className="modal-content" style={{ maxWidth: 320, textAlign: 'center', background: '#fff', borderRadius: 16, boxShadow: '0 4px 24px rgba(0,0,0,0.18)', padding: '36px 24px' }}>
-                        <div style={{ fontWeight: 700, fontSize: '1.2rem', marginBottom: 16, color: messageType === 'success' ? '#28a745' : '#dc3545' }}>{messageType === 'success' ? '출석 성공' : '출석 실패'}</div>
-                        <div style={{ marginBottom: 18, color: '#222', fontSize: '1.05rem' }}>{message}</div>
-                        <button onClick={handleAlertClose} className="startQR-button" style={{ width: '100%' }}>확인</button>
+                    <div className="modal-content" style={{ maxWidth: 320, textAlign: 'center', background: 'var(--card-bg)', borderRadius: 16, boxShadow: '0 4px 24px var(--shadow)', padding: '36px 24px' }}>
+                        <div style={{ fontWeight: 700, fontSize: '1.2rem', marginBottom: 16, color: messageType === 'success' ? 'var(--success)' : 'var(--absent)' }}>{messageType === 'success' ? (i18n[language].attendSuccess || '출석 성공') : (i18n[language].attendFail || '출석 실패')}</div>
+                        <div style={{ marginBottom: 18, color: 'var(--text)', fontSize: '1.05rem' }}>{message}</div>
+                        <button onClick={handleAlertClose} className="startQR-button" style={{ width: '100%' }}>{i18n[language].ok || '확인'}</button>
                     </div>
                 </div>
             )}

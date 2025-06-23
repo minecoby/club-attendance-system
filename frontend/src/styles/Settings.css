@@ -1,144 +1,322 @@
-.setting-section {
-  max-width: 1100px;
-  margin: 40px auto;
-  padding: 0 24px;
+html, body {
+  min-height: 100vh;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background: var(--bg);
+}
+body::before {
+  display: none !important;
+}
+
+.settings-root {
+  min-height: 100vh;
+  height: auto;
+  padding: 60px 0 80px 0;
+  position: relative;
+  background: none;
+  color: var(--text);
+}
+
+.settings-container {
+  min-height: 60vh;
+  height: auto;
+  margin-top: 80px;
+  max-width: 900px;
+  margin: 0 auto;
   display: flex;
+  flex-direction: column;
   gap: 32px;
-  justify-content: space-between;
-  align-items: flex-start;
-  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
 }
 
-.setting-block, .club-manage-card {
-  flex: 1 1 320px;
-  min-width: 320px;
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-  padding: 32px 24px 24px 24px;
-  margin-bottom: 32px;
-  transition: box-shadow 0.2s;
-}
-
-.setting-block h3, .club-manage-title {
-  margin-top: 0;
-  margin-bottom: 18px;
-  font-size: 1.2rem;
-  color: #2d3a4b;
-  font-weight: 700;
-}
-
-.setting-block label {
-  display: inline-block;
-  width: 110px;
-  font-weight: 500;
-  color: #555;
-}
-
-.setting-block input[type='text'],
-.setting-block input[type='password'],
-.club-manage-input {
-  width: 60%;
-  padding: 8px 10px;
+/* 카드형 섹션 */
+.settings-card {
+  background: var(--card-bg);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 36px 32px 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  transition: box-shadow 0.2s, background 0.2s;
   margin-bottom: 10px;
-  border: 1px solid #d0d0d0;
-  border-radius: 6px;
-  font-size: 1rem;
-  transition: border 0.2s;
+  color: var(--text);
 }
-
-.setting-block input:focus,
-.club-manage-input:focus {
-  border: 1.5px solid #4f8cff;
-  outline: none;
-}
-
-.setting-btn, .club-manage-btn, .club-list-li .club-leave-btn {
-  margin-left: 10px;
-  padding: 7px 18px;
-  background: #4f8cff;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.setting-btn:hover, .club-manage-btn:hover, .club-list-li .club-leave-btn:hover {
-  background: #2563eb;
-}
-
-.setting-block > div, .club-list-wrap {
+.settings-card-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary);
   margin-bottom: 12px;
+  letter-spacing: -0.5px;
+}
+.settings-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
-.password-change-form {
-  margin-top: 12px;
+/* 행 배치 */
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 0;
+}
+.settings-row label {
+  min-width: 80px;
+  font-weight: 500;
+  color: var(--text);
+  font-size: 1.05rem;
+}
+
+.settings-input {
+  flex: 1 1 180px;
+  padding: 9px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  font-size: 1.05rem;
+  background: var(--input-bg);
+  color: var(--text);
+  transition: border 0.2s, background 0.2s, color 0.2s;
+}
+.settings-input:focus {
+  border: 1.5px solid var(--primary);
+  outline: none;
+  background: var(--input-focus-bg);
+}
+
+/* 버튼 스타일 */
+.settings-btn {
+  padding: 8px 22px;
+  border: none;
+  border-radius: 7px;
+  font-weight: 600;
+  font-size: 1.02rem;
+  background: var(--primary-light);
+  color: var(--primary);
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+  margin-left: 8px;
+}
+.settings-btn.primary {
+  background: var(--primary);
+  color: #fff;
+}
+.settings-btn.danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+.settings-btn.small {
+  padding: 6px 14px;
+  font-size: 0.98rem;
+}
+.settings-btn:disabled {
+  background: #e0e0e0;
+  color: var(--muted);
+  cursor: not-allowed;
+}
+.settings-btn:not(:disabled):hover {
+  filter: brightness(0.97);
+  box-shadow: 0 2px 8px var(--primary-light);
+}
+
+/* 경고/안내 */
+.settings-warning {
+  color: var(--danger);
+  margin-top: 8px;
+  font-size: 0.98em;
+  font-weight: 500;
+}
+
+/* 비밀번호 변경 폼 */
+.settings-password-form {
+  margin-top: 8px;
   padding: 16px 0 0 0;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-@media (max-width: 1000px) {
-  .setting-section {
-    flex-direction: column;
-    gap: 0;
-  }
-  .setting-block, .club-manage-card {
-    width: 100%;
-    min-width: unset;
-    margin-bottom: 24px;
-  }
+/* 동아리 리스트 */
+.settings-club-list {
+  margin-top: 10px;
 }
-
-@media (max-width: 600px) {
-  .setting-section {
-    max-width: 100%;
-    padding: 0 4px;
-  }
-  .setting-block, .club-manage-card {
-    padding: 18px 8px 16px 8px;
-  }
-  .setting-block label {
-    width: 90px;
-    font-size: 0.95rem;
-  }
-  .setting-block input[type='text'],
-  .setting-block input[type='password'],
-  .club-manage-input {
-    width: 90%;
-    font-size: 0.95rem;
-  }
+.settings-club-list-title {
+  margin-bottom: 10px;
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 1.08rem;
 }
-
-.club-list-ul {
+.settings-empty {
+  color: var(--muted);
+  font-size: 1.01rem;
+  margin-bottom: 8px;
+}
+.settings-club-ul {
   list-style: none;
   padding: 0;
   margin: 0;
 }
-
-.club-list-li {
+.settings-club-li {
   display: flex;
   align-items: center;
-  background: #fff;
+  background: var(--table-row-bg);
   border-radius: 8px;
-  box-shadow: 0 1px 6px rgba(79,140,255,0.07);
+  box-shadow: 0 1px 6px var(--primary-light);
   padding: 12px 18px;
   margin-bottom: 10px;
   font-size: 1.07rem;
   font-weight: 500;
-  color: #2563eb;
-  justify-content: space-between;
+  color: var(--primary);
+  justify-content: flex-start;
+  gap: 12px;
 }
-
-.club-list-li .club-name {
+.settings-club-li .club-name {
   font-weight: 700;
-  color: #007bff;
+  color: var(--primary);
   margin-right: 10px;
 }
-
-.club-list-li .club-code {
+.settings-club-li .club-code {
   font-size: 0.98em;
-  color: #888;
+  color: var(--muted);
   margin-right: 18px;
+}
+
+/* 동아리 가입 입력 행 */
+.club-register-row {
+  gap: 10px;
+}
+
+/* 반응형 */
+@media (min-width: 900px) {
+  .settings-root {
+    background: none;
+    padding: 60px 0 80px 0;
+  }
+  .settings-container {
+    margin-top: 100px;
+    max-width: 950px;
+    margin-left: auto;
+    margin-right: auto;
+    background: var(--card-bg);
+    border-radius: 24px;
+    box-shadow: var(--card-shadow);
+    padding: 56px 56px 44px 56px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 48px 56px;
+    justify-items: center;
+    align-items: flex-start;
+    position: relative;
+    z-index: 1;
+    min-height: 60vh;
+    height: auto;
+  }
+  .settings-card {
+    background: var(--card-bg);
+    box-shadow: var(--card-shadow);
+    border-radius: 18px;
+    width: 100%;
+    max-width: 400px;
+    min-width: 320px;
+    padding: 32px 28px 28px 28px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .settings-card-title {
+    font-size: 1.25rem;
+    margin-bottom: 18px;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 10px;
+  }
+  .settings-row label {
+    font-size: 1.10rem;
+    min-width: 100px;
+  }
+  .settings-input {
+    font-size: 1.10rem;
+    padding: 12px 18px;
+  }
+  .settings-btn {
+    font-size: 1.06rem;
+    padding: 10px 26px;
+  }
+  .settings-btn.small {
+    font-size: 1.01rem;
+    padding: 8px 16px;
+  }
+  .settings-club-li {
+    font-size: 1.10rem;
+    padding: 14px 20px;
+  }
+}
+@media (max-width: 900px) {
+  .settings-root {
+    padding-top: 72px;
+    min-height: 100vh;
+    height: auto;
+  }
+  .settings-container {
+    margin-top: 80px;
+    padding: 0 8px;
+    gap: 28px 0;
+    min-height: 60vh;
+    height: auto;
+  }
+  .settings-card {
+    background: var(--card-bg);
+    box-shadow: var(--card-shadow);
+    border-radius: 16px;
+    padding: 22px 10px 18px 10px;
+    margin-bottom: 18px;
+    gap: 14px;
+  }
+}
+@media (max-width: 600px) {
+  .settings-root {
+    padding: 24px 0 24px 0;
+  }
+  .settings-container {
+    gap: 8px;
+    max-width: 100%;
+    width: 100vw;
+    padding: 0 2px;
+    margin-top: 4px;
+  }
+  .settings-card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding: 8px 4px 8px 4px;
+    border-radius: 10px;
+    margin: 0 auto 4px auto;
+    box-sizing: border-box;
+    gap: 8px;
+  }
+  .settings-card-content {
+    gap: 8px;
+    padding: 0;
+  }
+  .settings-row {
+    gap: 8px;
+    margin-bottom: 0;
+  }
+  .settings-row label {
+    min-width: 60px;
+    font-size: 0.97rem;
+  }
+  .settings-input {
+    font-size: 0.97rem;
+    padding: 7px 8px;
+  }
+  .settings-btn {
+    font-size: 0.97rem;
+    padding: 7px 10px;
+  }
 }
