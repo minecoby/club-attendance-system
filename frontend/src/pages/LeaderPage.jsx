@@ -5,6 +5,9 @@ import QRCode from "react-qr-code";
 import AlertModal from '../components/AlertModal';
 import i18n from '../i18n';
 
+const API = import.meta.env.VITE_API_BASE_URL;
+const WS_API = import.meta.env.VITE_WS_BASE_URL;
+
 function LeaderPage({ language, setLanguage }) {
     const [attendanceList, setAttendanceList] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -39,7 +42,7 @@ function LeaderPage({ language, setLanguage }) {
                 const token = localStorage.getItem("token");
                 // 날짜를 지정하지 않으면 전체 출석부(날짜 목록 포함) 반환
                 const response = await axios.get(
-                    `http://localhost:8000/admin/show_attendance/None`,
+                    `${API}/admin/show_attendance/None`,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
                 // response.data: [출석데이터, 날짜리스트]
@@ -68,7 +71,7 @@ function LeaderPage({ language, setLanguage }) {
             try {
                 const token = localStorage.getItem("token");
                 const response = await axios.get(
-                    `http://localhost:8000/admin/show_attendance/${selectedDate}`,
+                    `${API}/admin/show_attendance/${selectedDate}`,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
                 // 출석 상태가 없는 경우 결석으로 초기화
@@ -94,7 +97,7 @@ function LeaderPage({ language, setLanguage }) {
         const token = localStorage.getItem("token");
         try {
             await axios.post(
-                "http://localhost:8000/admin/add_date",
+                `${API}/admin/add_date`,
                 { date: selectedDate },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -108,7 +111,7 @@ function LeaderPage({ language, setLanguage }) {
                     onConfirm: async () => {
                         try {
                             await axios.post(
-                                "http://localhost:8000/admin/refresh_date",
+                                `${API}/admin/refresh_date`,
                                 { date: selectedDate },
                                 { headers: { Authorization: `Bearer ${token}` } }
                             );
@@ -127,7 +130,7 @@ function LeaderPage({ language, setLanguage }) {
     };
 
     const startWebSocket = (token) => {
-        const socket = new window.WebSocket(`ws://localhost:8000/admin/attendance/${selectedDate}/ws`);
+        const socket = new window.WebSocket(`${WS_API}/admin/attendance/${selectedDate}/ws`);
         socket.onopen = () => {
             socket.send("Bearer " + token);
         };
@@ -157,7 +160,7 @@ function LeaderPage({ language, setLanguage }) {
         try {
             const token = localStorage.getItem("token");
             const response = await axios.get(
-                `http://localhost:8000/admin/show_attendance/None`,
+                `${API}/admin/show_attendance/None`,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             // response.data: [출석데이터, 날짜리스트]
@@ -254,7 +257,7 @@ function LeaderPage({ language, setLanguage }) {
         try {
             const token = localStorage.getItem("token");
             const response = await axios.get(
-                `http://localhost:8000/admin/export_attendance`,
+                `${API}/admin/export_attendance`,
                 {
                     headers: { Authorization: `Bearer ${token}` },
                     responseType: 'blob', // 파일 다운로드를 위해 blob 타입으로 받기

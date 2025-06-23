@@ -12,11 +12,13 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [alert, setAlert] = useState({ show: false, type: 'error', message: '' });
 
+  const API = import.meta.env.VITE_API_BASE_URL;
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     const usertype = localStorage.getItem("usertype");
     if (token && usertype) {
-      axios.get("http://localhost:8000/users/validate_token", {
+      axios.get(`${API}/users/validate_token`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       .then(response => {
@@ -38,7 +40,7 @@ function LoginPage() {
     e.preventDefault();
 
     try {
-      const response = await axios.post("http://localhost:8000/users/login", {
+      const response = await axios.post(`${API}/users/login`, {
         user_id: user_id,
         password: password,
       });

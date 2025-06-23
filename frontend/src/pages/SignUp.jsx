@@ -14,6 +14,8 @@ const SignUp = () => {
   });
   const [alert, setAlert] = useState({ show: false, type: 'info', message: '', after: null });
 
+  const API = import.meta.env.VITE_API_BASE_URL;
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -23,7 +25,7 @@ const SignUp = () => {
     e.preventDefault();
 
     try {
-      await axios.post("http://localhost:8000/users/signin", formData);
+      await axios.post(`${API}/users/signin`, formData);
       setAlert({ show: true, type: 'success', message: '회원가입 완료!', after: () => navigate('/login') });
     } catch (err) {
       console.error("회원가입 실패:", err);

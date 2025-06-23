@@ -4,6 +4,8 @@ import "../styles/UserPage.css";
 import AlertModal from '../components/AlertModal';
 import i18n from '../i18n';
 
+const API = import.meta.env.VITE_API_BASE_URL;
+
 function UserPage({ language, setLanguage }) {
     const [attendanceList, setAttendanceList] = useState([]); // 출석부 데이터
     const [showCodeModal, setShowCodeModal] = useState(false);
@@ -16,7 +18,7 @@ function UserPage({ language, setLanguage }) {
     useEffect(() => {
         const token = localStorage.getItem("token");
         if (!token) return;
-        fetch("http://localhost:8000/clubs/get_club_info", {
+        fetch(`${API}/clubs/get_club_info`, {
             headers: { Authorization: `Bearer ${token}` }
         })
         .then(res => res.json())
@@ -31,7 +33,7 @@ function UserPage({ language, setLanguage }) {
     useEffect(() => {
         const token = localStorage.getItem("token");
         if (!token || !selectedClub) return;
-        fetch(`http://localhost:8000/attend/load_myattend/${selectedClub}`, {
+        fetch(`${API}/attend/load_myattend/${selectedClub}`, {
             headers: { Authorization: `Bearer ${token}` }
         })
         .then(res => res.json())

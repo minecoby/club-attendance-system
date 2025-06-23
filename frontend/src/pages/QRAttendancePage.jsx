@@ -5,6 +5,8 @@ import axios from 'axios';
 import '../styles/UserPage.css'; // 모달 스타일 재사용
 import i18n from '../i18n';
 
+const API = import.meta.env.VITE_API_BASE_URL;
+
 function QRAttendancePage({ language, setLanguage }) {
     const [mode, setMode] = useState('qr'); // 'qr' 또는 'code'
     const [attendanceCode, setAttendanceCode] = useState("");
@@ -85,7 +87,7 @@ function QRAttendancePage({ language, setLanguage }) {
                     const token = localStorage.getItem("token");
                     const clubCode = localStorage.getItem("club_code");
                     await axios.post(
-                        "http://localhost:8000/attend/check",
+                        `${API}/attend/check`,
                         {
                             club_code: clubCode,
                             code: decodedText
@@ -168,7 +170,7 @@ function QRAttendancePage({ language, setLanguage }) {
             const token = localStorage.getItem("token");
             const clubCode = localStorage.getItem("club_code");
             await axios.post(
-                "http://localhost:8000/attend/check",
+                `${API}/attend/check`,
                 {
                     club_code: clubCode,
                     code: attendanceCode

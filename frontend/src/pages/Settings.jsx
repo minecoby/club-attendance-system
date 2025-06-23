@@ -4,6 +4,8 @@ import '../styles/Settings.css';
 import AlertModal from '../components/AlertModal';
 import i18n from '../i18n';
 
+const API = import.meta.env.VITE_API_BASE_URL;
+
 function Settings({ theme, setTheme, language, setLanguage }) {
     // 사용자 정보 상태
     const [userInfo, setUserInfo] = useState({
@@ -24,13 +26,16 @@ function Settings({ theme, setTheme, language, setLanguage }) {
     const [notification, setNotification] = useState(true);
     const [profileImg, setProfileImg] = useState(null);
     const [profileImgUrl, setProfileImgUrl] = useState('');
+    // 탈퇴 모달 상태
+    const [showQuitModal, setShowQuitModal] = useState(false);
+    const [quitTargetClub, setQuitTargetClub] = useState(null);
 
     // 사용자 정보 불러오기
     useEffect(() => {
         const fetchUser = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const res = await axios.get('http://localhost:8000/users/get_mydata', {
+                const res = await axios.get(`${API}/users/get_mydata`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setUserInfo({
@@ -77,10 +82,11 @@ function Settings({ theme, setTheme, language, setLanguage }) {
 
     // 이름 변경
     const handleUpdateUser = async () => {
+        if (!newName) return;
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
-            await axios.put('http://localhost:8000/users/update', { name: newName }, {
+            await axios.put(`${API}/users/update`, { name: newName }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setUserInfo(prev => ({ ...prev, name: newName }));
@@ -101,7 +107,7 @@ function Settings({ theme, setTheme, language, setLanguage }) {
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
-            await axios.put('http://localhost:8000/users/change_password', {
+            await axios.put(`${API}/users/change_password`, {
                 old_password: oldPassword,
                 new_password: newPassword
             }, {
@@ -124,11 +130,11 @@ function Settings({ theme, setTheme, language, setLanguage }) {
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
-            await axios.post('http://localhost:8000/clubs/join_club', { club_code: clubCode }, {
+            await axios.post(`${API}/clubs/join_club`, { club_code: clubCode }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             // 가입 후, 최신 동아리 목록을 다시 불러와서 setJoinedClubs에 반영
-            const res = await axios.get('http://localhost:8000/users/get_mydata', {
+            const res = await axios.get(`${API}/users/get_mydata`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (res.data.club_data && res.data.club_data.length > 0) {
@@ -145,20 +151,33 @@ function Settings({ theme, setTheme, language, setLanguage }) {
 
     // 동아리 탈퇴
     const handleQuitClub = async (club_code) => {
-        if (!window.confirm("정말로 이 동아리에서 탈퇴하시겠습니까?")) return;
+        setShowQuitModal(true);
+        setQuitTargetClub(club_code);
+    };
+
+    // 진짜 탈퇴 실행
+    const handleConfirmQuit = async () => {
+        if (!quitTargetClub) return;
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
-            await axios.post('http://localhost:8000/clubs/quit_club', { club_code }, {
+            await axios.post(`${API}/clubs/quit_club`, { club_code: quitTargetClub }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setAlert({ show: true, type: 'success', message: '동아리에서 탈퇴되었습니다.' });
-            setJoinedClubs(prev => prev.filter(c => c.club_code !== club_code));
+            setJoinedClubs(prev => prev.filter(c => c.club_code !== quitTargetClub));
         } catch (err) {
             setAlert({ show: true, type: 'error', message: '동아리 탈퇴 실패: ' + (err.response?.data?.detail || '') });
         } finally {
             setLoading(false);
+            setShowQuitModal(false);
+            setQuitTargetClub(null);
         }
+    };
+
+    const handleCancelQuit = () => {
+        setShowQuitModal(false);
+        setQuitTargetClub(null);
     };
 
     // 로그아웃
@@ -180,6 +199,15 @@ function Settings({ theme, setTheme, language, setLanguage }) {
     return (
         <div className="settings-root">
             <AlertModal show={alert.show} type={alert.type} message={alert.message} onClose={handleCloseAlert} />
+            {/* 탈퇴 확인 모달 */}
+            <AlertModal
+                show={showQuitModal}
+                type="info"
+                message="정말로 이 동아리에서 탈퇴하시겠습니까?"
+                confirm={true}
+                onConfirm={handleConfirmQuit}
+                onClose={handleCancelQuit}
+            />
             <div className="settings-container">
                 {/* 사용자 정보 카드 */}
                 <div className="settings-card">
