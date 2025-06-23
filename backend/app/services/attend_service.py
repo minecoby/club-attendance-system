@@ -1,15 +1,23 @@
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import select,delete
 from app.models import Attendance,AttendanceDate
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-#출석날짜 연동
-async def get_date_id(date: str,club_code: str,  db: AsyncSession) -> int:
+# 출석날짜 연동
+async def get_date_id(date: str, club_code: str, db: AsyncSession) -> int:
+    try:
+        date_obj = datetime.strptime(date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="날짜 형식이 잘못되었습니다. (예: 2025-05-15)")
+
     result = await db.execute(
-        select(AttendanceDate).where(AttendanceDate.date == date,AttendanceDate.club_code == club_code)
+        select(AttendanceDate).where(
+            AttendanceDate.date == date_obj,
+            AttendanceDate.club_code == club_code
+        )
     )
     attendance_date = result.scalar_one_or_none()
     if not attendance_date:
@@ -62,3 +70,17 @@ async def load_myattend(club_code, user_id: str, db: AsyncSession):
             })
     
     return attendances
+
+async def bulk_update_attendance(attendance_date_id: int, attendances: list, db):
+    await db.execute(
+        delete(Attendance).where(Attendance.attendance_date_id == attendance_date_id)
+    )
+    for item in attendances:
+        new_attendance = Attendance(
+            user_id=item.user_id,
+            attendance_date_id=attendance_date_id,
+            status=item.status  
+        )
+        db.add(new_attendance)
+    await db.commit()
+    return {"message": "출석 정보가 업데이트되었습니다."}

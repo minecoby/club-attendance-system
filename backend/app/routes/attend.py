@@ -49,3 +49,17 @@ async def load_attend(
     token = credentials.credentials
     user = await get_current_user(token, db)
     return await load_myattend(club_code,user.user_id,db)
+
+
+@router.put("/attendance/bulk_update")
+async def bulk_update_attendance_api(
+    req: AttendanceBulkUpdateRequest,
+    db=Depends(get_db)
+):
+    return await bulk_update_attendance(req.attendance_date_id, req.attendances, db)
+
+# 날짜와 club_code로 attendance_date_id 반환
+@router.get("/get_date_id")
+async def get_attendance_date_id(date: str, club_code: str, db: AsyncSession = Depends(get_db)):
+    attendance_date_id = await get_date_id(date, club_code, db)
+    return {"attendance_date_id": attendance_date_id}

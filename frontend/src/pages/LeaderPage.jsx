@@ -23,6 +23,8 @@ function LeaderPage({ language, setLanguage }) {
     const [fixedCode, setFixedCode] = useState(""); // 고정 코드 값
     const [modalMode, setModalMode] = useState("qr"); // 'qr' 또는 'code'
     const [alert, setAlert] = useState({ show: false, type: 'info', message: '', confirm: false, onConfirm: null });
+    const [editMode, setEditMode] = useState(false);
+    const [editAttendanceList, setEditAttendanceList] = useState([]);
 
     useEffect(() => {
         // 오늘 날짜 구하기 (YYYY-MM-DD)
@@ -62,35 +64,50 @@ function LeaderPage({ language, setLanguage }) {
         }
     }, [today]);
 
-    // 출석부 불러오기
+    // 출석부 불러오기 함수 (useEffect 밖으로 분리)
+    const fetchAttendance = async (date = selectedDate) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const token = localStorage.getItem("token");
+            const response = await axios.get(
+                `${API}/admin/show_attendance/${date}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            // club_code가 응답에 있으면 저장
+            if (response.data && response.data.club_code) {
+                localStorage.setItem("club_code", response.data.club_code);
+            } else {
+                // 없으면 별도 API로 club_code 조회
+                const userRes = await axios.get(`${API}/users/get_mydata`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (userRes.data && userRes.data.club_data && userRes.data.club_data.length > 0) {
+                    // 리더는 club_data[0]이 자신의 club_code일 것
+                    localStorage.setItem("club_code", userRes.data.club_data[0].club_code);
+                }
+            }
+            // 출석 상태가 없는 경우 결석으로 초기화
+            const attendanceData = response.data.map ? response.data.map(member => ({
+                ...member,
+                status: member.status !== undefined ? member.status : false
+            })) : [];
+            setAttendanceList(attendanceData);
+        } catch (err) {
+            if (err.response && err.response.status === 404) {
+                setAttendanceList([]); // 출석기록 없음
+            } else {
+                setError("출석 데이터를 불러오는 중 오류가 발생했습니다.");
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // 출석부 불러오기 useEffect
     useEffect(() => {
         if (selectedDate === undefined || selectedDate === "") return;
-        const fetchAttendance = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const token = localStorage.getItem("token");
-                const response = await axios.get(
-                    `${API}/admin/show_attendance/${selectedDate}`,
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
-                // 출석 상태가 없는 경우 결석으로 초기화
-                const attendanceData = response.data.map(member => ({
-                    ...member,
-                    status: member.status !== undefined ? member.status : false
-                }));
-                setAttendanceList(attendanceData);
-            } catch (err) {
-                if (err.response && err.response.status === 404) {
-                    setAttendanceList([]); // 출석기록 없음
-                } else {
-                    setError("출석 데이터를 불러오는 중 오류가 발생했습니다.");
-                }
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchAttendance();
+        fetchAttendance(selectedDate);
     }, [selectedDate]);
 
     const handleStartQR = async () => {
@@ -286,6 +303,50 @@ function LeaderPage({ language, setLanguage }) {
         }
     };
 
+    // 수정모드 진입
+    const handleEditClick = () => {
+        setEditAttendanceList(attendanceList.map(user => ({ ...user })));
+        setEditMode(true);
+    };
+    // 출석/결석 토글
+    const handleStatusToggle = (user_id, status) => {
+        setEditAttendanceList(prev =>
+            prev.map(user =>
+                user.user_id === user_id ? { ...user, status } : user
+            )
+        );
+    };
+
+    // 저장하기 버튼 클릭 시
+    const handleSaveAttendance = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            const club_code = localStorage.getItem("club_code");
+            if (!club_code) {
+                setAlert({ show: true, type: 'error', message: 'club_code가 없습니다. 동아리를 다시 선택해주세요.' });
+                return;
+            }
+            // 1. attendance_date_id 얻기
+            const dateIdRes = await axios.get(`${API}/attend/get_date_id`, {
+                params: { date: selectedDate, club_code },
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const attendance_date_id = dateIdRes.data.attendance_date_id || dateIdRes.data.id || dateIdRes.data;
+            // 2. 출석 정보 저장
+            await axios.put(`${API}/attend/attendance/bulk_update`, {
+                attendance_date_id,
+                attendances: editAttendanceList.map(u => ({ user_id: u.user_id, status: u.status }))
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setEditMode(false);
+            setAlert({ show: true, type: 'success', message: '출석 정보가 저장되었습니다.' });
+            fetchAttendance(selectedDate); // 저장 후 즉시 출석부 새로고침
+        } catch (err) {
+            setAlert({ show: true, type: 'error', message: '저장 중 오류가 발생했습니다.' });
+        }
+    };
+
     return (
         <div className="leader-page">
             <AlertModal
@@ -340,17 +401,7 @@ function LeaderPage({ language, setLanguage }) {
                 </button>
             </div>
             <div className="attendance-section">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                    <h2 className="attendance-title" style={{ margin: 0 }}>
-                        {selectedDate ? `${selectedDate} ${i18n[language].attendanceList || '출석부'}` : (i18n[language].allAttendance || '전체 출석부')}
-                    </h2>
-                    {/* 전체 출석부(날짜 선택 안함)일 때만 다운로드 버튼 노출 */}
-                    {selectedDate === "" && (
-                        <button className="download-excel-btn" onClick={handleDownloadExcel}>
-                            {i18n[language].downloadAttendance || '출석부 다운로드'}
-                        </button>
-                    )}
-                </div>
+                {/* 제목(h2)과 버튼은 아래 테이블 위 flex row에서만 렌더링 */}
                 {/* QR/코드 모달 (하나의 모달에서 분기) */}
                 {showQR && (
                   <div className="qr-modal-bg" onClick={handleCloseQR}>
@@ -379,34 +430,75 @@ function LeaderPage({ language, setLanguage }) {
                         <div className="attendance-message error">{i18n[language].error || error}</div>
                     ) : attendanceList.length === 0 ? (
                         <div className="attendance-message empty">{i18n[language].noAttendance || '출석기록이 없습니다.'}</div>
-                    ) : selectedDate === "" ? (
-                        // 전체 출석부 테이블
+                    ) : editMode ? (
+                        // 수정 모드 테이블
+                        <>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                            <h2 className="attendance-title" style={{ margin: 0 }}>
+                                {selectedDate ? `${selectedDate} ${i18n[language].attendanceList || '출석부'}` : (i18n[language].allAttendance || '전체 출석부')}
+                            </h2>
+                            <button className="save-attendance-btn" style={{ background: '#1976d2', color: 'white', border: 'none', borderRadius: '6px', padding: '8px 24px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer' }} onClick={handleSaveAttendance}>
+                                {i18n[language].saveAttendance || '저장하기'}
+                            </button>
+                        </div>
                         <table className="attendance-table">
                             <thead>
                                 <tr>
                                     <th>{i18n[language].name || '이름'}</th>
-                                    {dateList.map(date => (
-                                        <th key={date}>{date}</th>
-                                    ))}
+                                    <th>{i18n[language].attendanceStatus || '출석 상태'}</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {attendanceList.map(user => (
+                                {editAttendanceList.map(user => (
                                     <tr key={user.user_id}>
                                         <td>{user.name}</td>
-                                        {dateList.map(date => (
-                                            <td key={date}>
-                                                <span className={`status-badge ${user[date] === true ? "출석" : "결석"}`}>
-                                                    {user[date] === true ? (i18n[language].attended || '출석') : (i18n[language].absent || '결석')}
-                                                </span>
-                                            </td>
-                                        ))}
+                                        <td>
+                                            <button
+                                                style={{
+                                                    background: user.status ? '#4caf50' : '#e0e0e0',
+                                                    color: user.status ? 'white' : 'black',
+                                                    marginRight: '8px',
+                                                    fontWeight: user.status ? 'bold' : 'normal',
+                                                    borderRadius: '6px',
+                                                    border: 'none',
+                                                    padding: '6px 16px',
+                                                    cursor: 'pointer'
+                                                }}
+                                                onClick={() => handleStatusToggle(user.user_id, true)}
+                                            >
+                                                {i18n[language].attended || '출석'}
+                                            </button>
+                                            <button
+                                                style={{
+                                                    background: !user.status ? '#f44336' : '#e0e0e0',
+                                                    color: !user.status ? 'white' : 'black',
+                                                    fontWeight: !user.status ? 'bold' : 'normal',
+                                                    borderRadius: '6px',
+                                                    border: 'none',
+                                                    padding: '6px 16px',
+                                                    cursor: 'pointer'
+                                                }}
+                                                onClick={() => handleStatusToggle(user.user_id, false)}
+                                            >
+                                                {i18n[language].absent || '결석'}
+                                            </button>
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
+                        </>
                     ) : (
                         // 날짜별 출석부 테이블
+                        <>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                            <h2 className="attendance-title" style={{ margin: 0 }}>
+                                {selectedDate ? `${selectedDate} ${i18n[language].attendanceList || '출석부'}` : (i18n[language].allAttendance || '전체 출석부')}
+                            </h2>
+                            <button className="edit-attendance-btn" style={{ background: '#1976d2', color: 'white', border: 'none', borderRadius: '6px', padding: '8px 24px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer' }} onClick={handleEditClick}>
+                                {i18n[language].editAttendance || '수정하기'}
+                            </button>
+                        </div>
                         <table className="attendance-table">
                             <thead>
                                 <tr>
@@ -427,6 +519,7 @@ function LeaderPage({ language, setLanguage }) {
                                 ))}
                             </tbody>
                         </table>
+                        </>
                     )}
                 </div>
             </div>
