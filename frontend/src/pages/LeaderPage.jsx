@@ -430,6 +430,42 @@ function LeaderPage({ language, setLanguage }) {
                         <div className="attendance-message error">{i18n[language].error || error}</div>
                     ) : attendanceList.length === 0 ? (
                         <div className="attendance-message empty">{i18n[language].noAttendance || '출석기록이 없습니다.'}</div>
+                    ) : selectedDate === "" ? (
+                        // 전체 출석부 테이블 (원래 코드)
+                        <>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                            <h2 className="attendance-title" style={{ margin: 0 }}>
+                                {i18n[language].allAttendance || '전체 출석부'}
+                            </h2>
+                            <button className="download-excel-btn" onClick={handleDownloadExcel}>
+                                {i18n[language].downloadAttendance || '출석부 다운로드'}
+                            </button>
+                        </div>
+                        <table className="attendance-table">
+                            <thead>
+                                <tr>
+                                    <th>{i18n[language].name || '이름'}</th>
+                                    {dateList.map(date => (
+                                        <th key={date}>{date}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {attendanceList.map(user => (
+                                    <tr key={user.user_id}>
+                                        <td>{user.name}</td>
+                                        {dateList.map(date => (
+                                            <td key={date}>
+                                                <span className={`status-badge ${user[date] === true ? "출석" : "결석"}`}>
+                                                    {user[date] === true ? (i18n[language].attended || '출석') : (i18n[language].absent || '결석')}
+                                                </span>
+                                            </td>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        </>
                     ) : editMode ? (
                         // 수정 모드 테이블
                         <>
