@@ -56,23 +56,10 @@ function Settings({ theme, setTheme, language, setLanguage }) {
         fetchUser();
     }, []);
 
-    // 프로필 이미지 미리보기
-    const handleProfileImgChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setProfileImg(file);
-            setProfileImgUrl(URL.createObjectURL(file));
-        }
-    };
 
     // 테마 토글
     const handleThemeToggle = () => {
         setTheme(theme === 'light' ? 'dark' : 'light');
-    };
-
-    // 알림 토글
-    const handleNotificationToggle = () => {
-        setNotification((prev) => !prev);
     };
 
     // 언어 변경

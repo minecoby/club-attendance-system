@@ -17,6 +17,7 @@ body::before {
   position: relative;
   background: none;
   color: var(--text);
+  width: 100vw;
 }
 
 .settings-container {
