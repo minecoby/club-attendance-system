@@ -347,6 +347,8 @@ function LeaderPage({ language, setLanguage }) {
         }
     };
 
+
+
     return (
         <div className="leader-page">
             <AlertModal
@@ -538,14 +540,16 @@ function LeaderPage({ language, setLanguage }) {
                         <table className="attendance-table">
                             <thead>
                                 <tr>
-                                    <th>{i18n[language].name || '이름'}</th>
+                                    <th style={{ textAlign: 'center' }}>{i18n[language].name || '이름'}</th>
                                     <th>{i18n[language].attendanceStatus || '출석 상태'}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {attendanceList.map(user => (
                                     <tr key={user.user_id}>
-                                        <td>{user.name}</td>
+                                        <td style={{ textAlign: 'center' }}>
+                                            {user.name}
+                                        </td>
                                         <td>
                                             <span className={`status-badge ${user.status === true ? "출석" : "결석"}`}>
                                                 {user.status === true ? (i18n[language].attended || '출석') : (i18n[language].absent || '결석')}

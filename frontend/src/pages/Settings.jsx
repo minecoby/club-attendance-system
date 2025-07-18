@@ -26,9 +26,14 @@ function Settings({ theme, setTheme, language, setLanguage }) {
     const [notification, setNotification] = useState(true);
     const [profileImg, setProfileImg] = useState(null);
     const [profileImgUrl, setProfileImgUrl] = useState('');
+    // 유저목록 관련 상태
+    const [members, setMembers] = useState([]);
     // 탈퇴 모달 상태
     const [showQuitModal, setShowQuitModal] = useState(false);
     const [quitTargetClub, setQuitTargetClub] = useState(null);
+    // 강퇴 모달 상태
+    const [showKickModal, setShowKickModal] = useState(false);
+    const [kickTargetUser, setKickTargetUser] = useState(null);
 
     // 사용자 정보 불러오기
     useEffect(() => {
@@ -49,12 +54,30 @@ function Settings({ theme, setTheme, language, setLanguage }) {
                 } else {
                     setJoinedClubs([]);
                 }
+                
+                // 리더인 경우 멤버 목록도 불러오기
+                if (res.data.user_data.is_leader) {
+                    await fetchMembers();
+                }
             } catch (err) {
                 setAlert({ show: true, type: 'error', message: '사용자 정보를 불러오지 못했습니다.' });
             }
         };
         fetchUser();
     }, []);
+
+    // 멤버 목록 불러오기
+    const fetchMembers = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.get(`${API}/clubs/get_members`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setMembers(res.data);
+        } catch (err) {
+            console.error('멤버 목록 불러오기 실패:', err);
+        }
+    };
 
 
     // 테마 토글
@@ -179,6 +202,39 @@ function Settings({ theme, setTheme, language, setLanguage }) {
         setAlert({ show: true, type: 'info', message: '회원탈퇴 기능은 추후 구현 예정입니다.' });
     };
 
+    // 강퇴 모달 열기
+    const handleKickUser = (user_id, userName) => {
+        setShowKickModal(true);
+        setKickTargetUser({ user_id, name: userName });
+    };
+
+    // 진짜 강퇴 실행
+    const handleConfirmKick = async () => {
+        if (!kickTargetUser) return;
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+            await axios.delete(`${API}/admin/kick_user`, {
+                headers: { Authorization: `Bearer ${token}` },
+                data: { user_id: kickTargetUser.user_id }
+            });
+            setAlert({ show: true, type: 'success', message: '강퇴가 완료되었습니다.' });
+            // 멤버 목록 새로고침
+            await fetchMembers();
+        } catch (err) {
+            setAlert({ show: true, type: 'error', message: '강퇴에 실패했습니다.' });
+        } finally {
+            setLoading(false);
+            setShowKickModal(false);
+            setKickTargetUser(null);
+        }
+    };
+
+    const handleCancelKick = () => {
+        setShowKickModal(false);
+        setKickTargetUser(null);
+    };
+
     const handleCloseAlert = () => {
         setAlert({ ...alert, show: false });
     };
@@ -194,6 +250,15 @@ function Settings({ theme, setTheme, language, setLanguage }) {
                 confirm={true}
                 onConfirm={handleConfirmQuit}
                 onClose={handleCancelQuit}
+            />
+            {/* 강퇴 확인 모달 */}
+            <AlertModal
+                show={showKickModal}
+                type="warning"
+                message={kickTargetUser ? `정말로 "${kickTargetUser.name}"님을 강퇴하시겠습니까?` : "강퇴하시겠습니까?"}
+                confirm={true}
+                onConfirm={handleConfirmKick}
+                onClose={handleCancelKick}
             />
             <div className="settings-container">
                 {/* 사용자 정보 카드 */}
@@ -294,6 +359,36 @@ function Settings({ theme, setTheme, language, setLanguage }) {
                         </div>
                     </div>
                 </div>
+
+                {/* 유저 목록 관리 카드 (리더만 표시) */}
+                {userInfo.is_leader && (
+                    <div className="settings-card wide-card">
+                        <div className="settings-card-title">유저 목록 관리</div>
+                        <div className="settings-card-content">
+                            <div className="settings-club-list">
+                                <div className="settings-club-list-title">동아리 멤버 목록</div>
+                                {members.length === 0 && <div className="settings-empty">멤버가 없습니다.</div>}
+                                <div className="members-grid">
+                                    {members.map(member => (
+                                        <div key={member.user_id} className="member-card">
+                                            <div className="member-info">
+                                                <span className="member-name">{member.name}</span>
+                                                <span className="member-id">({member.user_id})</span>
+                                            </div>
+                                            <button 
+                                                className="settings-btn danger small" 
+                                                onClick={() => handleKickUser(member.user_id, member.name)}
+                                                disabled={loading}
+                                            >
+                                                강퇴
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

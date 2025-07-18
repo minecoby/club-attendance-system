@@ -306,7 +306,7 @@
 .qr-label {
   font-size: 1.1rem;
   font-weight: 500;
-  color: #0056b3;
+  color: #475569;
   margin-bottom: 14px;
   margin-top: 6px;
 }
@@ -323,7 +323,7 @@
   z-index: 10;
 }
 .qr-close-btn:hover {
-  color: #0056b3;
+  color: #475569;
 }
 @keyframes qr-pop {
   0% { transform: scale(0.8); opacity: 0; }

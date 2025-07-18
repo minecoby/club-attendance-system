@@ -73,14 +73,14 @@
 }
   
 .input-field:focus {
-    border-color: #f7b137;
-    box-shadow: 0 0 0 3px rgba(247, 177, 55, 0.2);
+    border-color: #475569;
+    box-shadow: 0 0 0 3px rgba(71, 85, 105, 0.2);
 }
   
 .login-button {
     width: 100%;
     padding: 0.75rem;
-    background-color: #f7b137;
+    background-color: #475569;
     border: none;
     border-radius: 8px;
     color: white;
@@ -91,7 +91,7 @@
 }
   
 .login-button:hover {
-    background-color: #eaa82e;
+    background-color: #334155;
 }
   
 .link-signup {
@@ -107,7 +107,7 @@
 }
   
 .signupto:hover {
-    color: #f7b137;
+    color: #475569;
     text-decoration: underline;
 }
   

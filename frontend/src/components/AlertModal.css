@@ -54,7 +54,7 @@
 }
 
 .alert-modal-close {
-  background: #007bff;
+  background: #475569;
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -66,5 +66,5 @@
 }
 
 .alert-modal-close:hover {
-  background: #0056b3;
+  background: #334155;
 } 
