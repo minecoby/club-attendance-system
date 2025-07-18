@@ -67,13 +67,13 @@ async def load_attendance(user, date, db: AsyncSession):
 
 #유저강퇴
 async def kick_user_from_club(id: str,code:str ,db: AsyncSession):
-    data = await check_joining(id,code,db)
+    data = await check_joining(id,code,db)  
     try:
-        data = data.scalars().first()
-        db.delete(data)
-        db.commit()
+        await db.delete(data)
+        await db.commit()
         return 
     except SQLAlchemyError as e:
+        await db.rollback()
         raise HTTPException(status_code=500, detail="데이터베이스 오류")
     
 async def delete_date_from_club(code: str, date: str, db: AsyncSession):
