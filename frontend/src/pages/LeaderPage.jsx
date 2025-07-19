@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import "../styles/LeaderPage.css";
 import axios from 'axios';
+import apiClient from '../utils/apiClient';
 import QRCode from "react-qr-code";
 import AlertModal from '../components/AlertModal';
 import i18n from '../i18n';
@@ -41,12 +42,8 @@ function LeaderPage({ language, setLanguage }) {
     useEffect(() => {
         const fetchDateList = async () => {
             try {
-                const token = localStorage.getItem("token");
-                // 날짜를 지정하지 않으면 전체 출석부(날짜 목록 포함) 반환
-                const response = await axios.get(
-                    `${API}/admin/show_attendance/None`,
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
+                // apiClient 사용으로 자동 토큰 갱신
+                const response = await apiClient.get(`/admin/show_attendance/None`);
                 // response.data: [출석데이터, 날짜리스트]
                 if (Array.isArray(response.data) && response.data.length === 2) {
                     const dates = response.data[1];
@@ -69,19 +66,15 @@ function LeaderPage({ language, setLanguage }) {
         setLoading(true);
         setError(null);
         try {
-            const token = localStorage.getItem("token");
-            const response = await axios.get(
-                `${API}/admin/show_attendance/${date}`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            // apiClient 사용으로 자동 토큰 갱신
+            const response = await apiClient.get(`/admin/show_attendance/${date}`);
+            
             // club_code가 응답에 있으면 저장
             if (response.data && response.data.club_code) {
                 localStorage.setItem("club_code", response.data.club_code);
             } else {
                 // 없으면 별도 API로 club_code 조회
-                const userRes = await axios.get(`${API}/users/get_mydata`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const userRes = await apiClient.get(`/users/get_mydata`);
                 if (userRes.data && userRes.data.club_data && userRes.data.club_data.length > 0) {
                     // 리더는 club_data[0]이 자신의 club_code일 것
                     localStorage.setItem("club_code", userRes.data.club_data[0].club_code);
@@ -111,13 +104,8 @@ function LeaderPage({ language, setLanguage }) {
     }, [selectedDate]);
 
     const handleStartQR = async () => {
-        const token = localStorage.getItem("token");
         try {
-            await axios.post(
-                `${API}/admin/add_date`,
-                { date: selectedDate },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            await apiClient.post(`/admin/add_date`, { date: selectedDate });
         } catch (e) {
             if (e.response && e.response.status === 409) {
                 setAlert({
@@ -127,12 +115,8 @@ function LeaderPage({ language, setLanguage }) {
                     confirm: true,
                     onConfirm: async () => {
                         try {
-                            await axios.post(
-                                `${API}/admin/refresh_date`,
-                                { date: selectedDate },
-                                { headers: { Authorization: `Bearer ${token}` } }
-                            );
-                            startWebSocket(token);
+                            await apiClient.post(`/admin/refresh_date`, { date: selectedDate });
+                            startWebSocket();
                         } catch (refreshError) {
                             setError("날짜 초기화 중 오류가 발생했습니다.");
                         }
@@ -143,10 +127,11 @@ function LeaderPage({ language, setLanguage }) {
             }
             return;
         }
-        startWebSocket(token);
+        startWebSocket();
     };
 
-    const startWebSocket = (token) => {
+    const startWebSocket = () => {
+        const token = localStorage.getItem("token");
         const socket = new window.WebSocket(`${WS_API}/admin/attendance/${selectedDate}/ws`);
         socket.onopen = () => {
             socket.send("Bearer " + token);
@@ -175,11 +160,7 @@ function LeaderPage({ language, setLanguage }) {
         setLoading(true);
         setError(null);
         try {
-            const token = localStorage.getItem("token");
-            const response = await axios.get(
-                `${API}/admin/show_attendance/None`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const response = await apiClient.get(`/admin/show_attendance/None`);
             // response.data: [출석데이터, 날짜리스트]
             setAttendanceList(response.data[0]);
             setDateList(response.data[1]);
@@ -272,11 +253,9 @@ function LeaderPage({ language, setLanguage }) {
     // 출석부 엑셀 다운로드 함수
     const handleDownloadExcel = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await axios.get(
-                `${API}/admin/export_attendance`,
+            const response = await apiClient.get(
+                `/admin/export_attendance`,
                 {
-                    headers: { Authorization: `Bearer ${token}` },
                     responseType: 'blob', // 파일 다운로드를 위해 blob 타입으로 받기
                 }
             );
@@ -320,24 +299,20 @@ function LeaderPage({ language, setLanguage }) {
     // 저장하기 버튼 클릭 시
     const handleSaveAttendance = async () => {
         try {
-            const token = localStorage.getItem("token");
             const club_code = localStorage.getItem("club_code");
             if (!club_code) {
                 setAlert({ show: true, type: 'error', message: 'club_code가 없습니다. 동아리를 다시 선택해주세요.' });
                 return;
             }
             // 1. attendance_date_id 얻기
-            const dateIdRes = await axios.get(`${API}/attend/get_date_id`, {
-                params: { date: selectedDate, club_code },
-                headers: { Authorization: `Bearer ${token}` }
+            const dateIdRes = await apiClient.get(`/attend/get_date_id`, {
+                params: { date: selectedDate, club_code }
             });
             const attendance_date_id = dateIdRes.data.attendance_date_id || dateIdRes.data.id || dateIdRes.data;
             // 2. 출석 정보 저장
-            await axios.put(`${API}/attend/attendance/bulk_update`, {
+            await apiClient.put(`/attend/attendance/bulk_update`, {
                 attendance_date_id,
                 attendances: editAttendanceList.map(u => ({ user_id: u.user_id, status: u.status }))
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
             });
             setEditMode(false);
             setAlert({ show: true, type: 'success', message: '출석 정보가 저장되었습니다.' });

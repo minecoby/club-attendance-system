@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import apiClient from '../utils/apiClient';
 import '../styles/Settings.css';
 import AlertModal from '../components/AlertModal';
 import i18n from '../i18n';
@@ -39,10 +40,7 @@ function Settings({ theme, setTheme, language, setLanguage }) {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const token = localStorage.getItem('token');
-                const res = await axios.get(`${API}/users/get_mydata`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const res = await apiClient.get(`/users/get_mydata`);
                 setUserInfo({
                     user_id: res.data.user_data.id,
                     name: res.data.user_data.name,
@@ -69,10 +67,7 @@ function Settings({ theme, setTheme, language, setLanguage }) {
     // 멤버 목록 불러오기
     const fetchMembers = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`${API}/clubs/get_members`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await apiClient.get(`/clubs/get_members`);
             setMembers(res.data);
         } catch (err) {
             console.error('멤버 목록 불러오기 실패:', err);
@@ -95,10 +90,7 @@ function Settings({ theme, setTheme, language, setLanguage }) {
         if (!newName) return;
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            await axios.put(`${API}/users/update`, { name: newName }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await apiClient.put(`/users/update`, { name: newName });
             setUserInfo(prev => ({ ...prev, name: newName }));
             setAlert({ show: true, type: 'success', message: '이름이 변경되었습니다.' });
         } catch (err) {
@@ -116,12 +108,9 @@ function Settings({ theme, setTheme, language, setLanguage }) {
         }
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            await axios.put(`${API}/users/change_password`, {
+            await apiClient.put(`/users/change_password`, {
                 old_password: oldPassword,
                 new_password: newPassword
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
             });
             setOldPassword('');
             setNewPassword('');
@@ -139,14 +128,9 @@ function Settings({ theme, setTheme, language, setLanguage }) {
         if (!clubCode) return;
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            await axios.post(`${API}/clubs/join_club`, { club_code: clubCode }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await apiClient.post(`/clubs/join_club`, { club_code: clubCode });
             // 가입 후, 최신 동아리 목록을 다시 불러와서 setJoinedClubs에 반영
-            const res = await axios.get(`${API}/users/get_mydata`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await apiClient.get(`/users/get_mydata`);
             if (res.data.club_data && res.data.club_data.length > 0) {
                 setJoinedClubs(res.data.club_data);
             }
@@ -170,10 +154,7 @@ function Settings({ theme, setTheme, language, setLanguage }) {
         if (!quitTargetClub) return;
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            await axios.post(`${API}/clubs/quit_club`, { club_code: quitTargetClub }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await apiClient.post(`/clubs/quit_club`, { club_code: quitTargetClub });
             setAlert({ show: true, type: 'success', message: '동아리에서 탈퇴되었습니다.' });
             setJoinedClubs(prev => prev.filter(c => c.club_code !== quitTargetClub));
         } catch (err) {
@@ -191,10 +172,25 @@ function Settings({ theme, setTheme, language, setLanguage }) {
     };
 
     // 로그아웃
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('usertype');
-        window.location.href = '/login';
+    const handleLogout = async () => {
+        try {
+            const refreshToken = localStorage.getItem('refresh_token');
+            if (refreshToken) {
+                // 백엔드에 리프레시 토큰 무효화 요청
+                await axios.post(`${API}/users/logout`, {
+                    refresh_token: refreshToken
+                });
+            }
+        } catch (error) {
+            console.error('로그아웃 요청 실패:', error);
+            // 실패해도 로컬 토큰은 제거
+        } finally {
+            // 로컬 스토리지에서 모든 토큰 제거
+            localStorage.removeItem('token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('usertype');
+            window.location.href = '/login';
+        }
     };
 
     // 회원탈퇴(추가 구현 필요)
@@ -213,9 +209,7 @@ function Settings({ theme, setTheme, language, setLanguage }) {
         if (!kickTargetUser) return;
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            await axios.delete(`${API}/admin/kick_user`, {
-                headers: { Authorization: `Bearer ${token}` },
+            await apiClient.delete(`/admin/kick_user`, {
                 data: { user_id: kickTargetUser.user_id }
             });
             setAlert({ show: true, type: 'success', message: '강퇴가 완료되었습니다.' });

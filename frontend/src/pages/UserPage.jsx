@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import "../styles/UserPage.css";
 import AlertModal from '../components/AlertModal';
+import apiClient from '../utils/apiClient';
 import i18n from '../i18n';
 
 const API = import.meta.env.VITE_API_BASE_URL;
@@ -18,30 +19,32 @@ function UserPage({ language, setLanguage }) {
     useEffect(() => {
         const token = localStorage.getItem("token");
         if (!token) return;
-        fetch(`${API}/clubs/get_club_info`, {
-            headers: { Authorization: `Bearer ${token}` }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (Array.isArray(data) && data.length > 0) {
-                setClubList(data);
-                setSelectedClub(data[0].club_code); 
+        
+        apiClient.get('/clubs/get_club_info')
+        .then(res => {
+            if (Array.isArray(res.data) && res.data.length > 0) {
+                setClubList(res.data);
+                setSelectedClub(res.data[0].club_code); 
             }
+        })
+        .catch(error => {
+            console.error('동아리 정보 불러오기 실패:', error);
         });
     }, []);
 
     useEffect(() => {
         const token = localStorage.getItem("token");
         if (!token || !selectedClub) return;
-        fetch(`${API}/attend/load_myattend/${selectedClub}`, {
-            headers: { Authorization: `Bearer ${token}` }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (Array.isArray(data)) {
-                const sortedData = data.sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        apiClient.get(`/attend/load_myattend/${selectedClub}`)
+        .then(res => {
+            if (Array.isArray(res.data)) {
+                const sortedData = res.data.sort((a, b) => new Date(a.date) - new Date(b.date));
                 setAttendanceList(sortedData);
             }
+        })
+        .catch(error => {
+            console.error('출석 정보 불러오기 실패:', error);
         });
     }, [selectedClub]);
 

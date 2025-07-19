@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import "../styles/Login.css";
 import kungya from '../assets/kungya.jpg';
 import axios from 'axios';
+import apiClient from '../utils/apiClient';
 import AlertModal from '../components/AlertModal';
 
 function LoginPage() {
@@ -18,9 +19,8 @@ function LoginPage() {
     const token = localStorage.getItem("token");
     const usertype = localStorage.getItem("usertype");
     if (token && usertype) {
-      axios.get(`${API}/users/validate_token`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      // apiClient를 사용하여 토큰 검증 (자동 갱신 포함)
+      apiClient.get(`/users/validate_token`)
       .then(response => {
         if (usertype === "leader") {
           navigate("/leaderpage");
@@ -30,8 +30,7 @@ function LoginPage() {
       })
       .catch(error => {
         console.error("토큰 검증 실패", error);
-        localStorage.removeItem("token");
-        localStorage.removeItem("usertype");
+        // apiClient가 이미 토큰 정리를 했을 것임
       });
     }
   }, [navigate]);
@@ -45,9 +44,11 @@ function LoginPage() {
         password: password,
       });
 
-      const { access_token, usertype } = response.data;
+      const { access_token, refresh_token, usertype } = response.data;
 
+      // 액세스 토큰과 리프레시 토큰 모두 저장
       localStorage.setItem("token", access_token);
+      localStorage.setItem("refresh_token", refresh_token);
       localStorage.setItem("usertype", usertype);
 
       if (usertype === "leader") {

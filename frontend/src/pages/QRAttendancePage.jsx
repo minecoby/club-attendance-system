@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Html5Qrcode } from 'html5-qrcode';
 import axios from 'axios';
+import apiClient from '../utils/apiClient';
 import '../styles/UserPage.css'; // 모달 스타일 재사용
 import i18n from '../i18n';
 
@@ -15,10 +16,100 @@ function QRAttendancePage({ language, setLanguage }) {
     const [showAlert, setShowAlert] = useState(false);
     const [qrScanned, setQrScanned] = useState(false);
     const [qrActive, setQrActive] = useState(false);
+    const [zoomLevel, setZoomLevel] = useState(1);
+    const [zoomCapabilities, setZoomCapabilities] = useState({ min: 1, max: 1, step: 0.1 });
+    const [currentStream, setCurrentStream] = useState(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const [lastTouchDistance, setLastTouchDistance] = useState(0);
+    const [zoomSupported, setZoomSupported] = useState(false);
     const qrRef = useRef(null);
     const html5QrCodeRef = useRef(null);
     const navigate = useNavigate();
     const location = useLocation();
+
+    // 실제 카메라 줌 조절 함수
+    const adjustCameraZoom = async (newZoomLevel) => {
+        if (!currentStream || !currentStream.getVideoTracks().length || !zoomSupported) return;
+        
+        const videoTrack = currentStream.getVideoTracks()[0];
+        const capabilities = videoTrack.getCapabilities();
+        
+        if (capabilities.zoom) {
+            const clampedZoom = Math.max(
+                capabilities.zoom.min, 
+                Math.min(capabilities.zoom.max, newZoomLevel)
+            );
+            
+            try {
+                await videoTrack.applyConstraints({
+                    advanced: [{ zoom: clampedZoom }]
+                });
+                setZoomLevel(clampedZoom);
+            } catch (error) {
+                console.error('카메라 줌 조절 실패:', error);
+            }
+        }
+    };
+
+    // 터치 거리 계산 함수
+    const getTouchDistance = (touches) => {
+        if (touches.length < 2) return 0;
+        const touch1 = touches[0];
+        const touch2 = touches[1];
+        return Math.sqrt(
+            Math.pow(touch2.clientX - touch1.clientX, 2) + 
+            Math.pow(touch2.clientY - touch1.clientY, 2)
+        );
+    };
+
+    // 터치 시작 이벤트
+    const handleTouchStart = (e) => {
+        if (e.touches.length === 2 && zoomSupported) {
+            e.preventDefault();
+            const distance = getTouchDistance(e.touches);
+            setLastTouchDistance(distance);
+            setIsDragging(true);
+        }
+    };
+
+    // 터치 이동 이벤트 (핀치 줌)
+    const handleTouchMove = (e) => {
+        if (e.touches.length === 2 && isDragging && zoomSupported) {
+            e.preventDefault();
+            const distance = getTouchDistance(e.touches);
+            
+            if (lastTouchDistance > 0) {
+                const scale = distance / lastTouchDistance;
+                const currentZoom = zoomLevel;
+                const newZoom = Math.max(
+                    zoomCapabilities.min, 
+                    Math.min(zoomCapabilities.max, currentZoom * scale)
+                );
+                adjustCameraZoom(newZoom);
+            }
+            setLastTouchDistance(distance);
+        }
+    };
+
+    // 터치 끝 이벤트
+    const handleTouchEnd = (e) => {
+        if (e.touches.length < 2) {
+            setIsDragging(false);
+            setLastTouchDistance(0);
+        }
+    };
+
+
+    const handleWheel = (e) => {
+        if (!zoomSupported) return;
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? 0.95 : 1.05;
+        const newZoom = Math.max(
+            zoomCapabilities.min, 
+            Math.min(zoomCapabilities.max, zoomLevel * delta)
+        );
+        adjustCameraZoom(newZoom);
+    };
 
     // 카메라 안전종료 함수
     const stopCamera = async () => {
@@ -42,7 +133,10 @@ function QRAttendancePage({ language, setLanguage }) {
             }
             qrRef.current.innerHTML = '';
         }
+        setCurrentStream(null);
         setQrActive(false);
+        setZoomLevel(1);
+        setZoomSupported(false);
     };
 
     // 페이지 이동 시 카메라 종료
@@ -77,6 +171,7 @@ function QRAttendancePage({ language, setLanguage }) {
         const html5QrCode = new Html5Qrcode(qrId);
         html5QrCodeRef.current = html5QrCode;
         setQrActive(true);
+        
         html5QrCode.start(
             { facingMode: 'environment' },
             { fps: 10, qrbox: { width: 250, height: 250 } },
@@ -86,16 +181,10 @@ function QRAttendancePage({ language, setLanguage }) {
                 try {
                     const token = localStorage.getItem("token");
                     const clubCode = localStorage.getItem("club_code");
-                    await axios.post(
-                        `${API}/attend/check`,
+                    await apiClient.post('/attend/check',
                         {
                             club_code: clubCode,
                             code: decodedText
-                        },
-                        {
-                            headers: {
-                                Authorization: `Bearer ${token}`
-                            }
                         }
                     );
                     setMessage('출석이 완료되었습니다!');
@@ -116,18 +205,41 @@ function QRAttendancePage({ language, setLanguage }) {
                     setShowAlert(true);
                 }
             }
-        ).catch(err => {
+        ).then(() => {
+            // 카메라 시작 후 stream 정보와 줌 capabilities 확인
+            setTimeout(() => {
+                const video = qrRef.current?.querySelector('video');
+                if (video && video.srcObject) {
+                    setCurrentStream(video.srcObject);
+                    
+                    const videoTrack = video.srcObject.getVideoTracks()[0];
+                    if (videoTrack) {
+                        const capabilities = videoTrack.getCapabilities();
+                        if (capabilities.zoom) {
+                            setZoomCapabilities({
+                                min: capabilities.zoom.min,
+                                max: capabilities.zoom.max,
+                                step: Math.max(0.1, (capabilities.zoom.max - capabilities.zoom.min) / 20)
+                            });
+                            setZoomLevel(capabilities.zoom.min);
+                            setZoomSupported(true);
+                        }
+                    }
+                }
+            }, 1000); // 카메라 완전히 시작된 후 확인
+        }).catch(err => {
             setMessage('카메라 오류: ' + err);
             setMessageType('error');
             setShowAlert(true);
         });
+        
         return () => {
             isMounted = false;
             stopCamera();
         };
     }, [mode]);
 
-    // QR카메라 영상이 부모 div를 꽉 채우도록 video 태그에 스타일 적용
+
     useEffect(() => {
         if (mode === 'qr' && qrRef.current) {
             const observer = new MutationObserver(() => {
@@ -167,18 +279,11 @@ function QRAttendancePage({ language, setLanguage }) {
     const handleSubmitCode = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem("token");
             const clubCode = localStorage.getItem("club_code");
-            await axios.post(
-                `${API}/attend/check`,
+            await apiClient.post('/attend/check',
                 {
                     club_code: clubCode,
                     code: attendanceCode
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
                 }
             );
             setMessage('출석 성공!');
@@ -204,7 +309,71 @@ function QRAttendancePage({ language, setLanguage }) {
             <div className="qr-card" style={{ background: 'var(--card-bg)', borderRadius: 18, boxShadow: '0 4px 16px var(--shadow)', padding: 32, marginBottom: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 340, minHeight: 380, justifyContent: 'center' }}>
                 {mode === 'qr' && (
                     <>
-                        <div ref={qrRef} style={{ width: 300, height: 300, borderRadius: 12, background: '#222', marginBottom: 18, position: 'relative', maxWidth: '100%' }} />
+                        <div 
+                            style={{ 
+                                position: 'relative', 
+                                width: 300, 
+                                height: 300, 
+                                maxWidth: '100%', 
+                                marginBottom: 18,
+                                touchAction: 'none',
+                                overflow: 'hidden',
+                                borderRadius: 12
+                            }}
+                            onTouchStart={handleTouchStart}
+                            onTouchMove={handleTouchMove}
+                            onTouchEnd={handleTouchEnd}
+                            onWheel={handleWheel}
+                        >
+                            <div 
+                                ref={qrRef} 
+                                style={{ 
+                                    width: '100%', 
+                                    height: '100%', 
+                                    borderRadius: 12, 
+                                    background: '#222', 
+                                    position: 'relative'
+                                }} 
+                            />
+                            {/* 줌 기능 지원 여부에 따른 UI */}
+                            {zoomSupported ? (
+                                <div style={{
+                                    position: 'absolute',
+                                    top: '10px',
+                                    left: '10px',
+                                    background: 'rgba(0,0,0,0.7)',
+                                    color: 'white',
+                                    padding: '6px 10px',
+                                    borderRadius: '12px',
+                                    fontSize: '0.8rem',
+                                    zIndex: 10,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center'
+                                }}>
+                                    <div>{(zoomLevel).toFixed(1)}x</div>
+                                    <div style={{ fontSize: '0.6rem', marginTop: '2px', opacity: 0.8 }}>
+
+                                    </div>
+                                </div>
+                            ) : (
+                                <div style={{
+                                    position: 'absolute',
+                                    bottom: '10px',
+                                    left: '50%',
+                                    transform: 'translateX(-50%)',
+                                    background: 'rgba(0,0,0,0.7)',
+                                    color: 'white',
+                                    padding: '4px 8px',
+                                    borderRadius: '12px',
+                                    fontSize: '0.7rem',
+                                    zIndex: 10,
+                                    opacity: 0.8
+                                }}>
+                                    줌 기능 미지원
+                                </div>
+                            )}
+                        </div>
                         <div style={{ marginTop: 18, display: 'flex', gap: 12, width: '100%', justifyContent: 'center' }}>
                             <button onClick={handleOpenCodeMode} className="startQR-button" style={{ minWidth: 120 }}>
                                 {i18n[language].attendWithCode || '코드로 출석하기'}
