@@ -1,5 +1,5 @@
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, Boolean, Date, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Boolean, Date, DateTime, ForeignKey, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
@@ -70,3 +70,7 @@ class Attendance(Base):
 
     attendance_date = relationship("AttendanceDate", back_populates="attendances")
     user = relationship("User")
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'attendance_date_id', name='unique_user_attendance_date'),
+    )

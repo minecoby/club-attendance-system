@@ -37,7 +37,7 @@ async def attend_date(user_id: str, date_id, db: AsyncSession):
             Attendance.attendance_date_id == date_id
         )
     )
-    existing_attendance = result.scalar_one_or_none()
+    existing_attendance = result.scalars().first()
 
     if existing_attendance:
         raise HTTPException(status_code=409, detail="이미 출석이 등록되었습니다.")
