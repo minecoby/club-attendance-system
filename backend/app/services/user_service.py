@@ -61,22 +61,16 @@ def create_refresh_token(data: dict, expires_delta: timedelta = timedelta(days=R
 # 리프레시 토큰을 DB에 저장
 async def save_refresh_token(user_id: str, refresh_token: str, db: AsyncSession):
     try:
-        # 기존 리프레시 토큰들을 모두 무효화
+
+        from sqlalchemy import update
         await db.execute(
-            select(RefreshToken).where(
+            update(RefreshToken)
+            .where(
                 RefreshToken.user_id == user_id,
                 RefreshToken.is_revoked == False
             )
+            .values(is_revoked=True)
         )
-        result = await db.execute(
-            select(RefreshToken).where(
-                RefreshToken.user_id == user_id,
-                RefreshToken.is_revoked == False
-            )
-        )
-        existing_tokens = result.scalars().all()
-        for token in existing_tokens:
-            token.is_revoked = True
 
         # 새로운 리프레시 토큰 저장
         expires_at = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
@@ -87,10 +81,12 @@ async def save_refresh_token(user_id: str, refresh_token: str, db: AsyncSession)
         )
         db.add(new_refresh_token)
         await db.commit()
+        await db.refresh(new_refresh_token)
         return new_refresh_token
     except SQLAlchemyError as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail="리프레시 토큰 저장 실패")
+        print(f"리프레시 토큰 저장 오류: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"리프레시 토큰 저장 실패: {str(e)}")
 
 # 리프레시 토큰 검증
 async def verify_refresh_token(token: str, db: AsyncSession):
@@ -120,17 +116,18 @@ async def verify_refresh_token(token: str, db: AsyncSession):
 # 리프레시 토큰 무효화
 async def revoke_refresh_token(token: str, db: AsyncSession):
     try:
-        result = await db.execute(
-            select(RefreshToken).where(RefreshToken.token == token)
+        from sqlalchemy import update
+
+        await db.execute(
+            update(RefreshToken)
+            .where(RefreshToken.token == token)
+            .values(is_revoked=True)
         )
-        db_token = result.scalar_one_or_none()
-        
-        if db_token:
-            db_token.is_revoked = True
-            await db.commit()
+        await db.commit()
     except SQLAlchemyError as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail="토큰 무효화 실패")
+        print(f"토큰 무효화 오류: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"토큰 무효화 실패: {str(e)}")
 
 # 리프레시 토큰 로테이션 
 async def rotate_refresh_token(old_refresh_token: str, db: AsyncSession):
