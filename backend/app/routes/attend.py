@@ -33,8 +33,7 @@ async def check_attendance(
         raise HTTPException(status_code=400, detail="출석 코드가 일치하지 않습니다.")
     
     date = current["date"]
-    date_obj = datetime.strptime(date, "%Y-%m-%d").date()
-    date_id = await get_date_id(date_obj, data.club_code, db)
+    date_id = await get_date_id(date, data.club_code, db)
     
     await asyncio.gather(
         attend_date(user.user_id, date_id, db)

@@ -3,15 +3,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
 from sqlalchemy import select,delete
 from app.models import Attendance,AttendanceDate
-from datetime import datetime
+from datetime import datetime, date
 from zoneinfo import ZoneInfo
 
 # 출석날짜 연동
-async def get_date_id(date: str, club_code: str, db: AsyncSession) -> int:
-    try:
-        date_obj = datetime.strptime(date, "%Y-%m-%d").date()
-    except ValueError:
-        raise HTTPException(status_code=400, detail="날짜 형식이 잘못되었습니다. (예: 2025-05-15)")
+async def get_date_id(date, club_code: str, db: AsyncSession) -> int:
+    # date가 문자열인 경우 date 객체로 변환
+    if isinstance(date, str):
+        try:
+            date_obj = datetime.strptime(date, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="날짜 형식이 잘못되었습니다. (예: 2025-05-15)")
+    # date가 이미 date 객체인 경우 그대로 사용
+    else:
+        date_obj = date
 
     result = await db.execute(
         select(AttendanceDate).where(
