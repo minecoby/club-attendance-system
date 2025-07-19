@@ -26,13 +26,39 @@ async def create_user(data: SigninForm, db: AsyncSession = Depends(get_db)):
     return await create_user_db(data, db)
 
 
-@router.post("/login")
+@router.post("/login", response_model=TokenResponse)
 async def login(data: LoginForm, db: AsyncSession = Depends(get_db)):
     user = await get_user(data, db)
     access_token = create_access_token(data={"sub": data.user_id})
     refresh_token = create_refresh_token(data={"sub": data.user_id})
+    
+    await save_refresh_token(data.user_id, refresh_token, db)
+    
     usertype = "leader" if user.is_leader else "user"
-    return {"로그인여부" : "성공" ,"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer", "usertype": usertype}
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_type="bearer",
+        usertype=usertype
+    )
+
+@router.post("/refresh", response_model=TokenResponse)
+async def refresh_token(data: RefreshTokenRequest, db: AsyncSession = Depends(get_db)):
+    try:
+        tokens = await rotate_refresh_token(data.refresh_token, db)
+        return TokenResponse(**tokens)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="토큰 갱신 실패")
+
+@router.post("/logout")
+async def logout(data: RefreshTokenRequest, db: AsyncSession = Depends(get_db)):
+    try:
+        await revoke_refresh_token(data.refresh_token, db)
+        return {"message": "성공적으로 로그아웃되었습니다."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="로그아웃 실패")
 
 @router.get("/get_mydata")
 async def get_mydata(credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):

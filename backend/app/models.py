@@ -1,5 +1,5 @@
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, Boolean, Date, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, Date, DateTime, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
@@ -13,6 +13,19 @@ class User(Base):
     password = Column(String, nullable=False)
     name = Column(String, nullable=False)
     is_leader = Column(Boolean, default=False)
+
+
+class RefreshToken(Base):
+    __tablename__ = "refresh_tokens"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String, ForeignKey("users.user_id"), nullable=False)
+    token = Column(Text, nullable=False, unique=True)
+    expires_at = Column(DateTime, nullable=False)
+    is_revoked = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    user = relationship("User")
 
 
 class Club(Base):
