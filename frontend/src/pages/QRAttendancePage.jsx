@@ -173,12 +173,27 @@ function QRAttendancePage({ language, setLanguage }) {
         setQrActive(true);
         
         html5QrCode.start(
-            { facingMode: 'environment' },
             { 
-                fps: 15, 
-                qrbox: { width: 300, height: 300 },
+                facingMode: 'environment',
+                advanced: [
+                    { width: { min: 1280 } },
+                    { height: { min: 720 } }
+                ]
+            },
+            { 
+                fps: 20,
+                qrbox: function(viewfinderWidth, viewfinderHeight) {
+                    let minEdgePercentage = 0.7;
+                    let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+                    let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
+                    return {
+                        width: qrboxSize,
+                        height: qrboxSize
+                    };
+                },
                 aspectRatio: 1.0,
-                disableFlip: false
+                disableFlip: false,
+                rememberLastUsedCamera: true
             },
             async (decodedText, decodedResult) => {
                 if (!isMounted || qrScanned) return;
@@ -193,32 +208,19 @@ function QRAttendancePage({ language, setLanguage }) {
                     const token = localStorage.getItem("token");
                     const clubCode = localStorage.getItem("club_code");
                     
-                    // 디버깅 정보 로그
-                    console.log('======= QR 스캔 디버깅 =======');
-                    console.log('QR 코드 내용:', decodedText);
-                    console.log('QR 코드 타입:', typeof decodedText);
-                    console.log('Club Code:', clubCode);
-                    
                     // club_code가 없으면 사용자 데이터에서 가져오기
                     if (!clubCode) {
-                        console.log('club_code가 없어서 사용자 데이터에서 가져오는 중...');
                         const userRes = await apiClient.get('/users/get_mydata');
                         if (userRes.data && userRes.data.club_data && userRes.data.club_data.length > 0) {
                             const newClubCode = userRes.data.club_data[0].club_code;
                             localStorage.setItem("club_code", newClubCode);
-                            console.log('새로 설정된 club_code:', newClubCode);
                         } else {
                             throw new Error('동아리 정보를 찾을 수 없습니다.');
                         }
                     }
                     
                     const finalClubCode = localStorage.getItem("club_code");
-                    console.log('최종 사용할 club_code:', finalClubCode);
-                    
-                    console.log('출석 요청 데이터:', {
-                        club_code: finalClubCode,
-                        code: decodedText
-                    });
+                    console.log('QR 스캔:', decodedText, '/ Club:', finalClubCode);
                     
                     const response = await apiClient.post('/attend/check',
                         {
@@ -227,7 +229,7 @@ function QRAttendancePage({ language, setLanguage }) {
                         }
                     );
                     
-                    console.log('출석 성공 응답:', response.data);
+                    console.log('✅ 출석 성공');
                     setMessage('✅ 출석이 완료되었습니다!');
                     setMessageType('success');
                     setShowAlert(true);
@@ -238,26 +240,19 @@ function QRAttendancePage({ language, setLanguage }) {
                     }, 1000);
                     
                 } catch (err) {
-                    console.error('======= 출석 처리 오류 =======');
-                    console.error('오류 객체:', err);
-                    console.error('응답 상태:', err.response?.status);
-                    console.error('응답 데이터:', err.response?.data);
-                    
                     let errorMsg = '출석 실패: ';
                     
                     if (err.response?.data?.detail) {
                         errorMsg += err.response.data.detail;
-                        console.log('오류 상세:', err.response.data.detail);
                     } else if (err.response?.data?.message) {
                         errorMsg += err.response.data.message;
-                        console.log('오류 메시지:', err.response.data.message);
                     } else if (err.message) {
                         errorMsg += err.message;
-                        console.log('일반 오류:', err.message);
                     } else {
                         errorMsg += '알 수 없는 오류';
-                        console.log('알 수 없는 오류 발생');
                     }
+                    
+                    console.log('❌', errorMsg);
                     
                     setMessage('❌ ' + errorMsg);
                     setMessageType('error');
@@ -287,18 +282,24 @@ function QRAttendancePage({ language, setLanguage }) {
                     const videoTrack = video.srcObject.getVideoTracks()[0];
                     if (videoTrack) {
                         const capabilities = videoTrack.getCapabilities();
+                        
                         if (capabilities.zoom) {
+                            const minZoom = capabilities.zoom.min || 1;
+                            const maxZoom = capabilities.zoom.max || 3;
                             setZoomCapabilities({
-                                min: capabilities.zoom.min,
-                                max: capabilities.zoom.max,
-                                step: Math.max(0.1, (capabilities.zoom.max - capabilities.zoom.min) / 20)
+                                min: minZoom,
+                                max: maxZoom,
+                                step: 0.2
                             });
-                            setZoomLevel(capabilities.zoom.min);
+                            setZoomLevel(minZoom);
                             setZoomSupported(true);
+                            console.log('📷 줌 지원:', minZoom + 'x ~', maxZoom + 'x');
+                        } else {
+                            setZoomSupported(false);
                         }
                     }
                 }
-            }, 1000); // 카메라 완전히 시작된 후 확인
+            }, 500); // 더 빠른 초기화
         }).catch(err => {
             console.error('카메라 시작 실패:', err);
             let errorMsg = '카메라를 시작할 수 없습니다.';
@@ -398,14 +399,16 @@ function QRAttendancePage({ language, setLanguage }) {
                         <div 
                             style={{ 
                                 position: 'relative', 
-                                width: 300, 
-                                height: 300, 
-                                maxWidth: '100%', 
+                                width: '350px', 
+                                height: '350px', 
+                                maxWidth: '90vw',
+                                maxHeight: '90vw',
                                 marginBottom: 18,
                                 touchAction: 'none',
                                 overflow: 'hidden',
-                                borderRadius: 12,
-                                border: qrScanned ? '3px solid #4CAF50' : '2px solid #ddd'
+                                borderRadius: 8,
+                                border: qrScanned ? '3px solid #4CAF50' : 'none',
+                                background: '#000'
                             }}
                             onTouchStart={handleTouchStart}
                             onTouchMove={handleTouchMove}
@@ -417,130 +420,99 @@ function QRAttendancePage({ language, setLanguage }) {
                                 style={{ 
                                     width: '100%', 
                                     height: '100%', 
-                                    borderRadius: 12, 
-                                    background: '#222', 
+                                    borderRadius: 8, 
+                                    background: '#000', 
                                     position: 'relative'
                                 }} 
                             />
                             
-                            {/* QR 스캔 성공 시 녹색 오버레이 */}
+                            {/* 간단한 QR 스캔 성공 표시 */}
                             {qrScanned && (
                                 <div style={{
                                     position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    width: '100%',
-                                    height: '100%',
-                                    background: 'rgba(76, 175, 80, 0.3)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    borderRadius: 12,
+                                    top: '50%',
+                                    left: '50%',
+                                    transform: 'translate(-50%, -50%)',
+                                    background: 'rgba(76, 175, 80, 0.9)',
+                                    color: 'white',
+                                    padding: '8px 12px',
+                                    borderRadius: '4px',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 'bold',
                                     zIndex: 15
                                 }}>
-                                    <div style={{
-                                        background: 'rgba(76, 175, 80, 0.9)',
-                                        color: 'white',
-                                        padding: '12px 16px',
-                                        borderRadius: '8px',
-                                        fontSize: '1.1rem',
-                                        fontWeight: 'bold',
-                                        textAlign: 'center'
-                                    }}>
-                                        ✅ QR 인식됨!
-                                    </div>
-                                </div>
-                            )}
-                            
-                            {/* 카메라 상태 표시 */}
-                            <div style={{
-                                position: 'absolute',
-                                top: '10px',
-                                right: '10px',
-                                background: qrActive ? 'rgba(76, 175, 80, 0.8)' : 'rgba(244, 67, 54, 0.8)',
-                                color: 'white',
-                                padding: '4px 8px',
-                                borderRadius: '12px',
-                                fontSize: '0.7rem',
-                                zIndex: 10,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px'
-                            }}>
-                                <div style={{
-                                    width: '6px',
-                                    height: '6px',
-                                    borderRadius: '50%',
-                                    background: qrActive ? '#4CAF50' : '#F44336'
-                                }}></div>
-                                {qrActive ? '스캔 중' : '카메라 오프'}
-                            </div>
-                            
-                            {/* 줌 기능 지원 여부에 따른 UI */}
-                            {zoomSupported ? (
-                                <div style={{
-                                    position: 'absolute',
-                                    top: '10px',
-                                    left: '10px',
-                                    background: 'rgba(0,0,0,0.7)',
-                                    color: 'white',
-                                    padding: '6px 10px',
-                                    borderRadius: '12px',
-                                    fontSize: '0.8rem',
-                                    zIndex: 10,
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center'
-                                }}>
-                                    <div>{(zoomLevel).toFixed(1)}x</div>
-                                    <div style={{ fontSize: '0.6rem', marginTop: '2px', opacity: 0.8 }}>
-                                        핀치로 줌
-                                    </div>
-                                </div>
-                            ) : (
-                                <div style={{
-                                    position: 'absolute',
-                                    bottom: '10px',
-                                    left: '50%',
-                                    transform: 'translateX(-50%)',
-                                    background: 'rgba(0,0,0,0.7)',
-                                    color: 'white',
-                                    padding: '4px 8px',
-                                    borderRadius: '12px',
-                                    fontSize: '0.7rem',
-                                    zIndex: 10,
-                                    opacity: 0.8
-                                }}>
-                                    QR 코드를 화면 중앙에 맞춰주세요
+                                    ✅ 인식됨
                                 </div>
                             )}
                         </div>
                         
-                        {/* 사용 안내 */}
-                        <div style={{
-                            marginTop: 12,
-                            marginBottom: 16,
-                            padding: '12px 16px',
-                            background: 'rgba(33, 150, 243, 0.1)',
-                            borderRadius: '8px',
-                            border: '1px solid rgba(33, 150, 243, 0.2)',
-                            textAlign: 'center',
-                            fontSize: '0.9rem',
-                            color: 'var(--text)',
-                            lineHeight: '1.4'
-                        }}>
-                            📱 <strong>사용법:</strong><br/>
-                            QR 코드를 카메라 중앙의 네모 안에 맞춰주세요<br/>
-                            {qrActive ? (
-                                <span style={{ color: '#4CAF50', fontWeight: 'bold' }}>
-                                    🟢 카메라가 활성화되었습니다
+                        {/* 줌 컨트롤 (줌 지원 시에만) */}
+                        {zoomSupported && (
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '16px',
+                                marginBottom: 16,
+                                padding: '10px 20px',
+                                background: 'rgba(255,255,255,0.9)',
+                                borderRadius: '25px',
+                                boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+                            }}>
+                                <button 
+                                    onClick={() => adjustCameraZoom(Math.max(zoomCapabilities.min, zoomLevel - 0.3))}
+                                    disabled={zoomLevel <= zoomCapabilities.min}
+                                    style={{
+                                        width: '36px',
+                                        height: '36px',
+                                        borderRadius: '50%',
+                                        border: 'none',
+                                        background: zoomLevel <= zoomCapabilities.min ? '#ccc' : '#007AFF',
+                                        color: 'white',
+                                        fontSize: '1.3rem',
+                                        fontWeight: 'bold',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        cursor: zoomLevel <= zoomCapabilities.min ? 'not-allowed' : 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    −
+                                </button>
+                                <span style={{ 
+                                    fontSize: '1rem', 
+                                    fontWeight: 'bold', 
+                                    minWidth: '50px', 
+                                    textAlign: 'center',
+                                    color: '#333'
+                                }}>
+                                    {zoomLevel.toFixed(1)}x
                                 </span>
-                            ) : (
-                                <span style={{ color: '#FF9800', fontWeight: 'bold' }}>
-                                    🟡 카메라를 준비 중입니다...
-                                </span>
-                            )}
-                        </div>
+                                <button 
+                                    onClick={() => adjustCameraZoom(Math.min(zoomCapabilities.max, zoomLevel + 0.3))}
+                                    disabled={zoomLevel >= zoomCapabilities.max}
+                                    style={{
+                                        width: '36px',
+                                        height: '36px',
+                                        borderRadius: '50%',
+                                        border: 'none',
+                                        background: zoomLevel >= zoomCapabilities.max ? '#ccc' : '#007AFF',
+                                        color: 'white',
+                                        fontSize: '1.3rem',
+                                        fontWeight: 'bold',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        cursor: zoomLevel >= zoomCapabilities.max ? 'not-allowed' : 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    +
+                                </button>
+                            </div>
+                        )}
+
                         
                         <div style={{ marginTop: 6, display: 'flex', gap: 12, width: '100%', justifyContent: 'center' }}>
                             <button onClick={handleOpenCodeMode} className="startQR-button" style={{ minWidth: 120 }}>
