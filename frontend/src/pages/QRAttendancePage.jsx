@@ -174,35 +174,107 @@ function QRAttendancePage({ language, setLanguage }) {
         
         html5QrCode.start(
             { facingMode: 'environment' },
-            { fps: 10, qrbox: { width: 250, height: 250 } },
+            { 
+                fps: 15, 
+                qrbox: { width: 300, height: 300 },
+                aspectRatio: 1.0,
+                disableFlip: false
+            },
             async (decodedText, decodedResult) => {
                 if (!isMounted || qrScanned) return;
                 setQrScanned(true);
+                
+                // QR 스캔 성공 시각적 피드백
+                setMessage('QR 코드 인식 완료! 출석 처리 중...');
+                setMessageType('info');
+                setShowAlert(true);
+                
                 try {
                     const token = localStorage.getItem("token");
                     const clubCode = localStorage.getItem("club_code");
-                    await apiClient.post('/attend/check',
+                    
+                    // 디버깅 정보 로그
+                    console.log('======= QR 스캔 디버깅 =======');
+                    console.log('QR 코드 내용:', decodedText);
+                    console.log('QR 코드 타입:', typeof decodedText);
+                    console.log('Club Code:', clubCode);
+                    
+                    // club_code가 없으면 사용자 데이터에서 가져오기
+                    if (!clubCode) {
+                        console.log('club_code가 없어서 사용자 데이터에서 가져오는 중...');
+                        const userRes = await apiClient.get('/users/get_mydata');
+                        if (userRes.data && userRes.data.club_data && userRes.data.club_data.length > 0) {
+                            const newClubCode = userRes.data.club_data[0].club_code;
+                            localStorage.setItem("club_code", newClubCode);
+                            console.log('새로 설정된 club_code:', newClubCode);
+                        } else {
+                            throw new Error('동아리 정보를 찾을 수 없습니다.');
+                        }
+                    }
+                    
+                    const finalClubCode = localStorage.getItem("club_code");
+                    console.log('최종 사용할 club_code:', finalClubCode);
+                    
+                    console.log('출석 요청 데이터:', {
+                        club_code: finalClubCode,
+                        code: decodedText
+                    });
+                    
+                    const response = await apiClient.post('/attend/check',
                         {
-                            club_code: clubCode,
+                            club_code: finalClubCode,
                             code: decodedText
                         }
                     );
-                    setMessage('출석이 완료되었습니다!');
+                    
+                    console.log('출석 성공 응답:', response.data);
+                    setMessage('✅ 출석이 완료되었습니다!');
                     setMessageType('success');
                     setShowAlert(true);
+                    
+                    // 성공 후 카메라 즉시 재활성화 (다음 사용자가 바로 스캔 가능)
+                    setTimeout(() => {
+                        setQrScanned(false);
+                    }, 1000);
+                    
                 } catch (err) {
-                    setMessage('출석 실패: ' + (err.response?.data?.message || '오류'));
+                    console.error('======= 출석 처리 오류 =======');
+                    console.error('오류 객체:', err);
+                    console.error('응답 상태:', err.response?.status);
+                    console.error('응답 데이터:', err.response?.data);
+                    
+                    let errorMsg = '출석 실패: ';
+                    
+                    if (err.response?.data?.detail) {
+                        errorMsg += err.response.data.detail;
+                        console.log('오류 상세:', err.response.data.detail);
+                    } else if (err.response?.data?.message) {
+                        errorMsg += err.response.data.message;
+                        console.log('오류 메시지:', err.response.data.message);
+                    } else if (err.message) {
+                        errorMsg += err.message;
+                        console.log('일반 오류:', err.message);
+                    } else {
+                        errorMsg += '알 수 없는 오류';
+                        console.log('알 수 없는 오류 발생');
+                    }
+                    
+                    setMessage('❌ ' + errorMsg);
                     setMessageType('error');
                     setShowAlert(true);
+                    
+                    // 실패 시 빠르게 다시 스캔 가능하도록
+                    setTimeout(() => setQrScanned(false), 1500);
                 }
-                setTimeout(() => setQrScanned(false), 2000);
             },
             (errorMessage) => {
                 if (!isMounted) return;
+                // 권한 관련 오류는 표시하지 않음 (너무 빈번함)
                 if (errorMessage && errorMessage.toLowerCase().includes('permission')) {
-                    setMessage('카메라 권한이 필요합니다. 브라우저 설정을 확인하세요.');
-                    setMessageType('error');
-                    setShowAlert(true);
+                    console.warn('카메라 권한 오류:', errorMessage);
+                } else if (errorMessage && !errorMessage.includes('NotFoundException')) {
+                    // 실제 오류만 로그에 기록
+                    console.warn('QR 스캔 오류:', errorMessage);
                 }
             }
         ).then(() => {
@@ -228,9 +300,23 @@ function QRAttendancePage({ language, setLanguage }) {
                 }
             }, 1000); // 카메라 완전히 시작된 후 확인
         }).catch(err => {
-            setMessage('카메라 오류: ' + err);
+            console.error('카메라 시작 실패:', err);
+            let errorMsg = '카메라를 시작할 수 없습니다.';
+            
+            if (err.message && err.message.includes('Permission')) {
+                errorMsg = '📱 카메라 권한을 허용해주세요.\n브라우저 설정에서 카메라 접근을 허용하고 페이지를 새로고침하세요.';
+            } else if (err.message && err.message.includes('NotFound')) {
+                errorMsg = '📷 카메라를 찾을 수 없습니다.\n다른 앱에서 카메라를 사용 중이거나 카메라가 연결되지 않았습니다.';
+            } else if (err.message && err.message.includes('NotAllowed')) {
+                errorMsg = '🚫 카메라 접근이 차단되었습니다.\n브라우저 주소창의 카메라 아이콘을 클릭하여 허용해주세요.';
+            } else if (err.message && err.message.includes('NotReadable')) {
+                errorMsg = '⚠️ 카메라가 다른 앱에서 사용 중입니다.\n다른 카메라 앱을 종료하고 다시 시도해주세요.';
+            }
+            
+            setMessage(errorMsg);
             setMessageType('error');
             setShowAlert(true);
+            setQrActive(false);
         });
         
         return () => {
@@ -318,7 +404,8 @@ function QRAttendancePage({ language, setLanguage }) {
                                 marginBottom: 18,
                                 touchAction: 'none',
                                 overflow: 'hidden',
-                                borderRadius: 12
+                                borderRadius: 12,
+                                border: qrScanned ? '3px solid #4CAF50' : '2px solid #ddd'
                             }}
                             onTouchStart={handleTouchStart}
                             onTouchMove={handleTouchMove}
@@ -335,6 +422,60 @@ function QRAttendancePage({ language, setLanguage }) {
                                     position: 'relative'
                                 }} 
                             />
+                            
+                            {/* QR 스캔 성공 시 녹색 오버레이 */}
+                            {qrScanned && (
+                                <div style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    background: 'rgba(76, 175, 80, 0.3)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    borderRadius: 12,
+                                    zIndex: 15
+                                }}>
+                                    <div style={{
+                                        background: 'rgba(76, 175, 80, 0.9)',
+                                        color: 'white',
+                                        padding: '12px 16px',
+                                        borderRadius: '8px',
+                                        fontSize: '1.1rem',
+                                        fontWeight: 'bold',
+                                        textAlign: 'center'
+                                    }}>
+                                        ✅ QR 인식됨!
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* 카메라 상태 표시 */}
+                            <div style={{
+                                position: 'absolute',
+                                top: '10px',
+                                right: '10px',
+                                background: qrActive ? 'rgba(76, 175, 80, 0.8)' : 'rgba(244, 67, 54, 0.8)',
+                                color: 'white',
+                                padding: '4px 8px',
+                                borderRadius: '12px',
+                                fontSize: '0.7rem',
+                                zIndex: 10,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                            }}>
+                                <div style={{
+                                    width: '6px',
+                                    height: '6px',
+                                    borderRadius: '50%',
+                                    background: qrActive ? '#4CAF50' : '#F44336'
+                                }}></div>
+                                {qrActive ? '스캔 중' : '카메라 오프'}
+                            </div>
+                            
                             {/* 줌 기능 지원 여부에 따른 UI */}
                             {zoomSupported ? (
                                 <div style={{
@@ -353,7 +494,7 @@ function QRAttendancePage({ language, setLanguage }) {
                                 }}>
                                     <div>{(zoomLevel).toFixed(1)}x</div>
                                     <div style={{ fontSize: '0.6rem', marginTop: '2px', opacity: 0.8 }}>
-
+                                        핀치로 줌
                                     </div>
                                 </div>
                             ) : (
@@ -370,11 +511,38 @@ function QRAttendancePage({ language, setLanguage }) {
                                     zIndex: 10,
                                     opacity: 0.8
                                 }}>
-                                    줌 기능 미지원
+                                    QR 코드를 화면 중앙에 맞춰주세요
                                 </div>
                             )}
                         </div>
-                        <div style={{ marginTop: 18, display: 'flex', gap: 12, width: '100%', justifyContent: 'center' }}>
+                        
+                        {/* 사용 안내 */}
+                        <div style={{
+                            marginTop: 12,
+                            marginBottom: 16,
+                            padding: '12px 16px',
+                            background: 'rgba(33, 150, 243, 0.1)',
+                            borderRadius: '8px',
+                            border: '1px solid rgba(33, 150, 243, 0.2)',
+                            textAlign: 'center',
+                            fontSize: '0.9rem',
+                            color: 'var(--text)',
+                            lineHeight: '1.4'
+                        }}>
+                            📱 <strong>사용법:</strong><br/>
+                            QR 코드를 카메라 중앙의 네모 안에 맞춰주세요<br/>
+                            {qrActive ? (
+                                <span style={{ color: '#4CAF50', fontWeight: 'bold' }}>
+                                    🟢 카메라가 활성화되었습니다
+                                </span>
+                            ) : (
+                                <span style={{ color: '#FF9800', fontWeight: 'bold' }}>
+                                    🟡 카메라를 준비 중입니다...
+                                </span>
+                            )}
+                        </div>
+                        
+                        <div style={{ marginTop: 6, display: 'flex', gap: 12, width: '100%', justifyContent: 'center' }}>
                             <button onClick={handleOpenCodeMode} className="startQR-button" style={{ minWidth: 120 }}>
                                 {i18n[language].attendWithCode || '코드로 출석하기'}
                             </button>
