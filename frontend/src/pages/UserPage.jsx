@@ -109,7 +109,7 @@ function UserPage({ language, setLanguage }) {
             <AlertModal show={alert.show} type={alert.type} message={alert.message} onClose={handleCloseAlert} />
             <div className="QR-section">
                 {/* 동아리 선택 카드형 섹션 */}
-                <div className="club-select-section">
+                <div className="club-select-section" style={{paddingLeft: '10px', paddingRight: '10px'}}>
                     <label htmlFor="club-select" className="club-select-label">{i18n[language].selectClub || '동아리 선택:'}</label>
                     <select id="club-select" value={selectedClub} onChange={handleClubChange} className="club-select-dropdown">
                         {clubList.map(club => (
@@ -145,8 +145,8 @@ function UserPage({ language, setLanguage }) {
                 </div>
             )}
 
-            <div className="attendance-section">
-                <h2>{i18n[language].myAttendance || '내 출석부'}</h2>
+            <div className="attendance-section" style={{paddingLeft: '3px', paddingRight: '10px'}}>
+                <h2 style={{paddingLeft: '15px'}}>{i18n[language].myAttendance || '내 출석부'}</h2>
                 <div className='attendance-table-wrapper'>
                 <table className="attendance-table">
                     <thead>
