@@ -15,7 +15,7 @@ function LoginPage() {
   const [clubCode, setClubCode] = useState("");
   const [alert, setAlert] = useState({ show: false, type: 'error', message: '' });
 
-  const API = import.meta.env.VITE_API_BASE_URL;
+  const API = import.meta.env.VITE_BASE_URL;
 
   useEffect(() => {
     const token = localStorage.getItem("token");
