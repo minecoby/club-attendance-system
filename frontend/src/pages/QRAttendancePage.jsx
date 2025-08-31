@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeScannerState } from 'html5-qrcode';
 import apiClient from '../utils/apiClient';
 import AlertModal from '../components/AlertModal';
 import i18n from '../i18n';
@@ -14,9 +14,11 @@ function QRAttendancePage({ language, setLanguage }) {
     const [qrScanned, setQrScanned] = useState(false);
     const [cameraActive, setCameraActive] = useState(false);
     const [attendanceCompleted, setAttendanceCompleted] = useState(false);
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
     
     const qrRef = useRef(null);
     const html5QrCodeRef = useRef(null);
+    const isStartingRef = useRef(false);
     const navigate = useNavigate();
 
     // QR 스캔 성공 시 출석 처리
@@ -77,16 +79,28 @@ function QRAttendancePage({ language, setLanguage }) {
 
     // 카메라 시작
     const startCamera = async () => {
+        if (isStartingRef.current || html5QrCodeRef.current) {
+            return;
+        }
+        
         try {
-            if (html5QrCodeRef.current) {
-                await stopCamera();
-            }
+            isStartingRef.current = true;
+            
+            const allVideos = document.querySelectorAll('video');
+            allVideos.forEach(video => video.remove());
+            
+            await new Promise(resolve => setTimeout(resolve, 500));
 
             const qrId = 'qr-reader';
-            if (qrRef.current) {
-                qrRef.current.innerHTML = '';
-                qrRef.current.id = qrId;
+            const qrContainer = document.getElementById(qrId);
+            
+            if (!qrContainer) {
+                console.error('QR 컨테이너를 찾을 수 없습니다');
+                return;
             }
+
+            // 컨테이너 완전히 정리
+            qrContainer.innerHTML = '';
 
             const html5QrCode = new Html5Qrcode(qrId);
             html5QrCodeRef.current = html5QrCode;
@@ -121,6 +135,8 @@ function QRAttendancePage({ language, setLanguage }) {
             
         } catch (error) {
             console.error('카메라 시작 실패:', error);
+        } finally {
+            isStartingRef.current = false;
         }
     };
 
@@ -128,31 +144,63 @@ function QRAttendancePage({ language, setLanguage }) {
     const stopCamera = async () => {
         try {
             if (html5QrCodeRef.current) {
-                await html5QrCodeRef.current.stop();
-                await html5QrCodeRef.current.clear();
+                try {
+                    const state = html5QrCodeRef.current.getState();
+                    if (state === Html5QrcodeScannerState.SCANNING || 
+                        state === Html5QrcodeScannerState.PAUSED) {
+                        await html5QrCodeRef.current.stop();
+                    }
+                } catch (stopError) {
+                    console.log('Stop error:', stopError);
+                }
+                
+                try {
+                    await html5QrCodeRef.current.clear();
+                } catch (clearError) {
+                    console.log('Clear error:', clearError);
+                }
+                
                 html5QrCodeRef.current = null;
             }
+            
             if (qrRef.current) {
                 qrRef.current.innerHTML = '';
+                const videos = qrRef.current.querySelectorAll('video');
+                videos.forEach(video => video.remove());
             }
+            
             setCameraActive(false);
         } catch (error) {
             console.error('카메라 중지 오류:', error);
+        } finally {
+            isStartingRef.current = false;
         }
     };
 
     // QR 모드 시작
     useEffect(() => {
+        let timeoutId;
+        
         if (mode === 'qr') {
-            startCamera();
+            timeoutId = setTimeout(() => {
+                startCamera();
+            }, 100);
         } else {
             stopCamera();
         }
         
         return () => {
+            if (timeoutId) clearTimeout(timeoutId);
             stopCamera();
         };
     }, [mode]);
+
+    // 윈도우 리사이즈 감지
+    useEffect(() => {
+        const handleResize = () => setWindowWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // 페이지 언마운트 시 카메라 정리
     useEffect(() => {
@@ -221,7 +269,8 @@ function QRAttendancePage({ language, setLanguage }) {
             alignItems: 'center',
             justifyContent: 'flex-start',
             background: 'var(--bg)',
-            padding: '20px'
+            padding: '10px',
+            boxSizing: 'border-box'
         }}>
             <AlertModal 
                 show={showAlert} 
@@ -231,58 +280,70 @@ function QRAttendancePage({ language, setLanguage }) {
             />
             
             <h2 style={{ 
-                marginBottom: 30, 
+                marginBottom: '20px', 
                 fontWeight: 700, 
-                fontSize: '1.8rem', 
-                color: 'var(--primary)' 
+                fontSize: 'clamp(1.5rem, 4vw, 1.8rem)', 
+                color: 'var(--primary)',
+                textAlign: 'center',
+                width: '100%'
             }}>
                 {i18n[language].attendance || '출석'}
             </h2>
 
             <div style={{
                 background: 'var(--card-bg)',
-                borderRadius: 20,
+                borderRadius: '15px',
                 boxShadow: '0 4px 20px var(--shadow)',
-                padding: 30,
+                padding: 'clamp(15px, 5vw, 30px)',
                 width: '100%',
-                maxWidth: 400,
+                maxWidth: '90vw',
+                minWidth: '320px',
                 display: 'flex',
                 flexDirection: 'column',
-                alignItems: 'center'
+                alignItems: 'center',
+                boxSizing: 'border-box'
             }}>
                 {mode === 'qr' ? (
                     <>
                         <div 
                             ref={qrRef}
+                            id="qr-reader"
                             style={{
-                                width: 300,
-                                height: 300,
-                                borderRadius: 15,
+                                width: 'min(280px, 80vw)',
+                                height: 'min(280px, 80vw)',
+                                borderRadius: '12px',
                                 background: '#000',
-                                marginBottom: 20,
+                                marginBottom: '15px',
                                 position: 'relative',
-                                border: '2px solid #ddd'
+                                border: '2px solid #ddd',
+                                overflow: 'hidden',
+                                maxWidth: '320px',
+                                maxHeight: '320px'
                             }}
                         />
 
                         <div style={{
                             display: 'flex',
-                            gap: 15,
+                            flexDirection: windowWidth < 400 ? 'column' : 'row',
+                            gap: '10px',
                             width: '100%',
                             justifyContent: 'center'
                         }}>
                             <button 
                                 onClick={() => setMode('code')}
                                 style={{
-                                    padding: '12px 20px',
-                                    borderRadius: '10px',
+                                    padding: 'clamp(10px, 3vw, 15px) clamp(15px, 4vw, 25px)',
+                                    borderRadius: '8px',
                                     border: 'none',
                                     background: '#007AFF',
                                     color: 'white',
-                                    fontSize: '1rem',
+                                    fontSize: 'clamp(0.9rem, 3vw, 1rem)',
                                     fontWeight: 'bold',
                                     cursor: 'pointer',
-                                    minWidth: 120
+                                    flex: windowWidth < 400 ? '1' : 'auto',
+                                    minHeight: '44px',
+                                    whiteSpace: 'nowrap',
+                                    textAlign: 'center'
                                 }}
                             >
                                 {i18n[language].attendWithCode || '코드로 출석'}
@@ -290,15 +351,18 @@ function QRAttendancePage({ language, setLanguage }) {
                             <button 
                                 onClick={() => navigate(-1)}
                                 style={{
-                                    padding: '12px 20px',
-                                    borderRadius: '10px',
+                                    padding: 'clamp(10px, 3vw, 15px) clamp(15px, 4vw, 25px)',
+                                    borderRadius: '8px',
                                     border: 'none',
                                     background: '#6c757d',
                                     color: 'white',
-                                    fontSize: '1rem',
+                                    fontSize: 'clamp(0.9rem, 3vw, 1rem)',
                                     fontWeight: 'bold',
                                     cursor: 'pointer',
-                                    minWidth: 80
+                                    flex: windowWidth < 400 ? '1' : 'auto',
+                                    minHeight: '44px',
+                                    whiteSpace: 'nowrap',
+                                    textAlign: 'center'
                                 }}
                             >
                                 {i18n[language].back || '뒤로가기'}
@@ -308,9 +372,11 @@ function QRAttendancePage({ language, setLanguage }) {
                 ) : (
                     <>
                         <h3 style={{ 
-                            marginBottom: 20, 
+                            marginBottom: '15px', 
                             color: 'var(--primary)', 
-                            fontWeight: 700 
+                            fontWeight: 700,
+                            fontSize: 'clamp(1.2rem, 4vw, 1.4rem)',
+                            textAlign: 'center'
                         }}>
                             {i18n[language].inputAttendCode || '출석 코드 입력'}
                         </h3>
@@ -324,32 +390,37 @@ function QRAttendancePage({ language, setLanguage }) {
                                 required
                                 style={{
                                     width: '100%',
-                                    padding: '15px',
-                                    marginBottom: 20,
-                                    borderRadius: '10px',
+                                    padding: 'clamp(12px, 4vw, 18px)',
+                                    marginBottom: '15px',
+                                    borderRadius: '8px',
                                     border: '1px solid var(--border)',
-                                    fontSize: '1.1rem',
-                                    textAlign: 'center'
+                                    fontSize: 'clamp(1rem, 4vw, 1.2rem)',
+                                    textAlign: 'center',
+                                    boxSizing: 'border-box',
+                                    minHeight: '50px'
                                 }}
                             />
                             
                             <div style={{
                                 display: 'flex',
-                                gap: 15,
+                                flexDirection: windowWidth < 400 ? 'column' : 'row',
+                                gap: '10px',
                                 width: '100%'
                             }}>
                                 <button 
                                     type="submit"
                                     style={{
                                         flex: 1,
-                                        padding: '12px',
-                                        borderRadius: '10px',
+                                        padding: 'clamp(12px, 4vw, 16px)',
+                                        borderRadius: '8px',
                                         border: 'none',
                                         background: '#4CAF50',
                                         color: 'white',
-                                        fontSize: '1rem',
+                                        fontSize: 'clamp(0.9rem, 3vw, 1rem)',
                                         fontWeight: 'bold',
-                                        cursor: 'pointer'
+                                        cursor: 'pointer',
+                                        minHeight: '50px',
+                                        textAlign: 'center'
                                     }}
                                 >
                                     {i18n[language].attend || '출석하기'}
@@ -359,14 +430,16 @@ function QRAttendancePage({ language, setLanguage }) {
                                     onClick={() => setMode('qr')}
                                     style={{
                                         flex: 1,
-                                        padding: '12px',
-                                        borderRadius: '10px',
+                                        padding: 'clamp(12px, 4vw, 16px)',
+                                        borderRadius: '8px',
                                         border: 'none',
                                         background: '#6c757d',
                                         color: 'white',
-                                        fontSize: '1rem',
+                                        fontSize: 'clamp(0.9rem, 3vw, 1rem)',
                                         fontWeight: 'bold',
-                                        cursor: 'pointer'
+                                        cursor: 'pointer',
+                                        minHeight: '50px',
+                                        textAlign: 'center'
                                     }}
                                 >
                                     {i18n[language].attendWithQR || 'QR로 출석'}

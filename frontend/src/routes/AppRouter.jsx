@@ -6,6 +6,7 @@ import LeaderPage from "../pages/LeaderPage";
 import Settings from "../pages/Settings";
 import Navbar from "../components/Navbar";
 import QRAttendancePage from "../pages/QRAttendancePage";
+import UserGuard from "../components/MobileGuard";
 
 const AppRouter = ({ theme, setTheme, language, setLanguage }) => {
   const location = useLocation();
@@ -19,10 +20,26 @@ const AppRouter = ({ theme, setTheme, language, setLanguage }) => {
     <Route path="/" element={<Login />} />
     <Route path="/login" element={<Login />} />
     <Route path="/signup" element={<SignUp />} />
-    <Route path="/userpage" element={<UserPage theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} />} />
-    <Route path="/leaderpage" element={<LeaderPage theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} />} />
-    <Route path="/settings" element={<Settings theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} />} />
-    <Route path="/qr-attendance" element={<QRAttendancePage theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} />} />
+    <Route path="/userpage" element={
+      <UserGuard>
+        <UserPage theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} />
+      </UserGuard>
+    } />
+    <Route path="/leaderpage" element={
+      <UserGuard>
+        <LeaderPage theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} />
+      </UserGuard>
+    } />
+    <Route path="/settings" element={
+      <UserGuard>
+        <Settings theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} />
+      </UserGuard>
+    } />
+    <Route path="/qr-attendance" element={
+      <UserGuard>
+        <QRAttendancePage theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} />
+      </UserGuard>
+    } />
   </Routes>
   </>);
 };

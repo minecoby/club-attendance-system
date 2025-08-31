@@ -1,0 +1,63 @@
+.mobile-only-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #ffffff;
+  z-index: 1000;
+}
+
+.mobile-only-content {
+  text-align: center;
+  background: #ffffff;
+  padding: 60px 40px;
+  max-width: 500px;
+  width: 100%;
+}
+
+.mobile-title {
+  font-size: 32px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 24px;
+  letter-spacing: -0.5px;
+}
+
+.mobile-description {
+  font-size: 18px;
+  color: #4a4a4a;
+  margin-bottom: 16px;
+  line-height: 1.6;
+  font-weight: 400;
+}
+
+.mobile-instruction {
+  font-size: 16px;
+  color: #6a6a6a;
+  font-weight: 400;
+}
+
+/* 다크 모드 지원 */
+body.dark .mobile-only-container {
+  background: #1a1a1a;
+}
+
+body.dark .mobile-only-content {
+  background: #1a1a1a;
+}
+
+body.dark .mobile-title {
+  color: #ffffff;
+}
+
+body.dark .mobile-description {
+  color: #b4b4b4;
+}
+
+body.dark .mobile-instruction {
+  color: #8a8a8a;
+}
