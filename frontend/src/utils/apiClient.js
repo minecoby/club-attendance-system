@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.BASE_URL;
+const API_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 // API 클라이언트 생성
 const apiClient = axios.create({
