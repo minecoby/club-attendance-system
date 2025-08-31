@@ -6,8 +6,8 @@ import QRCode from "react-qr-code";
 import AlertModal from '../components/AlertModal';
 import i18n from '../i18n';
 
-const API = import.meta.env.VITE_API_BASE_URL;
-const WS_API = import.meta.env.VITE_WS_BASE_URL;
+const API = import.meta.env.BASE_URL;
+const WS_API = import.meta.env.WS_URL;
 
 function LeaderPage({ language, setLanguage }) {
     const [attendanceList, setAttendanceList] = useState([]);

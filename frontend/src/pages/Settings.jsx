@@ -5,7 +5,7 @@ import '../styles/Settings.css';
 import AlertModal from '../components/AlertModal';
 import i18n from '../i18n';
 
-const API = import.meta.env.VITE_API_BASE_URL;
+const API = import.meta.env.BASE_URL;
 
 function Settings({ theme, setTheme, language, setLanguage }) {
     // 사용자 정보 상태

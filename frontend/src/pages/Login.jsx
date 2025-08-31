@@ -16,7 +16,7 @@ function LoginPage() {
   const [alert, setAlert] = useState({ show: false, type: 'error', message: '' });
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  const API = import.meta.env.VITE_API_BASE_URL;
+  const API = import.meta.env.BASE_URL;
 
   useEffect(() => {
     const token = localStorage.getItem("token");
