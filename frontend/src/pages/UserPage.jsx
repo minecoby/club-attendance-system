@@ -5,7 +5,7 @@ import AlertModal from '../components/AlertModal';
 import apiClient from '../utils/apiClient';
 import i18n from '../i18n';
 
-const API = import.meta.env.BASE_URL;
+const API = process.env.BASE_URL;
 
 function UserPage({ language, setLanguage }) {
     const [attendanceList, setAttendanceList] = useState([]); // 출석부 데이터
