@@ -68,6 +68,7 @@ async def get_members(credentials: HTTPAuthorizationCredentials = Security(secur
         select(User.user_id, User.name)
         .join(StuClub, User.user_id == StuClub.user_id)
         .where(StuClub.club_code == club_code)
+        .where(User.is_leader == False)
     )
     members = [{"user_id": r.user_id, "name": r.name} for r in result.all()]
     return members

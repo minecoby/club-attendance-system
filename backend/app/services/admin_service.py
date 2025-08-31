@@ -48,7 +48,8 @@ async def load_attendance(user, date, db: AsyncSession):
         )
         .where(
             StuClub.club_code == club_code,
-            AttendanceDate.date == datetime.strptime(date, "%Y-%m-%d").date()
+            AttendanceDate.date == datetime.strptime(date, "%Y-%m-%d").date(),
+            User.is_leader == False
         )
         .order_by(User.name)
     )
@@ -154,6 +155,7 @@ async def load_full_attendance(club_code: str, db: AsyncSession):
         select(User.user_id, User.name)
         .join(StuClub, StuClub.user_id == User.user_id)
         .where(StuClub.club_code == club_code)
+        .where(User.is_leader == False)
         .order_by(User.name)
     )
     users = user_result.all()  
