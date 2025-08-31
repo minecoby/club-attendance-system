@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import "../styles/Login.css";
-import kungya from '../assets/kungya.jpg';
 import axios from 'axios';
 import apiClient from '../utils/apiClient';
 import AlertModal from '../components/AlertModal';
@@ -9,8 +8,11 @@ import AlertModal from '../components/AlertModal';
 function LoginPage() {
   const navigate = useNavigate();
 
+  const [isSignUp, setIsSignUp] = useState(false);
   const [user_id, setUserId] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [clubCode, setClubCode] = useState("");
   const [alert, setAlert] = useState({ show: false, type: 'error', message: '' });
 
   const API = import.meta.env.VITE_API_BASE_URL;
@@ -38,27 +40,60 @@ function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    try {
-      const response = await axios.post(`${API}/users/login`, {
-        user_id: user_id,
-        password: password,
-      });
+    if (isSignUp) {
+      // 회원가입 로직
+      try {
+        await axios.post(`${API}/users/signup`, {
+          user_id: user_id,
+          password: password,
+          name: name,
+          club_code: clubCode,
+        });
 
-      const { access_token, refresh_token, usertype } = response.data;
-
-      // 액세스 토큰과 리프레시 토큰 모두 저장
-      localStorage.setItem("token", access_token);
-      localStorage.setItem("refresh_token", refresh_token);
-      localStorage.setItem("usertype", usertype);
-
-      if (usertype === "leader") {
-        navigate("/leaderpage");
-      } else if (usertype === "user") {
-        navigate("/userpage");
+        setAlert({ 
+          show: true, 
+          type: 'success', 
+          message: "회원가입이 완료되었습니다. 로그인해주세요." 
+        });
+        
+        // 폼 초기화 및 로그인 모드로 전환
+        setUserId("");
+        setPassword("");
+        setName("");
+        setClubCode("");
+        setIsSignUp(false);
+      } catch (error) {
+        console.error("회원가입 실패", error);
+        setAlert({ 
+          show: true, 
+          type: 'error', 
+          message: "회원가입 실패: 입력 정보를 확인하세요." 
+        });
       }
-    } catch (error) {
-      console.error("로그인 실패", error);
-      setAlert({ show: true, type: 'error', message: "로그인 실패: 아이디 또는 비밀번호를 확인하세요." });
+    } else {
+      // 로그인 로직
+      try {
+        const response = await axios.post(`${API}/users/login`, {
+          user_id: user_id,
+          password: password,
+        });
+
+        const { access_token, refresh_token, usertype } = response.data;
+
+        // 액세스 토큰과 리프레시 토큰 모두 저장
+        localStorage.setItem("token", access_token);
+        localStorage.setItem("refresh_token", refresh_token);
+        localStorage.setItem("usertype", usertype);
+
+        if (usertype === "leader") {
+          navigate("/leaderpage");
+        } else if (usertype === "user") {
+          navigate("/userpage");
+        }
+      } catch (error) {
+        console.error("로그인 실패", error);
+        setAlert({ show: true, type: 'error', message: "로그인 실패: 아이디 또는 비밀번호를 확인하세요." });
+      }
     }
   }
 
@@ -69,12 +104,32 @@ function LoginPage() {
   return (
     <div className="login-page">
       <AlertModal show={alert.show} type={alert.type} message={alert.message} onClose={handleCloseAlert} />
-      <div className="login-image-section">
-        <img src={kungya} alt="쿵야" className="login-image" />
+      <div className="login-brand-section">
+        <div className="brand-content">
+          <h1 className="brand-title">HANSSUP!</h1>
+          <p className="brand-subtitle">간편한 동아리 출석체크 플랫폼</p>
+        </div>
       </div>
       <div className="login-container">
         <form onSubmit={handleSubmit} className="login-form">
-          <h2 className="login-title">로그인</h2>
+          <div className="form-toggle">
+            <button
+              type="button"
+              className={`toggle-button ${!isSignUp ? 'active' : ''}`}
+              onClick={() => setIsSignUp(false)}
+            >
+              로그인
+            </button>
+            <button
+              type="button"
+              className={`toggle-button ${isSignUp ? 'active' : ''}`}
+              onClick={() => setIsSignUp(true)}
+            >
+              회원가입
+            </button>
+          </div>
+
+          <h2 className="login-title">{isSignUp ? '회원가입' : '로그인'}</h2>
 
           <div className="input-group">
             <label htmlFor="user_id" className="input-label">
@@ -104,14 +159,41 @@ function LoginPage() {
             />
           </div>
 
+          {isSignUp && (
+            <>
+              <div className="input-group">
+                <label htmlFor="name" className="input-label">
+                  이름(실명)
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="input-field"
+                  required
+                />
+              </div>
+              <div className="input-group">
+                <label htmlFor="clubCode" className="input-label">
+                  동아리 가입 코드
+                </label>
+                <input
+                  id="clubCode"
+                  type="text"
+                  value={clubCode}
+                  onChange={(e) => setClubCode(e.target.value)}
+                  className="input-field"
+                  placeholder="동아리에서 제공받은 가입 코드를 입력하세요"
+                  required
+                />
+              </div>
+            </>
+          )}
+
           <button type="submit" className="login-button">
-            로그인
+            {isSignUp ? '회원가입' : '로그인'}
           </button>
-          <div className="link-signup">
-            <Link to="/signup" className="signupto">
-              회원가입하기
-            </Link>
-          </div>
         </form>
       </div>
     </div>
