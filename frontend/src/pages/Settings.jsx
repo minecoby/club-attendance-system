@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import apiClient from '../utils/apiClient';
 import '../styles/Settings.css';
@@ -8,6 +9,8 @@ import i18n from '../i18n';
 const API = import.meta.env.VITE_BASE_URL;
 
 function Settings({ theme, setTheme, language, setLanguage }) {
+    const navigate = useNavigate();
+    
     // 사용자 정보 상태
     const [userInfo, setUserInfo] = useState({
         user_id: '',
@@ -189,7 +192,7 @@ function Settings({ theme, setTheme, language, setLanguage }) {
             localStorage.removeItem('token');
             localStorage.removeItem('refresh_token');
             localStorage.removeItem('usertype');
-            window.location.href = '/login';
+            navigate('/');
         }
     };
 
