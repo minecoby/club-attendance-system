@@ -4,6 +4,43 @@
   height: 100vh;
   width: 100vw;
 }
+
+@media (max-width: 768px) {
+  .login-page {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+  }
+  
+  .login-brand-section {
+    flex: none;
+    min-height: 20vh;
+    padding: 1rem 0;
+  }
+  
+  .brand-content {
+    padding: 1rem;
+  }
+  
+  .brand-title {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .brand-subtitle {
+    font-size: 0.9rem;
+  }
+  
+  .login-container {
+    flex: 1;
+    padding: 1rem;
+  }
+  
+  .login-form {
+    padding: 2rem 1.5rem;
+    max-height: none;
+  }
+}
   
 .login-brand-section{
   display: flex;
@@ -16,7 +53,7 @@
 .brand-content {
   text-align: center;
   color: #333;
-  padding: 2rem;
+  padding: 1.5rem;
 }
 
 .brand-logo {
@@ -27,17 +64,17 @@
 }
 
 .brand-title {
-  font-size: 3rem;
+  font-size: 2.5rem;
   font-weight: 700;
-  margin-bottom: 1rem;
+  margin-bottom: 0.8rem;
   letter-spacing: -0.02em;
 }
 
 .brand-subtitle {
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-weight: 300;
   opacity: 0.9;
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 .login-container {
@@ -48,6 +85,7 @@
   background-color: white;
   box-sizing: border-box;
   overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .login-form {
@@ -57,6 +95,9 @@
     border-radius: 16px;
     box-sizing: border-box;
     flex: 1;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    min-height: fit-content;
+    height: auto;
 }
 
 .form-toggle {
@@ -95,10 +136,46 @@
     margin-bottom: 2rem;
     text-align: center;
     color: #333;
+    transition: all 0.3s ease;
 }
   
 .input-group {
     margin-bottom: 1.5rem;
+    opacity: 1;
+    transform: translateY(0);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    max-height: 200px;
+}
+
+.input-group.slide-in {
+    animation: slideIn 0.3s ease forwards;
+}
+
+.input-group.slide-out {
+    animation: slideOut 0.3s ease forwards;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideOut {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
 }
   
 .input-label {
@@ -135,7 +212,8 @@
     font-size: 1.1rem;
     font-weight: bold;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: all 0.3s ease;
+    transform: translateY(0);
 }
   
 .login-button:hover {

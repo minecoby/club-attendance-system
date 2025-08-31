@@ -14,6 +14,7 @@ function LoginPage() {
   const [name, setName] = useState("");
   const [clubCode, setClubCode] = useState("");
   const [alert, setAlert] = useState({ show: false, type: 'error', message: '' });
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -101,6 +102,18 @@ function LoginPage() {
     setAlert({ ...alert, show: false });
   };
 
+  const handleToggle = (signUpMode) => {
+    if (isSignUp !== signUpMode && !isTransitioning) {
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setIsSignUp(signUpMode);
+        setTimeout(() => {
+          setIsTransitioning(false);
+        }, 100);
+      }, 200);
+    }
+  };
+
   return (
     <div className="login-page">
       <AlertModal show={alert.show} type={alert.type} message={alert.message} onClose={handleCloseAlert} />
@@ -111,25 +124,34 @@ function LoginPage() {
         </div>
       </div>
       <div className="login-container">
-        <form onSubmit={handleSubmit} className="login-form">
+        <form onSubmit={handleSubmit} className="login-form" style={{
+          transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+        }}>
           <div className="form-toggle">
             <button
               type="button"
               className={`toggle-button ${!isSignUp ? 'active' : ''}`}
-              onClick={() => setIsSignUp(false)}
+              onClick={() => handleToggle(false)}
+              disabled={isTransitioning}
             >
               로그인
             </button>
             <button
               type="button"
               className={`toggle-button ${isSignUp ? 'active' : ''}`}
-              onClick={() => setIsSignUp(true)}
+              onClick={() => handleToggle(true)}
+              disabled={isTransitioning}
             >
               회원가입
             </button>
           </div>
 
-          <h2 className="login-title">{isSignUp ? '회원가입' : '로그인'}</h2>
+          <h2 className="login-title" style={{
+            opacity: isTransitioning ? 0.5 : 1,
+            transform: isTransitioning ? 'translateY(-10px)' : 'translateY(0)'
+          }}>
+            {isSignUp ? '회원가입' : '로그인'}
+          </h2>
 
           <div className="input-group">
             <label htmlFor="user_id" className="input-label">
@@ -159,37 +181,48 @@ function LoginPage() {
             />
           </div>
 
-          {isSignUp && (
-            <>
-              <div className="input-group">
-                <label htmlFor="name" className="input-label">
-                  이름(실명)
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="input-field"
-                  required
-                />
-              </div>
-              <div className="input-group">
-                <label htmlFor="clubCode" className="input-label">
-                  동아리 가입 코드
-                </label>
-                <input
-                  id="clubCode"
-                  type="text"
-                  value={clubCode}
-                  onChange={(e) => setClubCode(e.target.value)}
-                  className="input-field"
-                  placeholder="동아리에서 제공받은 가입 코드를 입력하세요"
-                  required
-                />
-              </div>
-            </>
-          )}
+          <div style={{
+            maxHeight: isSignUp ? '300px' : '0px',
+            opacity: isSignUp ? 1 : 0,
+            overflow: 'hidden',
+            transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+          }}>
+            <div className="input-group" style={{
+              opacity: (isSignUp && !isTransitioning) ? 1 : 0,
+              transform: (isSignUp && !isTransitioning) ? 'translateY(0)' : 'translateY(-10px)',
+              transition: 'all 0.3s ease 0.1s'
+            }}>
+              <label htmlFor="name" className="input-label">
+                이름(실명)
+              </label>
+              <input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="input-field"
+                required
+              />
+            </div>
+            <div className="input-group" style={{
+              opacity: (isSignUp && !isTransitioning) ? 1 : 0,
+              transform: (isSignUp && !isTransitioning) ? 'translateY(0)' : 'translateY(-10px)',
+              transition: 'all 0.3s ease 0.2s'
+            }}>
+              <label htmlFor="clubCode" className="input-label">
+                동아리 가입 코드
+              </label>
+              <input
+                id="clubCode"
+                type="text"
+                value={clubCode}
+                onChange={(e) => setClubCode(e.target.value)}
+                className="input-field"
+                placeholder="가입 코드를 입력하세요."
+                required
+              />
+            </div>
+          </div>
 
           <button type="submit" className="login-button">
             {isSignUp ? '회원가입' : '로그인'}
