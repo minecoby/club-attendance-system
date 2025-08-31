@@ -8,13 +8,33 @@ import i18n from '../i18n';
 const API = import.meta.env.VITE_BASE_URL;
 
 function UserPage({ language, setLanguage }) {
-    const [attendanceList, setAttendanceList] = useState([]); // 출석부 데이터
+    const [attendanceList, setAttendanceList] = useState(() => {
+        const saved = localStorage.getItem('userPage_attendanceList');
+        return saved ? JSON.parse(saved) : [];
+    });
     const [showCodeModal, setShowCodeModal] = useState(false);
     const [attendanceCode, setAttendanceCode] = useState("");
     const [alert, setAlert] = useState({ show: false, type: 'info', message: '' });
-    const [clubList, setClubList] = useState([]); // 동아리 목록
-    const [selectedClub, setSelectedClub] = useState(""); // 선택된 동아리
+    const [clubList, setClubList] = useState(() => {
+        const saved = localStorage.getItem('userPage_clubList');
+        return saved ? JSON.parse(saved) : [];
+    });
+    const [selectedClub, setSelectedClub] = useState(() => {
+        return localStorage.getItem('userPage_selectedClub') || "";
+    });
     const navigate = useNavigate();
+
+    useEffect(() => {
+        localStorage.setItem('userPage_attendanceList', JSON.stringify(attendanceList));
+    }, [attendanceList]);
+
+    useEffect(() => {
+        localStorage.setItem('userPage_clubList', JSON.stringify(clubList));
+    }, [clubList]);
+
+    useEffect(() => {
+        localStorage.setItem('userPage_selectedClub', selectedClub);
+    }, [selectedClub]);
 
     useEffect(() => {
         const token = localStorage.getItem("token");

@@ -10,12 +10,20 @@ const API = import.meta.env.VITE_BASE_URL;
 const WS_API = import.meta.env.VITE_WS_URL;
 
 function LeaderPage({ language, setLanguage }) {
-    const [attendanceList, setAttendanceList] = useState([]);
+    const [attendanceList, setAttendanceList] = useState(() => {
+        const saved = localStorage.getItem('leaderPage_attendanceList');
+        return saved ? JSON.parse(saved) : [];
+    });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [today, setToday] = useState("");
-    const [dateList, setDateList] = useState([]); // 전체 날짜 목록
-    const [selectedDate, setSelectedDate] = useState(""); // 선택된 날짜
+    const [dateList, setDateList] = useState(() => {
+        const saved = localStorage.getItem('leaderPage_dateList');
+        return saved ? JSON.parse(saved) : [];
+    });
+    const [selectedDate, setSelectedDate] = useState(() => {
+        return localStorage.getItem('leaderPage_selectedDate') || "";
+    });
     const [dropdownOpen, setDropdownOpen] = useState(false); // 드롭다운 상태
     const [qrCode, setQrCode] = useState("");
     const [ws, setWs] = useState(null);
@@ -26,6 +34,18 @@ function LeaderPage({ language, setLanguage }) {
     const [alert, setAlert] = useState({ show: false, type: 'info', message: '', confirm: false, onConfirm: null });
     const [editMode, setEditMode] = useState(false);
     const [editAttendanceList, setEditAttendanceList] = useState([]);
+
+    useEffect(() => {
+        localStorage.setItem('leaderPage_attendanceList', JSON.stringify(attendanceList));
+    }, [attendanceList]);
+
+    useEffect(() => {
+        localStorage.setItem('leaderPage_dateList', JSON.stringify(dateList));
+    }, [dateList]);
+
+    useEffect(() => {
+        localStorage.setItem('leaderPage_selectedDate', selectedDate);
+    }, [selectedDate]);
 
     useEffect(() => {
         // 오늘 날짜 구하기 (YYYY-MM-DD)

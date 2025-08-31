@@ -12,17 +12,23 @@ function Settings({ theme, setTheme, language, setLanguage }) {
     const navigate = useNavigate();
     
     // 사용자 정보 상태
-    const [userInfo, setUserInfo] = useState({
-        user_id: '',
-        name: '',
-        is_leader: false,
+    const [userInfo, setUserInfo] = useState(() => {
+        const saved = localStorage.getItem('settings_userInfo');
+        return saved ? JSON.parse(saved) : {
+            user_id: '',
+            name: '',
+            is_leader: false,
+        };
     });
     const [newName, setNewName] = useState('');
     const [oldPassword, setOldPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     // 동아리 코드 등록 상태
     const [clubCode, setClubCode] = useState('');
-    const [joinedClubs, setJoinedClubs] = useState([]);
+    const [joinedClubs, setJoinedClubs] = useState(() => {
+        const saved = localStorage.getItem('settings_joinedClubs');
+        return saved ? JSON.parse(saved) : [];
+    });
     const [loading, setLoading] = useState(false);
     const [showPasswordForm, setShowPasswordForm] = useState(false);
     const [alert, setAlert] = useState({ show: false, type: 'info', message: '' });
@@ -31,13 +37,28 @@ function Settings({ theme, setTheme, language, setLanguage }) {
     const [profileImg, setProfileImg] = useState(null);
     const [profileImgUrl, setProfileImgUrl] = useState('');
     // 유저목록 관련 상태
-    const [members, setMembers] = useState([]);
+    const [members, setMembers] = useState(() => {
+        const saved = localStorage.getItem('settings_members');
+        return saved ? JSON.parse(saved) : [];
+    });
     // 탈퇴 모달 상태
     const [showQuitModal, setShowQuitModal] = useState(false);
     const [quitTargetClub, setQuitTargetClub] = useState(null);
     // 강퇴 모달 상태
     const [showKickModal, setShowKickModal] = useState(false);
     const [kickTargetUser, setKickTargetUser] = useState(null);
+
+    useEffect(() => {
+        localStorage.setItem('settings_userInfo', JSON.stringify(userInfo));
+    }, [userInfo]);
+
+    useEffect(() => {
+        localStorage.setItem('settings_joinedClubs', JSON.stringify(joinedClubs));
+    }, [joinedClubs]);
+
+    useEffect(() => {
+        localStorage.setItem('settings_members', JSON.stringify(members));
+    }, [members]);
 
     // 사용자 정보 불러오기
     useEffect(() => {
