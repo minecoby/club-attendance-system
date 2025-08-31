@@ -7,6 +7,7 @@ class User(BaseModel):
 class SigninForm(User):
     password: str
     name: str
+    club_code: str
 class LoginForm(User):
     password: str
     

@@ -8,6 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 from fastapi_limiter import FastAPILimiter
 from redis.asyncio import Redis
+from app.models import Base
+from app.db import engine
 
 app = FastAPI()
 
@@ -21,6 +23,8 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
     redis = Redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
     await FastAPILimiter.init(redis)

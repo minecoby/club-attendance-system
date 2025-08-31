@@ -4,7 +4,7 @@ from sqlalchemy.future import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import selectinload
 from fastapi import HTTPException
-from app.models import User, RefreshToken
+from app.models import User, RefreshToken, Club, StuClub
 import jwt
 from passlib.context import CryptContext
 from app.variable import *
@@ -160,16 +160,31 @@ async def rotate_refresh_token(old_refresh_token: str, db: AsyncSession):
 # 사용자 생성 
 async def create_user_db(data, db: AsyncSession):
     try:
+        # 동아리 코드 유효성 검증
+        club_result = await db.execute(select(Club).where(Club.club_code == data.club_code))
+        club = club_result.scalar_one_or_none()
+        
+        if not club:
+            raise HTTPException(status_code=404, detail="유효하지 않은 동아리 가입 코드입니다.")
+        
         # 비밀번호 해시화
         hashed_password = hash_password(data.password)
 
+        # 사용자 생성
         new_user = User(user_id=data.user_id, password=hashed_password, name=data.name)
         db.add(new_user)
         await db.commit()
         await db.refresh(new_user)
+        
+        # 동아리 자동 가입
+        stu_club = StuClub(user_id=new_user.user_id, club_code=data.club_code)
+        db.add(stu_club)
+        await db.commit()
+        
         return new_user
 
     except SQLAlchemyError as e:
+        await db.rollback()
         raise HTTPException(status_code=500, detail="데이터베이스 오류")
 
 async def get_user_info(id:str, db: AsyncSession):

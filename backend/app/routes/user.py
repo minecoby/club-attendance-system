@@ -25,6 +25,15 @@ async def create_user(data: SigninForm, db: AsyncSession = Depends(get_db)):
     #유저 추가
     return await create_user_db(data, db)
 
+# 회원가입
+@router.post("/signup")
+async def signup_user(data: SigninForm, db: AsyncSession = Depends(get_db)):
+    #유저 중복 확인
+    await check_duplicate_user(data,db)
+
+    #유저 추가
+    return await create_user_db(data, db)
+
 
 @router.post("/login", response_model=TokenResponse)
 async def login(data: LoginForm, db: AsyncSession = Depends(get_db)):
