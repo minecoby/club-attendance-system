@@ -6,6 +6,7 @@ import Settings from "../pages/Settings";
 import Navbar from "../components/Navbar";
 import QRAttendancePage from "../pages/QRAttendancePage";
 import UserGuard from "../components/MobileGuard";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const AppRouter = ({ theme, setTheme, language, setLanguage }) => {
   const location = useLocation();
