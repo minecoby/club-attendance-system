@@ -19,9 +19,10 @@ function LoginPage() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+    const refreshToken = localStorage.getItem("refresh_token");
     const usertype = localStorage.getItem("usertype");
-    if (token && usertype) {
-      // apiClient를 사용하여 토큰 검증 (자동 갱신 포함)
+    
+    if (token && refreshToken && usertype) {
       apiClient.get(`/users/validate_token`)
       .then(response => {
         if (usertype === "leader") {
@@ -31,8 +32,9 @@ function LoginPage() {
         }
       })
       .catch(error => {
-        console.error("토큰 검증 실패", error);
-        // apiClient가 이미 토큰 정리를 했을 것임
+        localStorage.removeItem("token");
+        localStorage.removeItem("refresh_token");
+        localStorage.removeItem("usertype");
       });
     }
   }, [navigate]);
