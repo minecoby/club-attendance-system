@@ -109,9 +109,17 @@ function LoginPage() {
   if (isCheckingAuth) {
     return (
       <div className="login-page">
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>로그인 중...</p>
+        <div className="login-brand-section">
+          <div className="brand-content">
+            <h1 className="brand-title">HANSSUP!</h1>
+            <p className="brand-subtitle">간편한 동아리 출석체크 플랫폼</p>
+          </div>
+        </div>
+        <div className="login-container">
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p>로그인 중...</p>
+          </div>
         </div>
       </div>
     );
