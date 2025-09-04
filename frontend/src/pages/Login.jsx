@@ -14,6 +14,7 @@ function LoginPage() {
   const [name, setName] = useState("");
   const [clubCode, setClubCode] = useState("");
   const [alert, setAlert] = useState({ show: false, type: 'error', message: '' });
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   const API = import.meta.env.VITE_BASE_URL;
 
@@ -35,7 +36,10 @@ function LoginPage() {
         localStorage.removeItem("token");
         localStorage.removeItem("refresh_token");
         localStorage.removeItem("usertype");
+        setIsCheckingAuth(false);
       });
+    } else {
+      setIsCheckingAuth(false);
     }
   }, [navigate]);
 
@@ -102,6 +106,16 @@ function LoginPage() {
   const handleCloseAlert = () => {
     setAlert({ ...alert, show: false });
   };
+  if (isCheckingAuth) {
+    return (
+      <div className="login-page">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>로그인 중...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="login-page">
