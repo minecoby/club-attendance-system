@@ -33,9 +33,6 @@ function LoginPage() {
         }
       })
       .catch(error => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("refresh_token");
-        localStorage.removeItem("usertype");
         setIsCheckingAuth(false);
       });
     } else {
