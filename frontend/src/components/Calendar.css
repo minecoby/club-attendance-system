@@ -1,0 +1,135 @@
+.calendar-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    padding: 16px;
+    max-width: 320px;
+    font-family: inherit;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.calendar-month-year {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: #333;
+}
+
+.calendar-nav-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #666;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.calendar-nav-btn:hover {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    margin-bottom: 8px;
+}
+
+.calendar-weekday {
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #666;
+    padding: 8px 4px;
+}
+
+.calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+
+.calendar-day {
+    position: relative;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background-color: transparent;
+}
+
+.calendar-day:hover {
+    background-color: #f0f0f0;
+}
+
+.calendar-day.other-month {
+    color: #ccc;
+    cursor: default;
+}
+
+.calendar-day.other-month:hover {
+    background-color: transparent;
+}
+
+.calendar-day.today {
+    background-color: #e3f2fd;
+    color: #1976d2;
+    font-weight: bold;
+}
+
+.calendar-day.selected {
+    background-color: #1976d2;
+    color: white;
+    font-weight: bold;
+}
+
+.calendar-day.selected:hover {
+    background-color: #1565c0;
+}
+
+.calendar-day.available .availability-dot {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 4px;
+    height: 4px;
+    background-color: #4caf50;
+    border-radius: 50%;
+}
+
+.calendar-day.selected .availability-dot {
+    background-color: rgba(255, 255, 255, 0.8);
+}
+
+.calendar-footer {
+    margin-top: 16px;
+    text-align: center;
+}
+
+.calendar-today-btn {
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    padding: 6px 16px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.calendar-today-btn:hover {
+    background-color: #e0e0e0;
+    color: #333;
+}

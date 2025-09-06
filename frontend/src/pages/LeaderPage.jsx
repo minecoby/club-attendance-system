@@ -4,6 +4,7 @@ import axios from 'axios';
 import apiClient from '../utils/apiClient';
 import QRCode from "react-qr-code";
 import AlertModal from '../components/AlertModal';
+import Calendar from '../components/Calendar';
 import i18n from '../i18n';
 
 const API = import.meta.env.VITE_BASE_URL;
@@ -34,6 +35,8 @@ function LeaderPage({ language, setLanguage }) {
     const [alert, setAlert] = useState({ show: false, type: 'info', message: '', confirm: false, onConfirm: null });
     const [editMode, setEditMode] = useState(false);
     const [editAttendanceList, setEditAttendanceList] = useState([]);
+    const [showInlineCalendar, setShowInlineCalendar] = useState(false);
+    const [isCalendarClosing, setIsCalendarClosing] = useState(false);
 
     useEffect(() => {
         localStorage.setItem('leaderPage_attendanceList', JSON.stringify(attendanceList));
@@ -244,6 +247,29 @@ function LeaderPage({ language, setLanguage }) {
         setAlert({ ...alert, show: false });
     };
 
+    const handleToggleInlineCalendar = () => {
+        if (showInlineCalendar) {
+            setIsCalendarClosing(true);
+            setTimeout(() => {
+                setShowInlineCalendar(false);
+                setIsCalendarClosing(false);
+            }, 200); 
+        } else {
+            setShowInlineCalendar(true);
+            setDropdownOpen(false);
+        }
+    };
+
+    const handleInlineCalendarDateSelect = (date) => {
+        setSelectedDate(date);
+        setIsCalendarClosing(true);
+        setTimeout(() => {
+            setShowInlineCalendar(false);
+            setIsCalendarClosing(false);
+        }, 200);
+        setDropdownOpen(false);
+    };
+
     // 페이지 벗어날 때 웹소켓 종료 및 출석 데이터 새로고침
     useEffect(() => {
         return () => {
@@ -358,15 +384,24 @@ function LeaderPage({ language, setLanguage }) {
                 <div className="leader-header-left">
                     <div className="leader-date-label">{i18n[language].attendanceDate || '출석 날짜'}</div>
                     <div className="leader-date-controls">
-                        <div className="leader-date-value">
-                            {selectedDate ? selectedDate : (i18n[language].all || '전체')}
-                            <button
-                                className="dropdown-btn"
-                                onClick={() => setDropdownOpen((v) => !v)}
-                                aria-label={i18n[language].openDateDropdown || '날짜 선택 드롭다운 열기'}
+                        <div className="date-selection-wrapper">
+                            <button 
+                                className="calendar-toggle-btn"
+                                onClick={handleToggleInlineCalendar}
+                                title={showInlineCalendar ? (i18n[language].closeCalendar || '캘린더 닫기') : (i18n[language].openCalendar || '캘린더 열기')}
                             >
-                                {dropdownOpen ? '▲' : '▼'}
+                                {showInlineCalendar ? '⟫' : '⟪'}
                             </button>
+                            <div className="leader-date-value">
+                                {selectedDate ? selectedDate : (i18n[language].all || '전체')}
+                                <button
+                                    className="dropdown-btn"
+                                    onClick={() => setDropdownOpen((v) => !v)}
+                                    aria-label={i18n[language].openDateDropdown || '날짜 선택 드롭다운 열기'}
+                                >
+                                    {dropdownOpen ? '▲' : '▼'}
+                                </button>
+                            </div>
                         </div>
                         <button className="all-attendance-btn" onClick={handleAllAttendanceClick}>
                             {i18n[language].allAttendance || '전체 출석부'}
@@ -390,6 +425,16 @@ function LeaderPage({ language, setLanguage }) {
                                     </div>
                                 ))
                             )}
+                        </div>
+                    )}
+                    {showInlineCalendar && (
+                        <div className={`inline-calendar-container ${isCalendarClosing ? 'closing' : ''}`}>
+                            <Calendar 
+                                selectedDate={selectedDate}
+                                onDateSelect={handleInlineCalendarDateSelect}
+                                availableDates={dateList}
+                                language={language}
+                            />
                         </div>
                     )}
                 </div>
@@ -420,6 +465,7 @@ function LeaderPage({ language, setLanguage }) {
                     </div>
                   </div>
                 )}
+
                 <div className='attendance-table-wrap' style={{ overflow: 'visible' }}>
                     {loading ? (
                         <div className="attendance-message loading">{i18n[language].loading || '로딩 중...'}</div>

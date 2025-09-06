@@ -29,6 +29,7 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    flex: 1;
 }
 
 .leader-date-label {
@@ -73,6 +74,39 @@
     color: var(--primary-dark);
 }
 
+.date-selection-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+}
+
+.calendar-toggle-btn {
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-weight: bold;
+    font-size: 1.3em;
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: color 0.15s, opacity 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    opacity: 0.7;
+}
+
+.calendar-toggle-btn:hover {
+    color: var(--primary-dark);
+    opacity: 1;
+}
+
+.date-selection-wrapper .leader-date-value {
+    border-radius: 6px;
+}
+
 .all-attendance-btn, .today-btn {
     background: var(--input-bg);
     border: 1px solid var(--border);
@@ -84,11 +118,13 @@
     cursor: pointer;
     transition: background 0.15s, color 0.15s, border 0.15s;
 }
+
 .all-attendance-btn:hover, .today-btn:hover {
     background: var(--primary-light);
     color: var(--primary-dark);
     border: 1px solid var(--primary);
 }
+
 .today-btn:disabled {
     background: #e0e0e0;
     color: var(--muted);
@@ -125,6 +161,41 @@
 .date-dropdown-item.selected, .date-dropdown-item:hover {
     background: var(--primary-light);
     color: var(--primary);
+}
+
+.inline-calendar-container {
+    position: absolute;
+    top: -8px;
+    right: 100%;
+    z-index: 15;
+    margin-right: 12px;
+    animation: calendar-slide-left 0.2s ease-out;
+}
+
+.inline-calendar-container.closing {
+    animation: calendar-slide-right 0.2s ease-in forwards;
+}
+
+@keyframes calendar-slide-left {
+    0% { 
+        opacity: 0; 
+        transform: translateX(10px); 
+    }
+    100% { 
+        opacity: 1; 
+        transform: translateX(0); 
+    }
+}
+
+@keyframes calendar-slide-right {
+    0% { 
+        opacity: 1; 
+        transform: translateX(0); 
+    }
+    100% { 
+        opacity: 0; 
+        transform: translateX(20px); 
+    }
 }
 
 .leader-qr-btn {
@@ -250,34 +321,53 @@
     color: var(--muted);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
     .leader-header-card, .attendance-section {
-        padding: 12px 4px;
-        width: 98%;
+        padding: 16px;
+        width: 95%;
         min-width: 0;
+        box-sizing: border-box;
     }
+    
     .leader-header-card {
         flex-direction: column;
-        gap: 12px;
+        gap: 16px;
         align-items: stretch;
     }
+    
     .leader-date-controls {
         flex-direction: column;
         align-items: stretch;
-        gap: 5px;
+        gap: 8px;
     }
+    
     .leader-date-value {
         font-size: 0.95rem;
-        padding: 5px 8px;
+        padding: 8px 12px;
         min-width: 0;
     }
+    
+    .calendar-toggle-btn {
+        font-size: 1em;
+        padding: 6px;
+        min-width: 28px;
+        height: 28px;
+    }
+
     .all-attendance-btn, .today-btn {
         font-size: 0.9em;
-        padding: 5px 6px;
+        padding: 8px 12px;
     }
+    
     .date-dropdown {
         min-width: 90px;
         font-size: 0.9em;
+    }
+
+    .inline-calendar-container {
+        right: 100%;
+        top: 0;
+        margin-right: 8px;
     }
 }
 
@@ -329,3 +419,4 @@
   0% { transform: scale(0.8); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
 }
+
