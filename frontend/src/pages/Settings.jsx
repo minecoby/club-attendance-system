@@ -198,11 +198,12 @@ function Settings({ theme, setTheme, language, setLanguage }) {
     // 로그아웃
     const handleLogout = async () => {
         try {
-            const refreshToken = localStorage.getItem('refresh_token');
-            if (refreshToken) {
-                // 백엔드에 리프레시 토큰 무효화 요청
-                await axios.post(`${API}/users/logout`, {
-                    refresh_token: refreshToken
+            const token = localStorage.getItem('token');
+            if (token) {
+                await axios.post(`${API}/users/logout`, {}, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
                 });
             }
         } catch (error) {

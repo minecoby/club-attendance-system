@@ -16,15 +16,6 @@ security = HTTPBearer()
 router = APIRouter(
     prefix="/users",
 )
-# 사용자 등록
-@router.post("/signin")
-async def create_user(data: SigninForm, db: AsyncSession = Depends(get_db)):
-    #유저 중복 확인
-    await check_duplicate_user(data,db)
-
-    #유저 추가
-    return await create_user_db(data, db)
-
 # 회원가입
 @router.post("/signup")
 async def signup_user(data: SigninForm, db: AsyncSession = Depends(get_db)):
@@ -62,9 +53,16 @@ async def refresh_token(data: RefreshTokenRequest, db: AsyncSession = Depends(ge
         raise HTTPException(status_code=500, detail="토큰 갱신 실패")
 
 @router.post("/logout")
-async def logout(data: RefreshTokenRequest, db: AsyncSession = Depends(get_db)):
+async def logout(credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
     try:
-        await revoke_refresh_token(data.refresh_token, db)
+        token = credentials.credentials
+        user = await get_current_user(token, db)
+        from sqlalchemy import delete
+        await db.execute(
+            delete(RefreshToken).where(RefreshToken.user_id == user.user_id)
+        )
+        await db.commit()
+        
         return {"message": "성공적으로 로그아웃되었습니다."}
     except Exception as e:
         raise HTTPException(status_code=500, detail="로그아웃 실패")

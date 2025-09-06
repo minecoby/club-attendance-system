@@ -61,28 +61,34 @@ def create_refresh_token(data: dict, expires_delta: timedelta = timedelta(days=R
 # 리프레시 토큰을 DB에 저장
 async def save_refresh_token(user_id: str, refresh_token: str, db: AsyncSession):
     try:
-
-        from sqlalchemy import update
-        await db.execute(
-            update(RefreshToken)
-            .where(
-                RefreshToken.user_id == user_id,
-                RefreshToken.is_revoked == False
-            )
-            .values(is_revoked=True)
-        )
-
-        # 새로운 리프레시 토큰 저장
         expires_at = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-        new_refresh_token = RefreshToken(
-            user_id=user_id,
-            token=refresh_token,
-            expires_at=expires_at
+        
+        # 기존 토큰 조회
+        result = await db.execute(
+            select(RefreshToken).where(RefreshToken.user_id == user_id)
         )
-        db.add(new_refresh_token)
-        await db.commit()
-        await db.refresh(new_refresh_token)
-        return new_refresh_token
+        existing_token = result.scalar_one_or_none()
+        
+        if existing_token:
+            # 기존 토큰 업데이트
+            existing_token.token = refresh_token
+            existing_token.expires_at = expires_at
+            existing_token.created_at = datetime.utcnow()
+            await db.commit()
+            await db.refresh(existing_token)
+            return existing_token
+        else:
+            # 새로운 리프레시 토큰 생성
+            new_refresh_token = RefreshToken(
+                user_id=user_id,
+                token=refresh_token,
+                expires_at=expires_at
+            )
+            db.add(new_refresh_token)
+            await db.commit()
+            await db.refresh(new_refresh_token)
+            return new_refresh_token
+            
     except SQLAlchemyError as e:
         await db.rollback()
         print(f"리프레시 토큰 저장 오류: {str(e)}")
@@ -100,7 +106,6 @@ async def verify_refresh_token(token: str, db: AsyncSession):
             select(RefreshToken).where(
                 RefreshToken.token == token,
                 RefreshToken.user_id == user_id,
-                RefreshToken.is_revoked == False,
                 RefreshToken.expires_at > datetime.utcnow()
             )
         )
@@ -113,21 +118,20 @@ async def verify_refresh_token(token: str, db: AsyncSession):
     except JWTError:
         raise HTTPException(status_code=401, detail="유효하지 않은 토큰")
 
-# 리프레시 토큰 무효화
-async def revoke_refresh_token(token: str, db: AsyncSession):
+# 리프레시 토큰 삭제
+async def delete_refresh_token(token: str, db: AsyncSession):
     try:
-        from sqlalchemy import update
+        from sqlalchemy import delete
 
         await db.execute(
-            update(RefreshToken)
+            delete(RefreshToken)
             .where(RefreshToken.token == token)
-            .values(is_revoked=True)
         )
         await db.commit()
     except SQLAlchemyError as e:
         await db.rollback()
-        print(f"토큰 무효화 오류: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"토큰 무효화 실패: {str(e)}")
+        print(f"토큰 삭제 오류: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"토큰 삭제 실패: {str(e)}")
 
 # 리프레시 토큰 로테이션 
 async def rotate_refresh_token(old_refresh_token: str, db: AsyncSession):
@@ -135,7 +139,7 @@ async def rotate_refresh_token(old_refresh_token: str, db: AsyncSession):
 
         user_id = await verify_refresh_token(old_refresh_token, db)
         
-        await revoke_refresh_token(old_refresh_token, db)
+        await delete_refresh_token(old_refresh_token, db)
         
         new_access_token = create_access_token(data={"sub": user_id})
         new_refresh_token = create_refresh_token(data={"sub": user_id})
