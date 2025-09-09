@@ -8,9 +8,8 @@ Base = declarative_base()
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(String(50), unique=True, nullable=False)
-    password = Column(String(255), nullable=False)
+    user_id = Column(String(255), primary_key=True)
+    gmail = Column(String(255), unique=True, nullable=False)
     name = Column(String(100), nullable=False)
     is_leader = Column(Boolean, default=False)
 
@@ -19,7 +18,7 @@ class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(String(50), ForeignKey("users.user_id"), nullable=False)
+    user_id = Column(String(255), ForeignKey("users.user_id"), nullable=False)
     token = Column(String(512), nullable=False, unique=True)
     expires_at = Column(DateTime, nullable=False)
     is_revoked = Column(Boolean, default=False)
@@ -41,8 +40,8 @@ class StuClub(Base):
     __tablename__ = "stuclubs"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(String(50), ForeignKey("users.user_id"), nullable=False)  
-    club_code = Column(String(20), ForeignKey("clubs.club_code"), nullable=False)  
+    user_id = Column(String(255), ForeignKey("users.user_id"), nullable=False)
+    club_code = Column(String(20), ForeignKey("clubs.club_code"), nullable=False)
 
     user = relationship("User")
     club = relationship("Club", back_populates="members")
@@ -52,9 +51,9 @@ class AttendanceDate(Base):
     __tablename__ = "attendance_dates"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    club_code = Column(String(20), ForeignKey("clubs.club_code"), nullable=False)  
+    club_code = Column(String(20), ForeignKey("clubs.club_code"), nullable=False)
     date = Column(Date, nullable=False)
-    set_by = Column(String(50), ForeignKey("users.user_id"), nullable=False)  
+    set_by = Column(String(255), ForeignKey("users.user_id"), nullable=False)
 
     attendances = relationship("Attendance", back_populates="attendance_date")
 
@@ -63,8 +62,8 @@ class Attendance(Base):
     __tablename__ = "attendance"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(String(50), ForeignKey("users.user_id"), nullable=False)  
-    attendance_date_id = Column(Integer, ForeignKey("attendance_dates.id"), nullable=False)  
+    user_id = Column(String(255), ForeignKey("users.user_id"), nullable=False)
+    attendance_date_id = Column(Integer, ForeignKey("attendance_dates.id"), nullable=False)
     status = Column(Boolean, nullable=False, default=False)
     timestamp = Column(DateTime, default=datetime.utcnow)
 

@@ -16,13 +16,12 @@ function Settings({ theme, setTheme, language, setLanguage }) {
         const saved = localStorage.getItem('settings_userInfo');
         return saved ? JSON.parse(saved) : {
             user_id: '',
+            gmail: '',
             name: '',
             is_leader: false,
         };
     });
     const [newName, setNewName] = useState('');
-    const [oldPassword, setOldPassword] = useState('');
-    const [newPassword, setNewPassword] = useState('');
     // 동아리 코드 등록 상태
     const [clubCode, setClubCode] = useState('');
     const [joinedClubs, setJoinedClubs] = useState(() => {
@@ -30,7 +29,6 @@ function Settings({ theme, setTheme, language, setLanguage }) {
         return saved ? JSON.parse(saved) : [];
     });
     const [loading, setLoading] = useState(false);
-    const [showPasswordForm, setShowPasswordForm] = useState(false);
     const [alert, setAlert] = useState({ show: false, type: 'info', message: '' });
     // 추가 설정 상태
     const [notification, setNotification] = useState(true);
@@ -66,7 +64,8 @@ function Settings({ theme, setTheme, language, setLanguage }) {
             try {
                 const res = await apiClient.get(`/users/get_mydata`);
                 setUserInfo({
-                    user_id: res.data.user_data.id,
+                    user_id: res.data.user_data.user_id,
+                    gmail: res.data.user_data.gmail,
                     name: res.data.user_data.name,
                     is_leader: res.data.user_data.is_leader,
                 });
@@ -124,28 +123,6 @@ function Settings({ theme, setTheme, language, setLanguage }) {
         }
     };
 
-    // 비밀번호 변경
-    const handleChangePassword = async () => {
-        if (!oldPassword || !newPassword) {
-            setAlert({ show: true, type: 'error', message: '기존 비밀번호와 새 비밀번호를 모두 입력하세요.' });
-            return;
-        }
-        try {
-            setLoading(true);
-            await apiClient.put(`/users/change_password`, {
-                old_password: oldPassword,
-                new_password: newPassword
-            });
-            setOldPassword('');
-            setNewPassword('');
-            setShowPasswordForm(false);
-            setAlert({ show: true, type: 'success', message: '비밀번호가 변경되었습니다.' });
-        } catch (err) {
-            setAlert({ show: true, type: 'error', message: '비밀번호 변경 실패: ' + (err.response?.data?.detail || '') });
-        } finally {
-            setLoading(false);
-        }
-    };
 
     // 동아리 코드 등록
     const handleRegisterClub = async () => {
@@ -285,32 +262,16 @@ function Settings({ theme, setTheme, language, setLanguage }) {
                     <div className="settings-card-title">{i18n[language].userInfo}</div>
                     <div className="settings-card-content">
                         <div className="settings-row">
-                            <label>{i18n[language].userId}</label>
-                            <input type="text" value={userInfo.user_id} disabled className="settings-input" />
+                            <label>이메일</label>
+                            <input type="text" value={userInfo.gmail || ''} disabled className="settings-input" />
                         </div>
                         <div className="settings-row">
                             <label>{i18n[language].name}</label>
                             <input type="text" value={newName} onChange={e => setNewName(e.target.value)} className="settings-input" />
                         </div>
                         <div className="settings-row">
-                            <button className="settings-btn" onClick={() => setShowPasswordForm(v => !v)}>
-                                {i18n[language].changePassword}
-                            </button>
                             <button className="settings-btn primary" onClick={handleUpdateUser} disabled={loading}>{i18n[language].saveName}</button>
                         </div>
-                        {showPasswordForm && (
-                            <div className="settings-password-form">
-                                <div className="settings-row">
-                                    <label>{i18n[language].oldPassword}</label>
-                                    <input type="password" value={oldPassword} onChange={e => setOldPassword(e.target.value)} className="settings-input" />
-                                </div>
-                                <div className="settings-row">
-                                    <label>{i18n[language].newPassword}</label>
-                                    <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="settings-input" />
-                                    <button className="settings-btn primary" onClick={handleChangePassword} disabled={loading}>{i18n[language].changePassword}</button>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
 

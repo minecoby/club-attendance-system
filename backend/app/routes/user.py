@@ -10,37 +10,99 @@ from app.services.service import *
 from app.services.club_service import get_club_info
 
 from fastapi import HTTPException
+import urllib.parse
+import requests
 
 security = HTTPBearer()
 
 router = APIRouter(
     prefix="/users",
 )
-# 회원가입
-@router.post("/signup")
-async def signup_user(data: SigninForm, db: AsyncSession = Depends(get_db)):
-    #유저 중복 확인
-    await check_duplicate_user(data,db)
 
-    #유저 추가
-    return await create_user_db(data, db)
-
-
-@router.post("/login", response_model=TokenResponse)
-async def login(data: LoginForm, db: AsyncSession = Depends(get_db)):
-    user = await get_user(data, db)
-    access_token = create_access_token(data={"sub": data.user_id})
-    refresh_token = create_refresh_token(data={"sub": data.user_id})
+@router.get("/google/login")
+async def google_login():
+    scope = "openid email profile"
+    params = {
+        "client_id": GOOGLE_CLIENT_ID,
+        "redirect_uri": GOOGLE_REDIRECT_URI,
+        "scope": scope,
+        "response_type": "code",
+        "access_type": "offline",
+        "prompt": "consent"
+    }
     
-    await save_refresh_token(data.user_id, refresh_token, db)
+    auth_url = "https://accounts.google.com/o/oauth2/auth?" + urllib.parse.urlencode(params)
     
-    usertype = "leader" if user.is_leader else "user"
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        token_type="bearer",
-        usertype=usertype
-    )
+    return {"auth_url": auth_url}
+
+@router.get("/google/callback")
+async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
+    try:
+        token_data = {
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "code": code,
+            "grant_type": "authorization_code",
+            "redirect_uri": GOOGLE_REDIRECT_URI,
+        }
+        
+        token_response = requests.post(
+            "https://oauth2.googleapis.com/token",
+            data=token_data
+        )
+        token_response.raise_for_status()
+        tokens = token_response.json()
+        access_token = tokens.get("access_token")
+        if not access_token:
+            raise HTTPException(status_code=400, detail="토큰을 받을 수 없습니다.")
+        
+        user_info_response = requests.get(
+            f"https://www.googleapis.com/oauth2/v2/userinfo?access_token={access_token}"
+        )
+        user_info_response.raise_for_status()
+        user_info = user_info_response.json()
+        
+        google_id = user_info.get("id")
+        email = user_info.get("email")
+        name = user_info.get("name")
+        
+        if not google_id or not email:
+            raise HTTPException(status_code=400, detail="사용자 정보를 가져올 수 없습니다.")
+        
+        from sqlalchemy.future import select
+        from app.models import User
+        
+        result = await db.execute(select(User).where(User.user_id == google_id))
+        user = result.scalar_one_or_none()
+        
+        if not user:
+            user = User(
+                user_id=google_id,
+                gmail=email,
+                name=name,
+                is_leader=False
+            )
+            db.add(user)
+            await db.commit()
+            await db.refresh(user)
+        
+        jwt_access_token = create_access_token(data={"sub": user.user_id})
+        jwt_refresh_token = create_refresh_token(data={"sub": user.user_id})
+        
+        await save_refresh_token(user.user_id, jwt_refresh_token, db)
+        
+        usertype = "leader" if user.is_leader else "user"
+        
+        from fastapi.responses import RedirectResponse
+        
+        redirect_url = f"{FRONTEND_URL}/auth/callback?access_token={jwt_access_token}&refresh_token={jwt_refresh_token}&usertype={usertype}"
+        
+        return RedirectResponse(url=redirect_url)
+        
+    except requests.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"구글 API 요청 실패: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"로그인 처리 중 오류: {str(e)}")
 
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(data: RefreshTokenRequest, db: AsyncSession = Depends(get_db)):
@@ -90,17 +152,6 @@ async def update_user(
     user = await get_current_user(token, db)
     updated_user = await update_user_info(user.user_id, data.name, db)
     return {"message": "사용자 정보가 수정되었습니다.", "user": {"user_id": updated_user.user_id, "name": updated_user.name}}
-
-@router.put("/change_password")
-async def change_password(
-    data: ChangePasswordForm,
-    credentials: HTTPAuthorizationCredentials = Security(security),
-    db: AsyncSession = Depends(get_db)
-):
-    token = credentials.credentials
-    user = await get_current_user(token, db)
-    await change_user_password(user.user_id, data.old_password, data.new_password, db)
-    return {"message": "비밀번호가 변경되었습니다."}
 
 # 토큰 유효성 검사
 @router.get("/validate_token")

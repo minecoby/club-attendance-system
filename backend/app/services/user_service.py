@@ -17,29 +17,6 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 
-# 비밀번호 해시화
-def hash_password(password: str) -> str:
-    salt = bcrypt.gensalt()
-    return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
-
-
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
-async def check_duplicate_user(data,db: AsyncSession):
-    #중복 아이디 검사
-    existing_user = await db.execute(select(User).where(User.user_id == data.user_id))
-    if existing_user.scalars().first():
-        raise HTTPException(status_code=409, detail="중복되는 user_id")
-
-#로그인파트
-async def get_user(data, db: AsyncSession):
-    result = await db.execute(select(User).where(User.user_id == data.user_id))
-    db_user = result.scalar_one_or_none()  
-
-    if db_user is None or not verify_password(data.password, db_user.password):
-        raise HTTPException(status_code=400, detail="로그인 정보 불일치.")
-    return db_user
 
 
 #토큰생성
@@ -113,7 +90,7 @@ async def verify_refresh_token(token: str, db: AsyncSession):
         
         if db_token is None:
             raise HTTPException(status_code=401, detail="유효하지 않거나 만료된 리프레시 토큰")
-        
+
         return user_id
     except JWTError:
         raise HTTPException(status_code=401, detail="유효하지 않은 토큰")
@@ -161,42 +138,13 @@ async def rotate_refresh_token(old_refresh_token: str, db: AsyncSession):
         await db.rollback()
         raise e
 
-# 사용자 생성 
-async def create_user_db(data, db: AsyncSession):
-    try:
-        # 동아리 코드 유효성 검증
-        club_result = await db.execute(select(Club).where(Club.club_code == data.club_code))
-        club = club_result.scalar_one_or_none()
-        
-        if not club:
-            raise HTTPException(status_code=404, detail="유효하지 않은 동아리 가입 코드입니다.")
-        
-        # 비밀번호 해시화
-        hashed_password = hash_password(data.password)
-
-        # 사용자 생성
-        new_user = User(user_id=data.user_id, password=hashed_password, name=data.name)
-        db.add(new_user)
-        await db.commit()
-        await db.refresh(new_user)
-        
-        # 동아리 자동 가입
-        stu_club = StuClub(user_id=new_user.user_id, club_code=data.club_code)
-        db.add(stu_club)
-        await db.commit()
-        
-        return new_user
-
-    except SQLAlchemyError as e:
-        await db.rollback()
-        raise HTTPException(status_code=500, detail="데이터베이스 오류")
 
 async def get_user_info(id:str, db: AsyncSession):
     data = await db.execute(select(User).where(User.user_id == id))
     data = data.scalars().first()
     if data is None:
-        raise HTTPException(status_code=404, detail="동아리가입되지않음")
-    return {"name": data.name, "id" : data.user_id, "is_leader" : data.is_leader}
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
+    return {"name": data.name, "gmail": data.gmail, "user_id": data.user_id, "is_leader": data.is_leader}
 
 async def update_user_info(user_id: str, name: str, db: AsyncSession):
     result = await db.execute(select(User).where(User.user_id == user_id))
@@ -208,14 +156,3 @@ async def update_user_info(user_id: str, name: str, db: AsyncSession):
     await db.refresh(db_user)
     return db_user
 
-async def change_user_password(user_id: str, old_password: str, new_password: str, db: AsyncSession):
-    result = await db.execute(select(User).where(User.user_id == user_id))
-    db_user = result.scalar_one_or_none()
-    if db_user is None:
-        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
-    if not verify_password(old_password, db_user.password):
-        raise HTTPException(status_code=400, detail="기존 비밀번호가 일치하지 않습니다.")
-    db_user.password = hash_password(new_password)
-    await db.commit()
-    await db.refresh(db_user)
-    return db_user
