@@ -12,7 +12,6 @@ function UserPage({ language, setLanguage }) {
     const [showCodeModal, setShowCodeModal] = useState(false);
     const [attendanceCode, setAttendanceCode] = useState("");
     const [alert, setAlert] = useState({ show: false, type: 'info', message: '' });
-    const [showExitModal, setShowExitModal] = useState(false);
     const [clubList, setClubList] = useState([]);
     const [selectedClub, setSelectedClub] = useState("");
     const navigate = useNavigate();
@@ -21,7 +20,11 @@ function UserPage({ language, setLanguage }) {
     useEffect(() => {
         const handlePopState = (e) => {
             e.preventDefault();
-            setShowExitModal(true);
+            if (window.opener) {
+                window.close();
+            } else {
+                window.history.back();
+            }
         };
 
         window.history.replaceState(null, null, window.location.href);
@@ -113,33 +116,10 @@ function UserPage({ language, setLanguage }) {
         setAlert({ ...alert, show: false });
     };
 
-    const handleExitConfirm = () => {
-        if (window.opener) {
-            window.close();
-        } else {
-            window.history.back();
-        }
-        setShowExitModal(false);
-    };
-
-    const handleExitCancel = () => {
-        window.history.pushState(null, null, window.location.href);
-        setShowExitModal(false);
-    };
 
     return (
         <div className="userpage-section">
             <AlertModal show={alert.show} type={alert.type} message={alert.message} onClose={handleCloseAlert} />
-            
-            {/* 앱 종료 확인 모달 */}
-            <AlertModal 
-                show={showExitModal} 
-                type="info" 
-                message="앱을 종료하시겠습니까?" 
-                onClose={handleExitCancel}
-                confirm={true}
-                onConfirm={handleExitConfirm}
-            />
             <div className="QR-section">
                 {/* 동아리 선택 카드형 섹션 */}
                 <div className="club-select-section" style={{paddingLeft: '10px', paddingRight: '10px'}}>
