@@ -4,6 +4,7 @@ import "../styles/Login.css";
 import axios from 'axios';
 import apiClient from '../utils/apiClient';
 import AlertModal from '../components/AlertModal';
+import googleIcon from '../assets/google.png';
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -98,7 +99,7 @@ function LoginPage() {
               <span className="loading-spinner"></span>
             ) : (
               <>
-                <img src="/src/assets/google.png" alt="Google" className="google-icon" />
+                <img src={googleIcon} alt="Google" className="google-icon" />
                 Google로 로그인
               </>
             )}
