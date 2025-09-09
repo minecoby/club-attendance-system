@@ -30,9 +30,9 @@ function GoogleCallback() {
       localStorage.setItem("usertype", usertype);
 
       if (usertype === "leader") {
-        navigate("/leaderpage");
+        navigate("/leaderpage", { replace: true });
       } else if (usertype === "user") {
-        navigate("/userpage");
+        navigate("/userpage", { replace: true });
       } else {
         navigate('/login');
       }

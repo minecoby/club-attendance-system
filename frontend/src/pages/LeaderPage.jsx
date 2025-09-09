@@ -30,10 +30,27 @@ function LeaderPage({ language, setLanguage }) {
     const [fixedCode, setFixedCode] = useState(""); // 고정 코드 값
     const [modalMode, setModalMode] = useState("qr"); // 'qr' 또는 'code'
     const [alert, setAlert] = useState({ show: false, type: 'info', message: '', confirm: false, onConfirm: null });
+    const [showExitModal, setShowExitModal] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [editAttendanceList, setEditAttendanceList] = useState([]);
     const [showInlineCalendar, setShowInlineCalendar] = useState(false);
     const [isCalendarClosing, setIsCalendarClosing] = useState(false);
+
+    // 뒤로가기 방지
+    useEffect(() => {
+        const handlePopState = (e) => {
+            e.preventDefault();
+            setShowExitModal(true);
+        };
+
+        window.history.replaceState(null, null, window.location.href);
+        window.history.pushState(null, null, window.location.href);
+        window.addEventListener('popstate', handlePopState);
+
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+        };
+    }, []);
 
     useEffect(() => {
         localStorage.setItem('leaderPage_attendanceList', JSON.stringify(attendanceList));
@@ -244,6 +261,20 @@ function LeaderPage({ language, setLanguage }) {
         setAlert({ ...alert, show: false });
     };
 
+    const handleExitConfirm = () => {
+        if (window.opener) {
+            window.close();
+        } else {
+            window.history.back();
+        }
+        setShowExitModal(false);
+    };
+
+    const handleExitCancel = () => {
+        window.history.pushState(null, null, window.location.href);
+        setShowExitModal(false);
+    };
+
     const handleToggleInlineCalendar = () => {
         if (showInlineCalendar) {
             setIsCalendarClosing(true);
@@ -376,6 +407,16 @@ function LeaderPage({ language, setLanguage }) {
                 onClose={handleCloseAlert}
                 confirm={alert.confirm}
                 onConfirm={handleConfirmAlert}
+            />
+            
+            {/* 앱 종료 확인 모달 */}
+            <AlertModal 
+                show={showExitModal} 
+                type="info" 
+                message="앱을 종료하시겠습니까?" 
+                onClose={handleExitCancel}
+                confirm={true}
+                onConfirm={handleExitConfirm}
             />
             <div className="leader-header-card">
                 <div className="leader-header-left">
