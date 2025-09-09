@@ -7,7 +7,6 @@ import Settings from "../pages/Settings";
 import Navbar from "../components/Navbar";
 import QRAttendancePage from "../pages/QRAttendancePage";
 import UserGuard from "../components/MobileGuard";
-import { SpeedInsights } from "@vercel/speed-insights/react"
 
 const AppRouter = ({ theme, setTheme, language, setLanguage }) => {
   const location = useLocation();
@@ -15,7 +14,6 @@ const AppRouter = ({ theme, setTheme, language, setLanguage }) => {
   const showNav = !hideNavOnPaths.includes(location.pathname);
 
   return (<>
-  <SpeedInsights />
   {showNav && <Navbar language={language} />}
   <Routes>
     <Route path="/" element={<Login />} />

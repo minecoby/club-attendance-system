@@ -10,7 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@vercel/speed-insights": "^1.2.0",
     "axios": "^1.8.4",
     "html5-qrcode": "^2.3.8",
     "react": "^19.0.0",
