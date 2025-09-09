@@ -304,7 +304,13 @@ function Settings({ theme, setTheme, language, setLanguage }) {
                         </div>
                         <div className="settings-row">
                             <label>{i18n[language].name}</label>
-                            <input type="text" value={newName} onChange={e => setNewName(e.target.value)} className="settings-input" />
+                            <input 
+                                type="text" 
+                                value={newName} 
+                                onChange={e => setNewName(e.target.value)} 
+                                className="settings-input" 
+                                maxLength={10}
+                            />
                         </div>
                         <div className="settings-row">
                             <button className="settings-btn primary" onClick={handleUpdateUser} disabled={loading}>{i18n[language].saveName}</button>
@@ -317,7 +323,7 @@ function Settings({ theme, setTheme, language, setLanguage }) {
                     <div className="settings-card-title">{i18n[language].clubManage}</div>
                     <div className="settings-card-content">
                         <div className="settings-row club-register-row">
-                            <input type="text" value={clubCode} onChange={e => setClubCode(e.target.value)} placeholder={i18n[language].inputClubCode} className="settings-input" disabled={userInfo.is_leader} />
+                            <input type="text" value={clubCode} onChange={e => setClubCode(e.target.value)} placeholder={i18n[language].inputClubCode} className="settings-input" disabled={userInfo.is_leader} maxLength={8} />
                             <button className="settings-btn primary" onClick={handleRegisterClub} disabled={loading || userInfo.is_leader}>{i18n[language].join}</button>
                         </div>
                         {userInfo.is_leader && (

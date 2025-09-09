@@ -145,6 +145,7 @@ function UserPage({ language, setLanguage }) {
                             <input
                                 type="text"
                                 value={attendanceCode}
+                                maxLength={8}
                                 onChange={handleCodeChange}
                                 placeholder={i18n[language].inputAttendCodePlaceholder || '출석 코드를 입력하세요'}
                                 required
