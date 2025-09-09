@@ -1,9 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from app.routes import user
 from app.routes import admin
 from app.routes import club
 from app.routes import attend
 from fastapi.middleware.cors import CORSMiddleware
+from app.logger import setup_loggers, get_api_logger
+import time
+import json
 
 import os
 from fastapi_limiter import FastAPILimiter
@@ -12,6 +15,43 @@ from app.models import Base
 from app.db import engine
 
 app = FastAPI()
+
+setup_loggers()
+api_logger = get_api_logger()
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    
+    client_ip = request.client.host if request.client else "unknown"
+    method = request.method
+    url = str(request.url)
+    
+    body = ""
+    if method in ["POST", "PUT", "PATCH"]:
+        try:
+            body = await request.body()
+            if body:
+                body = body.decode('utf-8')[:500]  
+        except:
+            body = "Error reading body"
+    
+    response = await call_next(request)
+    
+    process_time = round(time.time() - start_time, 3)
+    
+    log_message = f"{client_ip} - {method} {url} - Status: {response.status_code} - Time: {process_time}s"
+    if body:
+        log_message += f" - Body: {body}"
+    
+    if response.status_code >= 500:
+        api_logger.error(log_message)
+    elif response.status_code >= 400:
+        api_logger.warning(log_message)
+    else:
+        api_logger.info(log_message)
+    
+    return response
 
 app.add_middleware(
     CORSMiddleware,
