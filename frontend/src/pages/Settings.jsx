@@ -45,6 +45,8 @@ function Settings({ theme, setTheme, language, setLanguage }) {
     // 강퇴 모달 상태
     const [showKickModal, setShowKickModal] = useState(false);
     const [kickTargetUser, setKickTargetUser] = useState(null);
+    // 회원탈퇴 모달 상태
+    const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
 
     useEffect(() => {
         localStorage.setItem('settings_userInfo', JSON.stringify(userInfo));
@@ -150,7 +152,6 @@ function Settings({ theme, setTheme, language, setLanguage }) {
         setQuitTargetClub(club_code);
     };
 
-    // 진짜 탈퇴 실행
     const handleConfirmQuit = async () => {
         if (!quitTargetClub) return;
         try {
@@ -195,10 +196,37 @@ function Settings({ theme, setTheme, language, setLanguage }) {
         }
     };
 
-    // 회원탈퇴(추가 구현 필요)
-    const handleWithdraw = () => {
-        setAlert({ show: true, type: 'info', message: '회원탈퇴 기능은 추후 구현 예정입니다.' });
+    // 회원탈퇴
+    const handleDeleteAccount = async () => {
+        try {
+            setLoading(true);
+            await apiClient.delete('/users/delete_account');
+            
+            localStorage.clear();
+            
+            setAlert({ 
+                show: true, 
+                type: 'success', 
+                message: '회원탈퇴가 완료되었습니다.' 
+            });
+            
+            setTimeout(() => {
+                navigate('/login');
+            }, 2000);
+            
+        } catch (error) {
+            console.error('회원탈퇴 실패:', error);
+            setAlert({ 
+                show: true, 
+                type: 'error', 
+                message: '회원탈퇴 중 오류가 발생했습니다.' 
+            });
+        } finally {
+            setLoading(false);
+            setShowDeleteAccountModal(false);
+        }
     };
+
 
     // 강퇴 모달 열기
     const handleKickUser = (user_id, userName) => {
@@ -256,6 +284,15 @@ function Settings({ theme, setTheme, language, setLanguage }) {
                 onConfirm={handleConfirmKick}
                 onClose={handleCancelKick}
             />
+            {/* 회원탈퇴 확인 모달 */}
+            <AlertModal
+                show={showDeleteAccountModal}
+                type="warning"
+                message="정말로 회원탈퇴를 하시겠습니까? 모든 데이터가 삭제되며 복구할 수 없습니다."
+                confirm={true}
+                onConfirm={handleDeleteAccount}
+                onClose={() => setShowDeleteAccountModal(false)}
+            />
             <div className="settings-container">
                 {/* 사용자 정보 카드 */}
                 <div className="settings-card">
@@ -310,7 +347,7 @@ function Settings({ theme, setTheme, language, setLanguage }) {
                     <div className="settings-card-content">
                         <div className="settings-row">
                             <button className="settings-btn" onClick={handleLogout}>{i18n[language].logout}</button>
-                            <button className="settings-btn danger" onClick={handleWithdraw} disabled={userInfo.is_leader}>
+                            <button className="settings-btn danger" onClick={() => setShowDeleteAccountModal(true)}>
                                 {i18n[language].withdraw}
                             </button>
                         </div>

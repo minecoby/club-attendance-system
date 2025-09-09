@@ -11,10 +11,7 @@ const API = import.meta.env.VITE_BASE_URL;
 const WS_API = import.meta.env.VITE_WS_URL;
 
 function LeaderPage({ language, setLanguage }) {
-    const [attendanceList, setAttendanceList] = useState(() => {
-        const saved = localStorage.getItem('leaderPage_attendanceList');
-        return saved ? JSON.parse(saved) : [];
-    });
+    const [attendanceList, setAttendanceList] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [today, setToday] = useState("");

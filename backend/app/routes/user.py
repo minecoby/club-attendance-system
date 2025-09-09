@@ -163,3 +163,37 @@ async def validate_token(credentials: HTTPAuthorizationCredentials = Security(se
         return {"message": "토큰이 유효합니다.", "user_id": user.user_id}
     except HTTPException as e:
         raise HTTPException(status_code=401, detail="유효하지 않은 토큰입니다.")
+    
+# 회원탈퇴
+@router.delete("/delete_account")
+async def delete_account(credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
+    try:
+        token = credentials.credentials
+        user = await get_current_user(token, db)
+        
+        from sqlalchemy import delete
+        from app.models import RefreshToken, StuClub, Attendance
+        
+        await db.execute(
+            delete(RefreshToken).where(RefreshToken.user_id == user.user_id)
+        )
+        
+        await db.execute(
+            delete(Attendance).where(Attendance.user_id == user.user_id)
+        )
+        
+        await db.execute(
+            delete(StuClub).where(StuClub.user_id == user.user_id)
+        )
+        
+        await db.execute(
+            delete(User).where(User.user_id == user.user_id)
+        )
+        
+        await db.commit()
+        
+        return {"message": "회원탈퇴가 완료되었습니다."}
+        
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="회원탈퇴 처리 중 오류가 발생했습니다.")

@@ -8,10 +8,7 @@ import i18n from '../i18n';
 const API = import.meta.env.VITE_BASE_URL;
 
 function UserPage({ language, setLanguage }) {
-    const [attendanceList, setAttendanceList] = useState(() => {
-        const saved = localStorage.getItem('userPage_attendanceList');
-        return saved ? JSON.parse(saved) : [];
-    });
+    const [attendanceList, setAttendanceList] = useState([]);
     const [showCodeModal, setShowCodeModal] = useState(false);
     const [attendanceCode, setAttendanceCode] = useState("");
     const [alert, setAlert] = useState({ show: false, type: 'info', message: '' });
