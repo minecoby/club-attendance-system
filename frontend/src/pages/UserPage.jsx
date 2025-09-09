@@ -12,13 +12,8 @@ function UserPage({ language, setLanguage }) {
     const [showCodeModal, setShowCodeModal] = useState(false);
     const [attendanceCode, setAttendanceCode] = useState("");
     const [alert, setAlert] = useState({ show: false, type: 'info', message: '' });
-    const [clubList, setClubList] = useState(() => {
-        const saved = localStorage.getItem('userPage_clubList');
-        return saved ? JSON.parse(saved) : [];
-    });
-    const [selectedClub, setSelectedClub] = useState(() => {
-        return localStorage.getItem('userPage_selectedClub') || "";
-    });
+    const [clubList, setClubList] = useState([]);
+    const [selectedClub, setSelectedClub] = useState("");
     const navigate = useNavigate();
 
     useEffect(() => {
