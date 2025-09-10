@@ -317,7 +317,9 @@ function Settings({ theme, setTheme, language, setLanguage }) {
                     <div className="settings-card-content">
                         <div className="settings-row club-register-row">
                             <input type="text" value={clubCode} onChange={e => setClubCode(e.target.value)} placeholder={i18n[language].inputClubCode} className="settings-input" disabled={userInfo.is_leader} maxLength={8} />
-                            <button className="settings-btn primary" onClick={handleRegisterClub} disabled={loading || userInfo.is_leader}>{i18n[language].join}</button>
+                            <button className="settings-btn primary" onClick={handleRegisterClub} disabled={loading || userInfo.is_leader}>
+                                {loading ? '가입 중...' : i18n[language].join}
+                            </button>
                         </div>
                         {userInfo.is_leader && (
                             <div className="settings-warning">{i18n[language].leaderNoJoin}</div>
@@ -331,7 +333,7 @@ function Settings({ theme, setTheme, language, setLanguage }) {
                                         <span className="club-name">{club.club_name}</span>
                                         <span className="club-code">({club.club_code})</span>
                                         <button className="settings-btn danger small" onClick={() => handleQuitClub(club.club_code)} disabled={loading || userInfo.is_leader}>
-                                            {i18n[language].quit}
+                                            {loading ? '탈퇴 중...' : i18n[language].quit}
                                         </button>
                                     </li>
                                 ))}
@@ -396,7 +398,7 @@ function Settings({ theme, setTheme, language, setLanguage }) {
                                                 onClick={() => handleKickUser(member.user_id, member.name)}
                                                 disabled={loading}
                                             >
-                                                강퇴
+                                                {loading ? '강퇴 중...' : '강퇴'}
                                             </button>
                                         </div>
                                     ))}
