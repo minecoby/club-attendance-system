@@ -144,6 +144,17 @@ function LeaderPage({ language, setLanguage }) {
     }, [selectedDate]);
 
     const handleStartQR = async () => {
+        if (selectedDate === "" || selectedDate === undefined) {
+            setAlert({
+                show: true,
+                type: 'info',
+                message: '출석할 날짜를 선택한 후 출석을 진행해주세요.',
+                confirm: false,
+                onConfirm: null
+            });
+            return;
+        }
+
         try {
             await apiClient.post(`/admin/add_date`, { date: selectedDate });
         } catch (e) {
