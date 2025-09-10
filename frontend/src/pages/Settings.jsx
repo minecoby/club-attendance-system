@@ -316,7 +316,7 @@ function Settings({ theme, setTheme, language, setLanguage }) {
                     <div className="settings-card-title">{i18n[language].clubManage}</div>
                     <div className="settings-card-content">
                         <div className="settings-row club-register-row">
-                            <input type="text" value={clubCode} onChange={e => setClubCode(e.target.value)} placeholder={i18n[language].inputClubCode} className="settings-input" disabled={userInfo.is_leader} maxLength={8} />
+                            <input type="text" value={clubCode} onChange={e => setClubCode(e.target.value)} placeholder={i18n[language].inputClubCode} className="settings-input" disabled={userInfo.is_leader} maxLength={10} />
                             <button className="settings-btn primary" onClick={handleRegisterClub} disabled={loading || userInfo.is_leader}>
                                 {loading ? '가입 중...' : i18n[language].join}
                             </button>
