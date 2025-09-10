@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import "../styles/UserPage.css";
 import AlertModal from '../components/AlertModal';
 import apiClient from '../utils/apiClient';
+import dataCache from '../utils/dataCache';
 import i18n from '../i18n';
 
 const API = import.meta.env.VITE_BASE_URL;
@@ -36,30 +37,33 @@ function UserPage({ language, setLanguage }) {
         };
     }, []);
 
-    useEffect(() => {
-        localStorage.setItem('userPage_attendanceList', JSON.stringify(attendanceList));
-    }, [attendanceList]);
-
-    useEffect(() => {
-        localStorage.setItem('userPage_clubList', JSON.stringify(clubList));
-    }, [clubList]);
-
-    useEffect(() => {
-        localStorage.setItem('userPage_selectedClub', selectedClub);
-    }, [selectedClub]);
 
     useEffect(() => {
         const token = localStorage.getItem("token");
         if (!token) return;
         
-        apiClient.get('/clubs/get_club_info')
-        .then(res => {
+        const fetchClubInfo = async () => {
+            const res = await apiClient.get('/clubs/get_club_info');
             if (Array.isArray(res.data) && res.data.length > 0) {
-                setClubList(res.data);
-                setSelectedClub(res.data[0].club_code); 
+                return res.data;
             }
-        })
-        .catch(error => {
+            return [];
+        };
+
+        dataCache.loadDataWithCache(
+            'clubList',
+            fetchClubInfo,
+            (data) => {
+                setClubList(data);
+                const savedClub = localStorage.getItem('userPage_selectedClub');
+                if (savedClub && data.find(club => club.club_code === savedClub)) {
+                    setSelectedClub(savedClub);
+                } else if (data.length > 0) {
+                    setSelectedClub(data[0].club_code);
+                }
+            },
+            1000 * 60 * 3
+        ).catch(error => {
             console.error('동아리 정보 불러오기 실패:', error);
         });
     }, []);
@@ -68,20 +72,28 @@ function UserPage({ language, setLanguage }) {
         const token = localStorage.getItem("token");
         if (!token || !selectedClub) return;
         
-        apiClient.get(`/attend/load_myattend/${selectedClub}`)
-        .then(res => {
+        const fetchAttendance = async () => {
+            const res = await apiClient.get(`/attend/load_myattend/${selectedClub}`);
             if (Array.isArray(res.data)) {
-                const sortedData = res.data.sort((a, b) => new Date(a.date) - new Date(b.date));
-                setAttendanceList(sortedData);
+                return res.data.sort((a, b) => new Date(a.date) - new Date(b.date));
             }
-        })
-        .catch(error => {
+            return [];
+        };
+
+        dataCache.loadDataWithCache(
+            `attendanceList_${selectedClub}`,
+            fetchAttendance,
+            setAttendanceList,
+            1000 * 60 * 2
+        ).catch(error => {
             console.error('출석 정보 불러오기 실패:', error);
         });
     }, [selectedClub]);
 
     const handleClubChange = (e) => {
-        setSelectedClub(e.target.value);
+        const newClub = e.target.value;
+        setSelectedClub(newClub);
+        localStorage.setItem('userPage_selectedClub', newClub);
     };
 
     const handleStartQR = () => {

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import apiClient from '../utils/apiClient';
+import dataCache from '../utils/dataCache';
 import '../styles/Settings.css';
 import AlertModal from '../components/AlertModal';
 import i18n from '../i18n';
@@ -12,22 +13,16 @@ function Settings({ theme, setTheme, language, setLanguage }) {
     const navigate = useNavigate();
     
     // 사용자 정보 상태
-    const [userInfo, setUserInfo] = useState(() => {
-        const saved = localStorage.getItem('settings_userInfo');
-        return saved ? JSON.parse(saved) : {
-            user_id: '',
-            gmail: '',
-            name: '',
-            is_leader: false,
-        };
+    const [userInfo, setUserInfo] = useState({
+        user_id: '',
+        gmail: '',
+        name: '',
+        is_leader: false,
     });
     const [newName, setNewName] = useState('');
     // 동아리 코드 등록 상태
     const [clubCode, setClubCode] = useState('');
-    const [joinedClubs, setJoinedClubs] = useState(() => {
-        const saved = localStorage.getItem('settings_joinedClubs');
-        return saved ? JSON.parse(saved) : [];
-    });
+    const [joinedClubs, setJoinedClubs] = useState([]);
     const [loading, setLoading] = useState(false);
     const [alert, setAlert] = useState({ show: false, type: 'info', message: '' });
     // 추가 설정 상태
@@ -35,10 +30,7 @@ function Settings({ theme, setTheme, language, setLanguage }) {
     const [profileImg, setProfileImg] = useState(null);
     const [profileImgUrl, setProfileImgUrl] = useState('');
     // 유저목록 관련 상태
-    const [members, setMembers] = useState(() => {
-        const saved = localStorage.getItem('settings_members');
-        return saved ? JSON.parse(saved) : [];
-    });
+    const [members, setMembers] = useState([]);
     // 탈퇴 모달 상태
     const [showQuitModal, setShowQuitModal] = useState(false);
     const [quitTargetClub, setQuitTargetClub] = useState(null);
@@ -48,55 +40,55 @@ function Settings({ theme, setTheme, language, setLanguage }) {
     // 회원탈퇴 모달 상태
     const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
 
-    useEffect(() => {
-        localStorage.setItem('settings_userInfo', JSON.stringify(userInfo));
-    }, [userInfo]);
-
-    useEffect(() => {
-        localStorage.setItem('settings_joinedClubs', JSON.stringify(joinedClubs));
-    }, [joinedClubs]);
-
-    useEffect(() => {
-        localStorage.setItem('settings_members', JSON.stringify(members));
-    }, [members]);
 
     // 사용자 정보 불러오기
     useEffect(() => {
-        const fetchUser = async () => {
-            try {
-                const res = await apiClient.get(`/users/get_mydata`);
-                setUserInfo({
-                    user_id: res.data.user_data.user_id,
-                    gmail: res.data.user_data.gmail,
-                    name: res.data.user_data.name,
-                    is_leader: res.data.user_data.is_leader,
-                });
-                setNewName(res.data.user_data.name);
-                if (res.data.club_data && res.data.club_data.length > 0) {
-                    setJoinedClubs(res.data.club_data);
-                } else {
-                    setJoinedClubs([]);
-                }
-                
-                // 리더인 경우 멤버 목록도 불러오기
-                if (res.data.user_data.is_leader) {
-                    await fetchMembers();
-                }
-            } catch (err) {
-                setAlert({ show: true, type: 'error', message: '사용자 정보를 불러오지 못했습니다.' });
-            }
+        const fetchUserData = async () => {
+            const res = await apiClient.get(`/users/get_mydata`);
+            const userData = {
+                user_id: res.data.user_data.user_id,
+                gmail: res.data.user_data.gmail,
+                name: res.data.user_data.name,
+                is_leader: res.data.user_data.is_leader,
+            };
+            const clubData = res.data.club_data && res.data.club_data.length > 0 ? res.data.club_data : [];
+            
+            return { userData, clubData, isLeader: userData.is_leader };
         };
-        fetchUser();
+
+        dataCache.loadDataWithCache(
+            'userSettings',
+            fetchUserData,
+            (data) => {
+                setUserInfo(data.userData);
+                setNewName(data.userData.name);
+                setJoinedClubs(data.clubData);
+                
+                if (data.isLeader) {
+                    loadMembersWithCache();
+                }
+            },
+            1000 * 60 * 5
+        ).catch(err => {
+            setAlert({ show: true, type: 'error', message: '사용자 정보를 불러오지 못했습니다.' });
+        });
     }, []);
 
     // 멤버 목록 불러오기
-    const fetchMembers = async () => {
-        try {
+    const loadMembersWithCache = () => {
+        const fetchMembers = async () => {
             const res = await apiClient.get(`/clubs/get_members`);
-            setMembers(res.data);
-        } catch (err) {
+            return res.data;
+        };
+
+        dataCache.loadDataWithCache(
+            'members',
+            fetchMembers,
+            setMembers,
+            1000 * 60 * 2
+        ).catch(err => {
             console.error('멤버 목록 불러오기 실패:', err);
-        }
+        });
     };
 
 
@@ -132,11 +124,11 @@ function Settings({ theme, setTheme, language, setLanguage }) {
         try {
             setLoading(true);
             await apiClient.post(`/clubs/join_club`, { club_code: clubCode });
-            // 가입 후, 최신 동아리 목록을 다시 불러와서 setJoinedClubs에 반영
+            // 가입 후, 캐시를 무효화하고 최신 동아리 목록을 다시 불러옴
+            dataCache.clearCache('userSettings');
             const res = await apiClient.get(`/users/get_mydata`);
-            if (res.data.club_data && res.data.club_data.length > 0) {
-                setJoinedClubs(res.data.club_data);
-            }
+            const clubData = res.data.club_data && res.data.club_data.length > 0 ? res.data.club_data : [];
+            setJoinedClubs(clubData);
             setAlert({ show: true, type: 'success', message: '동아리에 성공적으로 가입되었습니다!' });
             setClubCode('');
         } catch (err) {
@@ -244,7 +236,8 @@ function Settings({ theme, setTheme, language, setLanguage }) {
             });
             setAlert({ show: true, type: 'success', message: '강퇴가 완료되었습니다.' });
             // 멤버 목록 새로고침
-            await fetchMembers();
+            dataCache.clearCache('members');
+            loadMembersWithCache();
         } catch (err) {
             setAlert({ show: true, type: 'error', message: '강퇴에 실패했습니다.' });
         } finally {
