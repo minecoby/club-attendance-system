@@ -180,7 +180,7 @@ async def load_full_attendance(club_code: str, db: AsyncSession):
 
 #엑셀로 파일변환  
 async def export_excel(data,date_columns,club_code):
-    df = pd.DataFrame(data[1:])
+    df = pd.DataFrame(data[0:])
     df = df.rename(columns={
         "user_id": "아이디",
         "name": "이름"
