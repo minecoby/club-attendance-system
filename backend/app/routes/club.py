@@ -9,7 +9,9 @@ from app.services.service import *
 from app.models import User, StuClub
 from sqlalchemy.future import select
 from fastapi import HTTPException
+from app.logger import get_club_logger
 
+club_logger = get_club_logger()
 security = HTTPBearer()
 
 

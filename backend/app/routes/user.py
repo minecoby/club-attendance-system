@@ -6,12 +6,15 @@ from app.variable import *
 from app.schema.user_schema import *
 from app.services.user_service import *
 from app.services.service import *
+from app.logger import get_user_logger
 
 from app.services.club_service import get_club_info
 
 from fastapi import HTTPException
 import urllib.parse
 import requests
+
+user_logger = get_user_logger()
 
 security = HTTPBearer()
 

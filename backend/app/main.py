@@ -4,7 +4,7 @@ from app.routes import admin
 from app.routes import club
 from app.routes import attend
 from fastapi.middleware.cors import CORSMiddleware
-from app.logger import setup_loggers, get_api_logger
+from app.logger import setup_loggers, get_api_logger, get_user_logger, get_attendance_logger, get_admin_logger, get_club_logger
 import time
 import json
 
@@ -18,6 +18,22 @@ app = FastAPI()
 
 setup_loggers()
 api_logger = get_api_logger()
+user_logger = get_user_logger()
+attendance_logger = get_attendance_logger()
+admin_logger = get_admin_logger()
+club_logger = get_club_logger()
+
+def get_logger_by_path(path: str):
+    if path.startswith("/users"):
+        return user_logger
+    elif path.startswith("/admin"):
+        return admin_logger
+    elif path.startswith("/club"):
+        return club_logger
+    elif path.startswith("/attend"):
+        return attendance_logger
+    else:
+        return api_logger
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
@@ -26,6 +42,9 @@ async def log_requests(request: Request, call_next):
     client_ip = request.client.host if request.client else "unknown"
     method = request.method
     url = str(request.url)
+    path = request.url.path
+    
+    logger = get_logger_by_path(path)
     
     body = ""
     if method in ["POST", "PUT", "PATCH"]:
@@ -33,23 +52,63 @@ async def log_requests(request: Request, call_next):
             body = await request.body()
             if body:
                 body = body.decode('utf-8')[:500]  
-        except:
-            body = "Error reading body"
+        except Exception as e:
+            body = f"Error reading body: {str(e)}"
     
-    response = await call_next(request)
+    response = None
+    response_body = ""
+    error_detail = ""
+    
+    try:
+        response = await call_next(request)
+        
+        if response.status_code >= 400:
+            try:
+                response_body_bytes = b""
+                async for chunk in response.body_iterator:
+                    response_body_bytes += chunk
+                
+                if response_body_bytes:
+                    response_body = response_body_bytes.decode('utf-8')[:1000]
+                    
+                from fastapi import Response as FastAPIResponse
+                response = FastAPIResponse(
+                    content=response_body_bytes,
+                    status_code=response.status_code,
+                    headers=dict(response.headers),
+                    media_type=response.media_type
+                )
+                
+            except Exception as e:
+                response_body = f"Error reading response body: {str(e)}"
+    
+    except Exception as e:
+        error_detail = f" - Exception: {type(e).__name__}: {str(e)}"
+        from fastapi.responses import JSONResponse
+        response = JSONResponse(
+            content={"detail": "Internal server error"},
+            status_code=500
+        )
     
     process_time = round(time.time() - start_time, 3)
     
     log_message = f"{client_ip} - {method} {url} - Status: {response.status_code} - Time: {process_time}s"
+    
     if body:
-        log_message += f" - Body: {body}"
+        log_message += f" - Request Body: {body}"
+        
+    if response_body:
+        log_message += f" - Response Body: {response_body}"
+        
+    if error_detail:
+        log_message += error_detail
     
     if response.status_code >= 500:
-        api_logger.error(log_message)
+        logger.error(log_message)
     elif response.status_code >= 400:
-        api_logger.warning(log_message)
+        logger.warning(log_message)
     else:
-        api_logger.info(log_message)
+        logger.info(log_message)
     
     return response
 

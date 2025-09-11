@@ -13,7 +13,7 @@ def setup_loggers():
     )
     
     loggers_config = {
-        'auth': 'auth.log',          # 로그인, 로그아웃, 토큰 관련
+        'user': 'user.log',          # 사용자 관련
         'attendance': 'attendance.log', # 출석 관련
         'admin': 'admin.log',        # 관리자 기능
         'club': 'club.log',          # 동아리 관련
@@ -43,8 +43,8 @@ def setup_loggers():
         logger.addHandler(file_handler)
         logger.addHandler(console_handler)
 
-def get_auth_logger():
-    return logging.getLogger("hanssup.auth")
+def get_user_logger():
+    return logging.getLogger("hanssup.user")
 
 def get_attendance_logger():
     return logging.getLogger("hanssup.attendance")

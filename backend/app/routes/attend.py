@@ -9,9 +9,11 @@ from app.services.attend_service import *
 from app.routes.admin import attendance_ws 
 from app.schema.attend_schema import *
 from app.schema.club_schema import *
+from app.logger import get_attendance_logger
 import asyncio
 from fastapi_limiter.depends import RateLimiter
 
+attendance_logger = get_attendance_logger()
 security = HTTPBearer()
 
 router = APIRouter(

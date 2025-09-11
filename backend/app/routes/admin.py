@@ -7,10 +7,13 @@ from app.schema.admin_schema import *
 from app.services.admin_service import *
 from app.services.club_service import get_club_admin
 from app.services.service import *
+from app.logger import get_admin_logger
 from datetime import datetime
 from app.models import AttendanceDate
 import asyncio
 import random
+
+admin_logger = get_admin_logger()
 
 
 
