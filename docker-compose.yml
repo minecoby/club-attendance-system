@@ -7,14 +7,21 @@ services:
     restart: always
     ports:
       - "6379:6379"
+    environment:
+      - TZ=Asia/Seoul
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
 
   backend:
     build:
       context: ./backend
     volumes:
       - ./backend:/app
+      - /etc/localtime:/etc/localtime:ro
     env_file:
       - ./backend/.env
+    environment:
+      - TZ=Asia/Seoul
     depends_on:
       - redis
     ports:
