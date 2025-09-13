@@ -193,7 +193,22 @@ function LeaderPage({ language, setLanguage }) {
             } else {
                 const code = event.data;
                 const clubCode = localStorage.getItem("club_code");
-                const attendanceUrl = `https://hanssup.minecoby.com/attend?code=${code}&club=${clubCode}`; // ${window.location.origin}
+                
+                const data = {
+                    code: code,
+                    club: clubCode,
+                    timestamp: Date.now(),
+                    random: Math.random().toString(36).substring(2, 15)
+                };
+                
+                const jsonString = JSON.stringify(data);
+                const base64 = btoa(unescape(encodeURIComponent(jsonString)));
+                const obfuscated = base64
+                    .replace(/\+/g, '-')
+                    .replace(/\//g, '_')
+                    .replace(/=/g, '');
+                
+                const attendanceUrl = `https://hanssup.minecoby.com/attend/${obfuscated}`;
                 setQrCode(attendanceUrl);
             }
         };

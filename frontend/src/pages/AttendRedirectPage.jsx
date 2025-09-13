@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import apiClient from '../utils/apiClient';
 import AlertModal from '../components/AlertModal';
 import i18n from '../i18n';
@@ -12,14 +12,35 @@ function AttendRedirectPage({ language = 'ko' }) {
     
     const location = useLocation();
     const navigate = useNavigate();
+    const { token } = useParams();
 
     useEffect(() => {
         const processAttendance = async () => {
             try {
-                // URL에서 파라미터 추출
-                const searchParams = new URLSearchParams(location.search);
-                const code = searchParams.get('code');
-                const club = searchParams.get('club');
+                let code, club;
+                
+                if (token) {
+                    try {
+                        const base64 = token
+                            .replace(/-/g, '+')
+                            .replace(/_/g, '/');
+                            
+                        const padding = '='.repeat((4 - (base64.length % 4)) % 4);
+                        const completeBase64 = base64 + padding;
+                        
+                        const jsonString = decodeURIComponent(escape(atob(completeBase64)));
+                        const data = JSON.parse(jsonString);
+                        
+                        code = data.code;
+                        club = data.club;
+                    } catch (decodeError) {
+                        throw new Error('잘못된 출석 링크입니다.');
+                    }
+                } else {
+                    const searchParams = new URLSearchParams(location.search);
+                    code = searchParams.get('code');
+                    club = searchParams.get('club');
+                }
 
                 if (!code || !club) {
                     throw new Error('잘못된 출석 링크입니다.');

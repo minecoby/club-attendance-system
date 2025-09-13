@@ -43,6 +43,9 @@ const AppRouter = ({ theme, setTheme, language, setLanguage }) => {
     <Route path="/attend" element={
       <AttendRedirectPage theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} />
     } />
+    <Route path="/attend/:token" element={
+      <AttendRedirectPage theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} />
+    } />
   </Routes>
   </>);
 };
