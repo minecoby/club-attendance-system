@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import apiClient from '../utils/apiClient';
 import AlertModal from '../components/AlertModal';
 import i18n from '../i18n';
-import { initPWARedirect } from '../utils/pwaRedirect';
 
 function AttendRedirectPage({ language = 'ko' }) {
     const [message, setMessage] = useState("");
@@ -15,9 +14,6 @@ function AttendRedirectPage({ language = 'ko' }) {
     const navigate = useNavigate();
 
     useEffect(() => {
-        // PWA 리다이렉트 초기화
-        initPWARedirect();
-        
         const processAttendance = async () => {
             try {
                 // URL에서 파라미터 추출
