@@ -29,6 +29,23 @@ function GoogleCallback() {
       localStorage.setItem("refresh_token", refresh_token);
       localStorage.setItem("usertype", usertype);
 
+      // QR 출석 대기 중인 정보가 있는지 확인
+      const pendingAttendance = localStorage.getItem('pendingAttendance');
+      if (pendingAttendance) {
+        try {
+          const {code, club} = JSON.parse(pendingAttendance);
+          localStorage.removeItem('pendingAttendance');
+          
+          // 출석 처리 페이지로 리다이렉트
+          navigate(`/attend?code=${code}&club=${club}`, { replace: true });
+          return;
+        } catch (error) {
+          console.error('pending attendance 파싱 오류:', error);
+          localStorage.removeItem('pendingAttendance');
+        }
+      }
+
+      // 일반 로그인 후 페이지 이동
       if (usertype === "leader") {
         navigate("/leaderpage", { replace: true });
       } else if (usertype === "user") {

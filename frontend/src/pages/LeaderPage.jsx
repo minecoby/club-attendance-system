@@ -191,7 +191,10 @@ function LeaderPage({ language, setLanguage }) {
             if (modalMode === "code") {
                 setFixedCode(event.data);
             } else {
-                setQrCode(event.data);
+                const code = event.data;
+                const clubCode = localStorage.getItem("club_code");
+                const attendanceUrl = `https://hanssup.minecoby.com/attend?code=${code}&club=${clubCode}`; // ${window.location.origin}
+                setQrCode(attendanceUrl);
             }
         };
         setWs(socket);

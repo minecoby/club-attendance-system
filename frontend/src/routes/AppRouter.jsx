@@ -6,6 +6,7 @@ import LeaderPage from "../pages/LeaderPage";
 import Settings from "../pages/Settings";
 import Navbar from "../components/Navbar";
 import QRAttendancePage from "../pages/QRAttendancePage";
+import AttendRedirectPage from "../pages/AttendRedirectPage";
 import UserGuard from "../components/MobileGuard";
 
 const AppRouter = ({ theme, setTheme, language, setLanguage }) => {
@@ -38,6 +39,9 @@ const AppRouter = ({ theme, setTheme, language, setLanguage }) => {
       <UserGuard>
         <QRAttendancePage theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} />
       </UserGuard>
+    } />
+    <Route path="/attend" element={
+      <AttendRedirectPage theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} />
     } />
   </Routes>
   </>);
