@@ -12,16 +12,16 @@ function AttendRedirectPage({ language = 'ko' }) {
     
     const location = useLocation();
     const navigate = useNavigate();
-    const { token } = useParams();
+    const { token: urlToken } = useParams();
 
     useEffect(() => {
         const processAttendance = async () => {
             try {
                 let code, club;
                 
-                if (token) {
+                if (urlToken) {
                     try {
-                        const base64 = token
+                        const base64 = urlToken
                             .replace(/-/g, '+')
                             .replace(/_/g, '/');
                             
