@@ -1,0 +1,22 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["TEAMID.com.hanssup.app"],
+        "components": [
+          {
+            "/": "/attend*",
+            "comment": "Attendance links"
+          },
+          {
+            "/": "/*",
+            "comment": "All app links"
+          }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["TEAMID.com.hanssup.app"]
+  }
+}

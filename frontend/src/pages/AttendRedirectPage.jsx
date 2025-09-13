@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import apiClient from '../utils/apiClient';
 import AlertModal from '../components/AlertModal';
 import i18n from '../i18n';
+import { initPWARedirect } from '../utils/pwaRedirect';
 
 function AttendRedirectPage({ language = 'ko' }) {
     const [message, setMessage] = useState("");
@@ -14,6 +15,9 @@ function AttendRedirectPage({ language = 'ko' }) {
     const navigate = useNavigate();
 
     useEffect(() => {
+        // PWA 리다이렉트 초기화
+        initPWARedirect();
+        
         const processAttendance = async () => {
             try {
                 // URL에서 파라미터 추출
@@ -140,9 +144,7 @@ function AttendRedirectPage({ language = 'ko' }) {
         setShowAlert(false);
         setMessage("");
         setMessageType("");
-        if (messageType === 'success') {
-            navigate('/userpage');
-        }
+        navigate('/userpage');
     };
 
     return (
@@ -196,32 +198,14 @@ function AttendRedirectPage({ language = 'ko' }) {
                         </h2>
                     </>
                 ) : (
-                    <>
-                        <h2 style={{ 
-                            color: 'var(--primary)',
-                            textAlign: 'center',
-                            margin: 0,
-                            fontSize: '1.2rem'
-                        }}>
-                            {i18n[language]?.attendanceComplete || '출석 처리 완료'}
-                        </h2>
-                        <button 
-                            onClick={() => navigate('/userpage')}
-                            style={{
-                                marginTop: '20px',
-                                padding: '12px 24px',
-                                borderRadius: '8px',
-                                border: 'none',
-                                background: 'var(--primary)',
-                                color: 'white',
-                                fontSize: '1rem',
-                                fontWeight: 'bold',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            {i18n[language]?.goToMain || '메인으로 가기'}
-                        </button>
-                    </>
+                    <h2 style={{ 
+                        color: 'var(--primary)',
+                        textAlign: 'center',
+                        margin: 0,
+                        fontSize: '1.2rem'
+                    }}>
+                        {i18n[language]?.attendanceComplete || '출석 처리 완료'}
+                    </h2>
                 )}
             </div>
             
