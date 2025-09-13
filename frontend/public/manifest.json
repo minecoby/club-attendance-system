@@ -32,8 +32,8 @@
     {
       "name": "출석하기",
       "short_name": "출석",
-      "description": "QR 코드로 출석하기",
-      "url": "/qr-attendance",
+      "description": "코드로 출석하기",
+      "url": "/code-attendance",
       "icons": [
         {
           "src": "/icon-192.png",

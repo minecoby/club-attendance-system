@@ -102,7 +102,7 @@ function UserPage({ language, setLanguage }) {
             return;
         }
         localStorage.setItem("club_code", selectedClub);
-        navigate('/qr-attendance'); // QR 출석 페이지로 이동
+        navigate('/code-attendance'); // 코드 출석 페이지로 이동
     };
 
     const handleOpenCodeModal = () => {
@@ -144,7 +144,7 @@ function UserPage({ language, setLanguage }) {
                         ))}
                     </select>
                     <button onClick={handleStartQR} className="startQR-button">
-                        {i18n[language].startQR || 'QR로 출석하기'}
+                        {i18n[language].startQR || '출석하기'}
                     </button>
                 </div>
             </div>

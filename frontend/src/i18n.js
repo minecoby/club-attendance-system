@@ -30,7 +30,7 @@ const i18n = {
     settings: '환경설정',
     // UserPage/LeaderPage/QRAttendancePage 추가 키
     selectClub: '동아리 선택:',
-    startQR: 'QR로 출석하기',
+    startQR: '출석하기',
     inputAttendCode: '출석 코드 입력',
     inputAttendCodePlaceholder: '출석 코드를 입력하세요',
     attend: '출석하기',
@@ -91,7 +91,7 @@ const i18n = {
     settings: 'Settings',
     // UserPage/LeaderPage/QRAttendancePage 추가 키
     selectClub: 'Select Club:',
-    startQR: 'Start QR Attendance',
+    startQR: 'Start Attendance',
     inputAttendCode: 'Attendance Code Input',
     inputAttendCodePlaceholder: 'Enter attendance code',
     attend: 'Attend',
