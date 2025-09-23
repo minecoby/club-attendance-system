@@ -80,7 +80,7 @@ class AttendanceWebSocketManager:
                     self.attendance_codes[club_code]["date"] = date
 
                     await websocket.send_text(full_code)
-                    await asyncio.sleep(8)
+                    await asyncio.sleep(13)
 
             code_task = asyncio.create_task(generate_loop())
 
