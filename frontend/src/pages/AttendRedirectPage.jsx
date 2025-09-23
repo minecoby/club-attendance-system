@@ -78,24 +78,8 @@ function AttendRedirectPage({ language = 'ko' }) {
 
     const processAttendanceWithRetry = async (code, club, isRetry = false) => {
         try {
-            let clubCode = localStorage.getItem("club_code");
-            if (!clubCode) {
-                const userRes = await apiClient.get('/users/get_mydata');
-                if (userRes.data?.club_data?.[0]?.club_code) {
-                    clubCode = userRes.data.club_data[0].club_code;
-                    localStorage.setItem("club_code", clubCode);
-                } else {
-                    throw new Error('동아리 정보를 찾을 수 없습니다.');
-                }
-            }
-
-            if (club !== clubCode) {
-                throw new Error('동아리 정보가 일치하지 않습니다.');
-            }
-
-            await apiClient.post('/attend/check', {
-                club_code: clubCode,
-                code: code
+            await apiClient.post('/attend/check_qr', {
+                qr_code: code
             });
 
             // 출석 성공

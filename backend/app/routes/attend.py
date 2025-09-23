@@ -31,12 +31,52 @@ async def check_attendance(
     if not current:
         raise HTTPException(status_code=404, detail="출석 코드가 활성화되어 있지 않습니다.")
 
-    if current["code"] != data.code:
+    expected_code = f"{data.club_code}:{data.code}"
+
+    current_code = current.get("current_code")
+    previous_code = current.get("previous_code")
+
+    if expected_code != current_code and expected_code != previous_code:
         raise HTTPException(status_code=400, detail="출석 코드가 일치하지 않습니다.")
-    
+
     date = current["date"]
     date_id = await get_date_id(date, data.club_code, db)
-    
+
+    await asyncio.gather(
+        attend_date(user.user_id, date_id, db)
+    )
+
+    return {"message": "출석이 확인되었습니다."}
+
+@router.post("/check_qr", dependencies=[Depends(RateLimiter(times=100, seconds=10))])
+async def check_qr_attendance(
+    data: QRAttendanceCheckRequest, credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
+    token = credentials.credentials
+    user = await get_current_user(token, db)
+
+    if ":" not in data.qr_code:
+        raise HTTPException(status_code=400, detail="잘못된 QR코드 형식입니다.")
+
+    try:
+        club_code, code = data.qr_code.split(":", 1)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="잘못된 QR코드 형식입니다.")
+
+    await check_joining(user.user_id, club_code, db)
+
+    current = attendance_ws.attendance_codes.get(club_code)
+    if not current:
+        raise HTTPException(status_code=404, detail="출석 코드가 활성화되어 있지 않습니다.")
+
+    current_code = current.get("current_code")
+    previous_code = current.get("previous_code")
+
+    if data.qr_code != current_code and data.qr_code != previous_code:
+        raise HTTPException(status_code=400, detail="출석 코드가 일치하지 않습니다.")
+
+    date = current["date"]
+    date_id = await get_date_id(date, club_code, db)
+
     await asyncio.gather(
         attend_date(user.user_id, date_id, db)
     )

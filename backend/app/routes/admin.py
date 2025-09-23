@@ -27,8 +27,9 @@ class AttendanceWebSocketManager:
     def __init__(self):
         self.attendance_codes = {}
 
-    def generate_random_code(self) -> str:
-        return f"{random.randint(100, 999)}"
+    def generate_random_code(self, club_code: str) -> str:
+        random_number = random.randint(100, 999)
+        return f"{random_number}"
 
     async def handle_connection(self, websocket: WebSocket, date: str):
         await websocket.accept()
@@ -58,7 +59,8 @@ class AttendanceWebSocketManager:
                     await websocket.close()
                     return
             self.attendance_codes[club_code] = {
-                "code": None,
+                "current_code": None,
+                "previous_code": None,
                 "accepted": False,
                 "date": date
             }
@@ -66,14 +68,19 @@ class AttendanceWebSocketManager:
             async def generate_loop():
                 while True:
                     if self.attendance_codes[club_code]["accepted"]:
-                        await websocket.send_text(self.attendance_codes[club_code]["code"])
+                        await websocket.send_text(self.attendance_codes[club_code]["current_code"])
+                        print("코드출석으로 변경",self.attendance_codes[club_code]["current_code"] )
                         break
 
-                    code = self.generate_random_code()
-                    self.attendance_codes[club_code]["code"] = code
+                    new_code = self.generate_random_code(club_code)
+                    full_code = f'{club_code}:{new_code}'
+
+                    self.attendance_codes[club_code]["previous_code"] = self.attendance_codes[club_code]["current_code"]
+                    self.attendance_codes[club_code]["current_code"] = full_code
                     self.attendance_codes[club_code]["date"] = date
-                    await websocket.send_text(self.attendance_codes[club_code]["code"])
-                    await asyncio.sleep(15)
+
+                    await websocket.send_text(full_code)
+                    await asyncio.sleep(8)
 
             code_task = asyncio.create_task(generate_loop())
 
@@ -81,7 +88,8 @@ class AttendanceWebSocketManager:
                 message = await websocket.receive_text()
                 if message == "code_attendance_accepted":
                     self.attendance_codes[club_code]["accepted"] = True
-                    await websocket.send_text(self.attendance_codes[club_code]["code"])
+                    print("코드출석으로 변경",self.attendance_codes[club_code]["current_code"] )
+                    await websocket.send_text(self.attendance_codes[club_code]["current_code"])
                 elif message == "stop_attendance":
                     await websocket.send_text("출석종료")
                     stop_called = True

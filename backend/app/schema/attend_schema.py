@@ -5,6 +5,9 @@ from typing import List
 class AttendanceCheckRequest(BaseModel):
     club_code: str
     code: str
+
+class QRAttendanceCheckRequest(BaseModel):
+    qr_code: str
     
 class ClubForm(BaseModel):
     club_code: str
