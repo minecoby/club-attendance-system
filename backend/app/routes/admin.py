@@ -12,6 +12,7 @@ from datetime import datetime
 from app.models import AttendanceDate
 import asyncio
 import random
+from collections import deque
 
 admin_logger = get_admin_logger()
 
@@ -59,8 +60,7 @@ class AttendanceWebSocketManager:
                     await websocket.close()
                     return
             self.attendance_codes[club_code] = {
-                "current_code": None,
-                "previous_code": None,
+                "valid_codes": deque(maxlen=5),
                 "accepted": False,
                 "date": date
             }
@@ -68,15 +68,17 @@ class AttendanceWebSocketManager:
             async def generate_loop():
                 while True:
                     if self.attendance_codes[club_code]["accepted"]:
-                        await websocket.send_text(self.attendance_codes[club_code]["current_code"])
-                        print("코드출석으로 변경",self.attendance_codes[club_code]["current_code"] )
+                        if not self.attendance_codes[club_code]["valid_codes"]:
+                            await asyncio.sleep(1)
+                            continue
+                        await websocket.send_text(self.attendance_codes[club_code]["valid_codes"][-1])
+                        print("코드출석으로 변경",self.attendance_codes[club_code]["valid_codes"][-1] )
                         break
 
                     new_code = self.generate_random_code(club_code)
                     full_code = f'{club_code}:{new_code}'
 
-                    self.attendance_codes[club_code]["previous_code"] = self.attendance_codes[club_code]["current_code"]
-                    self.attendance_codes[club_code]["current_code"] = full_code
+                    self.attendance_codes[club_code]["valid_codes"].append(full_code)
                     self.attendance_codes[club_code]["date"] = date
 
                     await websocket.send_text(full_code)
@@ -88,8 +90,9 @@ class AttendanceWebSocketManager:
                 message = await websocket.receive_text()
                 if message == "code_attendance_accepted":
                     self.attendance_codes[club_code]["accepted"] = True
-                    print("코드출석으로 변경",self.attendance_codes[club_code]["current_code"] )
-                    await websocket.send_text(self.attendance_codes[club_code]["current_code"])
+                    if self.attendance_codes[club_code]["valid_codes"]:
+                        print("코드출석으로 변경",self.attendance_codes[club_code]["valid_codes"][-1] )
+                        await websocket.send_text(self.attendance_codes[club_code]["valid_codes"][-1])
                 elif message == "stop_attendance":
                     await websocket.send_text("출석종료")
                     stop_called = True

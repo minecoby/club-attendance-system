@@ -33,10 +33,9 @@ async def check_attendance(
 
     expected_code = f"{data.club_code}:{data.code}"
 
-    current_code = current.get("current_code")
-    previous_code = current.get("previous_code")
+    valid_codes = current.get("valid_codes")
 
-    if expected_code != current_code and expected_code != previous_code:
+    if expected_code not in valid_codes:
         raise HTTPException(status_code=400, detail="출석 코드가 일치하지 않습니다.")
 
     date = current["date"]
@@ -68,10 +67,9 @@ async def check_qr_attendance(
     if not current:
         raise HTTPException(status_code=404, detail="출석 코드가 활성화되어 있지 않습니다.")
 
-    current_code = current.get("current_code")
-    previous_code = current.get("previous_code")
+    valid_codes = current.get("valid_codes")
 
-    if data.qr_code != current_code and data.qr_code != previous_code:
+    if data.qr_code not in valid_codes:
         raise HTTPException(status_code=400, detail="출석 코드가 일치하지 않습니다.")
 
     date = current["date"]
