@@ -13,6 +13,8 @@ from app.services.club_service import get_club_info
 from fastapi import HTTPException
 import urllib.parse
 import requests
+import base64
+import json
 
 user_logger = get_user_logger()
 
@@ -23,24 +25,38 @@ router = APIRouter(
 )
 
 @router.get("/google/login")
-async def google_login():
+async def google_login(redirect_uri: str = None):
     scope = "openid email profile"
+
+    state_data = {"redirect_uri": redirect_uri} if redirect_uri else {}
+    state = base64.urlsafe_b64encode(json.dumps(state_data).encode()).decode()
+
     params = {
         "client_id": GOOGLE_CLIENT_ID,
         "redirect_uri": GOOGLE_REDIRECT_URI,
         "scope": scope,
         "response_type": "code",
         "access_type": "offline",
-        "prompt": "consent"
+        "prompt": "consent",
+        "state": state
     }
-    
+
     auth_url = "https://accounts.google.com/o/oauth2/auth?" + urllib.parse.urlencode(params)
-    
+
     return {"auth_url": auth_url}
 
 @router.get("/google/callback")
-async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
+async def google_callback(code: str, state: str = None, db: AsyncSession = Depends(get_db)):
     try:
+        # state에서 redirect_uri 추출
+        custom_redirect_uri = None
+        if state:
+            try:
+                state_data = json.loads(base64.urlsafe_b64decode(state).decode())
+                custom_redirect_uri = state_data.get("redirect_uri")
+            except:
+                pass
+
         token_data = {
             "client_id": GOOGLE_CLIENT_ID,
             "client_secret": GOOGLE_CLIENT_SECRET,
@@ -48,7 +64,7 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
             "grant_type": "authorization_code",
             "redirect_uri": GOOGLE_REDIRECT_URI,
         }
-        
+
         token_response = requests.post(
             "https://oauth2.googleapis.com/token",
             data=token_data
@@ -58,26 +74,26 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
         access_token = tokens.get("access_token")
         if not access_token:
             raise HTTPException(status_code=400, detail="토큰을 받을 수 없습니다.")
-        
+
         user_info_response = requests.get(
             f"https://www.googleapis.com/oauth2/v2/userinfo?access_token={access_token}"
         )
         user_info_response.raise_for_status()
         user_info = user_info_response.json()
-        
+
         google_id = user_info.get("id")
         email = user_info.get("email")
         name = user_info.get("name")
-        
+
         if not google_id or not email:
             raise HTTPException(status_code=400, detail="사용자 정보를 가져올 수 없습니다.")
-        
+
         from sqlalchemy.future import select
         from app.models import User
-        
+
         result = await db.execute(select(User).where(User.user_id == google_id))
         user = result.scalar_one_or_none()
-        
+
         if not user:
             user = User(
                 user_id=google_id,
@@ -88,20 +104,24 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
             db.add(user)
             await db.commit()
             await db.refresh(user)
-        
+
         jwt_access_token = create_access_token(data={"sub": user.user_id})
         jwt_refresh_token = create_refresh_token(data={"sub": user.user_id})
-        
+
         await save_refresh_token(user.user_id, jwt_refresh_token, db)
-        
+
         usertype = "leader" if user.is_leader else "user"
-        
+
         from fastapi.responses import RedirectResponse
-        
-        redirect_url = f"{FRONTEND_URL}/auth/callback?access_token={jwt_access_token}&refresh_token={jwt_refresh_token}&usertype={usertype}"
-        
+
+        # 앱에서 요청한 경우 앱으로, 아니면 웹으로 리다이렉트
+        if custom_redirect_uri:
+            redirect_url = f"{custom_redirect_uri}?access_token={jwt_access_token}&refresh_token={jwt_refresh_token}&user_type={usertype}"
+        else:
+            redirect_url = f"{FRONTEND_URL}/auth/callback?access_token={jwt_access_token}&refresh_token={jwt_refresh_token}&usertype={usertype}"
+
         return RedirectResponse(url=redirect_url)
-        
+
     except requests.RequestException as e:
         raise HTTPException(status_code=500, detail=f"구글 API 요청 실패: {str(e)}")
     except Exception as e:
