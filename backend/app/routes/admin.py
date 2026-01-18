@@ -154,7 +154,7 @@ async def refresh(data: DateRequest,credentials: HTTPAuthorizationCredentials = 
     await date_add(data, club_code, user)
 
 
-@router.delete("delete_date/{date}")
+@router.delete("/delete_date/{date}")
 async def delete_date(date: str,credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
     token = credentials.credentials
     user = await get_current_user(token, db)
@@ -164,6 +164,20 @@ async def delete_date(date: str,credentials: HTTPAuthorizationCredentials = Secu
 
     club_code = await get_leader_club_code(user.user_id, db)
     await delete_date_from_club(club_code,date,db)
+    return {"message": f"{date} 날짜의 출석 기록이 삭제되었습니다."}
+
+
+@router.delete("/delete_all_attendance")
+async def delete_all_attendance(credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
+    token = credentials.credentials
+    user = await get_current_user(token, db)
+
+    if not user.is_leader:
+        raise HTTPException(status_code=403, detail="오로지 관리자권한이 있는사람만 삭제가능합니다.")
+
+    club_code = await get_leader_club_code(user.user_id, db)
+    result = await delete_all_attendance_from_club(club_code, db)
+    return result
 
 
 

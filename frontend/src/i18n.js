@@ -59,6 +59,11 @@ const i18n = {
     attendFail: '출석 실패',
     ok: '확인',
     back: '뒤로가기',
+    editAttendance: '수정하기',
+    saveAttendance: '저장하기',
+    downloadAttendance: '출석부 다운로드',
+    deleteDate: '삭제하기',
+    deleteAllAttendance: '전체 삭제',
   },
   en: {
     userInfo: 'User Info',
@@ -120,6 +125,11 @@ const i18n = {
     attendFail: 'Attendance Failed',
     ok: 'OK',
     back: 'Back',
+    editAttendance: 'Edit',
+    saveAttendance: 'Save',
+    downloadAttendance: 'Download Attendance',
+    deleteDate: 'Delete',
+    deleteAllAttendance: 'Delete All',
   }
 };
 

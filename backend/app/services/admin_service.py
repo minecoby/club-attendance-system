@@ -114,6 +114,34 @@ async def delete_date_from_club(code: str, date: str, db: AsyncSession):
     except SQLAlchemyError:
         await db.rollback()
         raise HTTPException(status_code=500, detail="출석 삭제 중 데이터베이스 오류가 발생했습니다.")
+
+# 전체 출석 기록 삭제
+async def delete_all_attendance_from_club(code: str, db: AsyncSession):
+    try:
+        result = await db.execute(
+            select(AttendanceDate).where(AttendanceDate.club_code == code)
+        )
+        attendance_dates = result.scalars().all()
+
+        if not attendance_dates:
+            raise HTTPException(status_code=404, detail="삭제할 출석 기록이 없습니다.")
+
+        attendance_date_ids = [ad.id for ad in attendance_dates]
+
+        await db.execute(
+            delete(Attendance).where(Attendance.attendance_date_id.in_(attendance_date_ids))
+        )
+
+        await db.execute(
+            delete(AttendanceDate).where(AttendanceDate.club_code == code)
+        )
+
+        await db.commit()
+        return {"message": f"전체 출석 기록이 성공적으로 삭제되었습니다. ({len(attendance_dates)}개 날짜)"}
+
+    except SQLAlchemyError:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="전체 출석 삭제 중 데이터베이스 오류가 발생했습니다.")
     
 #등록된 날짜인지 확인
 async def check_date(code, date):

@@ -375,6 +375,54 @@ function LeaderPage({ language, setLanguage }) {
         }
     };
 
+    // 날짜별 출석 기록 삭제 핸들러
+    const handleDeleteDate = () => {
+        setAlert({
+            show: true,
+            type: 'warning',
+            message: `${selectedDate} 날짜의 출석 기록을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`,
+            confirm: true,
+            onConfirm: async () => {
+                try {
+                    await apiClient.delete(`/admin/delete_date/${selectedDate}`);
+                    setAlert({ show: true, type: 'success', message: '출석 기록이 삭제되었습니다.' });
+                    // 날짜 목록에서 삭제된 날짜 제거
+                    setDateList(prev => prev.filter(d => d !== selectedDate));
+                    // 오늘 날짜로 이동
+                    setSelectedDate(today);
+                } catch (err) {
+                    setAlert({ show: true, type: 'error', message: '삭제 중 오류가 발생했습니다.' });
+                }
+            }
+        });
+    };
+
+    // 전체 출석 기록 삭제 핸들러
+    const handleDeleteAllAttendance = () => {
+        setAlert({
+            show: true,
+            type: 'warning',
+            message: '전체 출석 기록을 삭제하시겠습니까?\n모든 날짜의 출석 데이터가 삭제됩니다.\n이 작업은 되돌릴 수 없습니다.',
+            confirm: true,
+            onConfirm: async () => {
+                try {
+                    await apiClient.delete(`/admin/delete_all_attendance`);
+                    setAlert({ show: true, type: 'success', message: '전체 출석 기록이 삭제되었습니다.' });
+                    // 날짜 목록 초기화
+                    setDateList([today]);
+                    setAttendanceList([]);
+                    setSelectedDate(today);
+                } catch (err) {
+                    if (err.response && err.response.status === 404) {
+                        setAlert({ show: true, type: 'info', message: '삭제할 출석 기록이 없습니다.' });
+                    } else {
+                        setAlert({ show: true, type: 'error', message: '삭제 중 오류가 발생했습니다.' });
+                    }
+                }
+            }
+        });
+    };
+
     // 수정모드 진입
     const handleEditClick = () => {
         setEditAttendanceList(attendanceList.map(user => ({ ...user })));
@@ -527,9 +575,14 @@ function LeaderPage({ language, setLanguage }) {
                             <h2 className="attendance-title" style={{ margin: 0 }}>
                                 {i18n[language].allAttendance || '전체 출석부'}
                             </h2>
-                            <button className="download-excel-btn" onClick={handleDownloadExcel}>
-                                {i18n[language].downloadAttendance || '출석부 다운로드'}
-                            </button>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <button className="download-excel-btn" onClick={handleDownloadExcel}>
+                                    {i18n[language].downloadAttendance || '출석부 다운로드'}
+                                </button>
+                                <button className="delete-all-attendance-btn" style={{ background: '#f44336', color: 'white', border: 'none', borderRadius: '6px', padding: '8px 16px', fontWeight: 'bold', fontSize: '0.95rem', cursor: 'pointer' }} onClick={handleDeleteAllAttendance}>
+                                    {i18n[language].deleteAllAttendance || '전체 삭제'}
+                                </button>
+                            </div>
                         </div>
                         <table className="attendance-table">
                             <thead>
@@ -621,9 +674,14 @@ function LeaderPage({ language, setLanguage }) {
                             <h2 className="attendance-title" style={{ margin: 0 }}>
                                 {selectedDate ? `${selectedDate} ${i18n[language].attendanceList || '출석부'}` : (i18n[language].allAttendance || '전체 출석부')}
                             </h2>
-                            <button className="edit-attendance-btn" style={{ background: '#1976d2', color: 'white', border: 'none', borderRadius: '6px', padding: '8px 24px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer' }} onClick={handleEditClick}>
-                                {i18n[language].editAttendance || '수정하기'}
-                            </button>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <button className="edit-attendance-btn" style={{ background: '#1976d2', color: 'white', border: 'none', borderRadius: '6px', padding: '8px 24px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer' }} onClick={handleEditClick}>
+                                    {i18n[language].editAttendance || '수정하기'}
+                                </button>
+                                <button className="delete-attendance-btn" style={{ background: '#f44336', color: 'white', border: 'none', borderRadius: '6px', padding: '8px 24px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer' }} onClick={handleDeleteDate}>
+                                    {i18n[language].deleteDate || '삭제하기'}
+                                </button>
+                            </div>
                         </div>
                         <table className="attendance-table">
                             <thead>
