@@ -6,6 +6,7 @@ from app.variable import *
 from app.schema.admin_schema import *
 from app.services.admin_service import *
 from app.services.club_service import get_club_admin
+from app.services.location_service import get_club_location_settings, update_club_location
 from app.services.service import *
 from app.logger import get_admin_logger
 from datetime import datetime
@@ -222,4 +223,31 @@ async def export_attendance_excel(credentials: HTTPAuthorizationCredentials = Se
         headers={
             "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}"
         }
+    )
+
+
+@router.get("/location_settings")
+async def get_location_settings(credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
+    token = credentials.credentials
+    user = await get_current_user(token, db)
+    if not user.is_leader:
+        raise HTTPException(status_code=403, detail="오로지 관리자권한이 있는사람만 조회가능합니다.")
+    club_code = await get_leader_club_code(user.user_id, db)
+    return await get_club_location_settings(club_code, db)
+
+
+@router.put("/location_settings")
+async def update_location_settings(data: LocationSettingRequest, credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
+    token = credentials.credentials
+    user = await get_current_user(token, db)
+    if not user.is_leader:
+        raise HTTPException(status_code=403, detail="오로지 관리자권한이 있는사람만 수정가능합니다.")
+    club_code = await get_leader_club_code(user.user_id, db)
+    return await update_club_location(
+        club_code,
+        data.location_enabled,
+        data.latitude,
+        data.longitude,
+        data.radius_km,
+        db
     )

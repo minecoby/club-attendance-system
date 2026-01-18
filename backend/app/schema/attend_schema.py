@@ -1,13 +1,18 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 
 class AttendanceCheckRequest(BaseModel):
     club_code: str
     code: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
 
 class QRAttendanceCheckRequest(BaseModel):
     qr_code: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     
 class ClubForm(BaseModel):
     club_code: str

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import apiClient from '../utils/apiClient';
+import { getCurrentPosition } from '../utils/geolocation';
 import AlertModal from '../components/AlertModal';
 import i18n from '../i18n';
 
@@ -78,8 +79,20 @@ function AttendRedirectPage({ language = 'ko' }) {
 
     const processAttendanceWithRetry = async (code, club, isRetry = false) => {
         try {
+            let locationData = {};
+            try {
+                const position = await getCurrentPosition();
+                locationData = {
+                    latitude: position.latitude,
+                    longitude: position.longitude
+                };
+            } catch (locationError) {
+                console.log('위치 정보 없이 출석 시도:', locationError.message);
+            }
+
             await apiClient.post('/attend/check_qr', {
-                qr_code: code
+                qr_code: code,
+                ...locationData
             });
 
             // 출석 성공

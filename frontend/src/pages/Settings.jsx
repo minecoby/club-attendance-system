@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import apiClient from '../utils/apiClient';
+import { getCurrentPosition } from '../utils/geolocation';
 import dataCache from '../utils/dataCache';
 import '../styles/Settings.css';
 import AlertModal from '../components/AlertModal';
+import LocationMapModal from '../components/LocationMapModal';
 import i18n from '../i18n';
 
 const API = import.meta.env.VITE_BASE_URL;
@@ -39,6 +41,15 @@ function Settings({ theme, setTheme, language, setLanguage }) {
     const [kickTargetUser, setKickTargetUser] = useState(null);
     // 회원탈퇴 모달 상태
     const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+    // 위치 설정 상태
+    const [locationSettings, setLocationSettings] = useState({
+        location_enabled: false,
+        latitude: null,
+        longitude: null,
+        radius_km: 0.1
+    });
+    const [locationLoading, setLocationLoading] = useState(false);
+    const [showMapModal, setShowMapModal] = useState(false);
 
 
     // 사용자 정보 불러오기
@@ -63,9 +74,10 @@ function Settings({ theme, setTheme, language, setLanguage }) {
                 setUserInfo(data.userData);
                 setNewName(data.userData.name);
                 setJoinedClubs(data.clubData);
-                
+
                 if (data.isLeader) {
                     loadMembersWithCache();
+                    loadLocationSettings();
                 }
             },
             1000 * 60 * 5
@@ -89,6 +101,57 @@ function Settings({ theme, setTheme, language, setLanguage }) {
         ).catch(err => {
             console.error('멤버 목록 불러오기 실패:', err);
         });
+    };
+
+    // 위치 설정 불러오기
+    const loadLocationSettings = async () => {
+        try {
+            const res = await apiClient.get('/admin/location_settings');
+            setLocationSettings(res.data);
+        } catch (err) {
+            console.error('위치 설정 불러오기 실패:', err);
+        }
+    };
+
+    // 위치 설정 저장
+    const handleSaveLocationSettings = async () => {
+        try {
+            setLocationLoading(true);
+            await apiClient.put('/admin/location_settings', locationSettings);
+            setAlert({ show: true, type: 'success', message: i18n[language].locationSettingsSaved || '위치 설정이 저장되었습니다.' });
+        } catch (err) {
+            setAlert({ show: true, type: 'error', message: i18n[language].locationSettingsFailed || '위치 설정 저장 실패' });
+        } finally {
+            setLocationLoading(false);
+        }
+    };
+
+    // 현재 위치 사용
+    const handleUseCurrentLocation = async () => {
+        try {
+            setLocationLoading(true);
+            const position = await getCurrentPosition();
+            setLocationSettings(prev => ({
+                ...prev,
+                latitude: position.latitude,
+                longitude: position.longitude
+            }));
+            setAlert({ show: true, type: 'success', message: i18n[language].currentLocationSet || '현재 위치가 설정되었습니다.' });
+        } catch (err) {
+            setAlert({ show: true, type: 'error', message: err.message });
+        } finally {
+            setLocationLoading(false);
+        }
+    };
+
+    // 지도에서 위치 선택
+    const handleMapSelect = (lat, lng) => {
+        setLocationSettings(prev => ({
+            ...prev,
+            latitude: lat,
+            longitude: lng
+        }));
+        setAlert({ show: true, type: 'success', message: i18n[language].locationSelectedFromMap || '지도에서 위치가 선택되었습니다.' });
     };
 
 
@@ -286,6 +349,15 @@ function Settings({ theme, setTheme, language, setLanguage }) {
                 onConfirm={handleDeleteAccount}
                 onClose={() => setShowDeleteAccountModal(false)}
             />
+            {/* 위치 지도 선택 모달 */}
+            <LocationMapModal
+                show={showMapModal}
+                onClose={() => setShowMapModal(false)}
+                onSelect={handleMapSelect}
+                initialLat={locationSettings.latitude}
+                initialLng={locationSettings.longitude}
+                language={language}
+            />
             <div className="settings-container">
                 {/* 사용자 정보 카드 */}
                 <div className="settings-card">
@@ -377,6 +449,71 @@ function Settings({ theme, setTheme, language, setLanguage }) {
                         </div>
                     </div>
                 </div>
+
+                {/* 위치 설정 카드 (리더만 표시) */}
+                {userInfo.is_leader && (
+                    <div className="settings-card">
+                        <div className="settings-card-title">{i18n[language].locationSettings || '위치 설정'}</div>
+                        <div className="settings-card-content">
+                            <div className="settings-row">
+                                <label>{i18n[language].locationVerification || '위치 검증'}</label>
+                                <button
+                                    className={`settings-btn ${locationSettings.location_enabled ? 'primary' : ''}`}
+                                    onClick={() => setLocationSettings(prev => ({ ...prev, location_enabled: !prev.location_enabled }))}
+                                >
+                                    {locationSettings.location_enabled ? (i18n[language].enabled || '활성화') : (i18n[language].disabled || '비활성화')}
+                                </button>
+                            </div>
+                            <div className="settings-row">
+                                <label>{i18n[language].latitude || '위도'}</label>
+                                <input
+                                    type="number"
+                                    step="any"
+                                    value={locationSettings.latitude || ''}
+                                    onChange={(e) => setLocationSettings(prev => ({ ...prev, latitude: e.target.value ? parseFloat(e.target.value) : null }))}
+                                    className="settings-input"
+                                    placeholder="37.5665"
+                                />
+                            </div>
+                            <div className="settings-row">
+                                <label>{i18n[language].longitude || '경도'}</label>
+                                <input
+                                    type="number"
+                                    step="any"
+                                    value={locationSettings.longitude || ''}
+                                    onChange={(e) => setLocationSettings(prev => ({ ...prev, longitude: e.target.value ? parseFloat(e.target.value) : null }))}
+                                    className="settings-input"
+                                    placeholder="126.9780"
+                                />
+                            </div>
+                            <div className="settings-row">
+                                <label>{i18n[language].radius || '반경'} (km)</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0.01"
+                                    value={locationSettings.radius_km || 0.1}
+                                    onChange={(e) => setLocationSettings(prev => ({ ...prev, radius_km: parseFloat(e.target.value) || 0.1 }))}
+                                    className="settings-input"
+                                    placeholder="0.1"
+                                />
+                            </div>
+                            <div className="settings-row">
+                                <button className="settings-btn" onClick={() => setShowMapModal(true)} disabled={locationLoading}>
+                                    {i18n[language].selectFromMap || '지도에서 선택'}
+                                </button>
+                                <button className="settings-btn" onClick={handleUseCurrentLocation} disabled={locationLoading}>
+                                    {i18n[language].useCurrentLocation || '현재 위치 사용'}
+                                </button>
+                            </div>
+                            <div className="settings-row">
+                                <button className="settings-btn primary" onClick={handleSaveLocationSettings} disabled={locationLoading}>
+                                    {locationLoading ? (i18n[language].saving || '저장 중...') : (i18n[language].save || '저장')}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* 유저 목록 관리 카드 (리더만 표시) */}
                 {userInfo.is_leader && (

@@ -6,7 +6,8 @@ from app.variable import *
 from app.services.service import *
 from app.services.club_service import *
 from app.services.attend_service import *
-from app.routes.admin import attendance_ws 
+from app.services.location_service import validate_location
+from app.routes.admin import attendance_ws
 from app.schema.attend_schema import *
 from app.schema.club_schema import *
 from app.logger import get_attendance_logger
@@ -37,6 +38,8 @@ async def check_attendance(
 
     if expected_code not in valid_codes:
         raise HTTPException(status_code=400, detail="출석 코드가 일치하지 않습니다.")
+
+    await validate_location(data.club_code, data.latitude, data.longitude, db)
 
     date = current["date"]
     date_id = await get_date_id(date, data.club_code, db)
@@ -71,6 +74,8 @@ async def check_qr_attendance(
 
     if data.qr_code not in valid_codes:
         raise HTTPException(status_code=400, detail="출석 코드가 일치하지 않습니다.")
+
+    await validate_location(club_code, data.latitude, data.longitude, db)
 
     date = current["date"]
     date_id = await get_date_id(date, club_code, db)

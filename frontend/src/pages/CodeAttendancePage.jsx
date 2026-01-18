@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../utils/apiClient';
+import { getCurrentPosition } from '../utils/geolocation';
 import AlertModal from '../components/AlertModal';
 import i18n from '../i18n';
 
@@ -36,9 +37,21 @@ function CodeAttendancePage({ language, setLanguage }) {
                 }
             }
 
+            let locationData = {};
+            try {
+                const position = await getCurrentPosition();
+                locationData = {
+                    latitude: position.latitude,
+                    longitude: position.longitude
+                };
+            } catch (locationError) {
+                console.log('위치 정보 없이 출석 시도:', locationError.message);
+            }
+
             await apiClient.post('/attend/check', {
                 club_code: clubCode,
-                code: attendanceCode
+                code: attendanceCode,
+                ...locationData
             });
 
             setAttendanceCompleted(true);
@@ -46,7 +59,7 @@ function CodeAttendancePage({ language, setLanguage }) {
             setMessageType('success');
             setShowAlert(true);
             setAttendanceCode("");
-            
+
         } catch (err) {
             let errorMsg = '출석 실패: ';
             if (err.response?.data?.detail) {

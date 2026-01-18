@@ -1,5 +1,5 @@
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, Boolean, Date, DateTime, ForeignKey, Text, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Boolean, Date, DateTime, ForeignKey, Text, UniqueConstraint, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
@@ -33,6 +33,10 @@ class Club(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     club_name = Column(String(100), nullable=False)
     club_code = Column(String(20), unique=True, nullable=False)
+    location_enabled = Column(Boolean, default=False)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    radius_km = Column(Float, default=0.1)
     members = relationship("StuClub", back_populates="club")
 
 
