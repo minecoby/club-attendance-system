@@ -1,17 +1,16 @@
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import Login from "../pages/Login";
-import GoogleCallback from "../pages/GoogleCallback";
-import UserPage from "../pages/UserPage";
+import Register from "../pages/Register";
 import LeaderPage from "../pages/LeaderPage";
 import Settings from "../pages/Settings";
 import Navbar from "../components/Navbar";
 import CodeAttendancePage from "../pages/CodeAttendancePage";
 import AttendRedirectPage from "../pages/AttendRedirectPage";
-import UserGuard from "../components/MobileGuard";
+import AuthGuard from "../components/AuthGuard";
 
 const AppRouter = ({ theme, setTheme, language, setLanguage }) => {
   const location = useLocation();
-  const hideNavOnPaths = ["/", "/login", "/auth/callback"];
+  const hideNavOnPaths = ["/", "/login", "/register"];
   const showNav = !hideNavOnPaths.includes(location.pathname);
 
   return (<>
@@ -19,26 +18,21 @@ const AppRouter = ({ theme, setTheme, language, setLanguage }) => {
   <Routes>
     <Route path="/" element={<Login />} />
     <Route path="/login" element={<Login />} />
-    <Route path="/auth/callback" element={<GoogleCallback />} />
-    <Route path="/userpage" element={
-      <UserGuard>
-        <UserPage theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} />
-      </UserGuard>
-    } />
+    <Route path="/register" element={<Register />} />
     <Route path="/leaderpage" element={
-      <UserGuard>
+      <AuthGuard>
         <LeaderPage theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} />
-      </UserGuard>
+      </AuthGuard>
     } />
     <Route path="/settings" element={
-      <UserGuard>
+      <AuthGuard>
         <Settings theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} />
-      </UserGuard>
+      </AuthGuard>
     } />
     <Route path="/code-attendance" element={
-      <UserGuard>
+      <AuthGuard>
         <CodeAttendancePage theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} />
-      </UserGuard>
+      </AuthGuard>
     } />
     <Route path="/attend" element={
       <AttendRedirectPage theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} />

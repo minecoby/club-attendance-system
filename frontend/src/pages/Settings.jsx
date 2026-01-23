@@ -246,7 +246,6 @@ function Settings({ theme, setTheme, language, setLanguage }) {
             // 로컬 스토리지에서 모든 토큰 제거
             localStorage.removeItem('token');
             localStorage.removeItem('refresh_token');
-            localStorage.removeItem('usertype');
             navigate('/');
         }
     };

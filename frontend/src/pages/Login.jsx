@@ -1,33 +1,31 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import "../styles/Login.css";
 import axios from 'axios';
 import apiClient from '../utils/apiClient';
 import AlertModal from '../components/AlertModal';
-import googleIcon from '../assets/google.png';
 
 function LoginPage() {
   const navigate = useNavigate();
 
   const [alert, setAlert] = useState({ show: false, type: 'error', message: '' });
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
+
+  // 아이디/비밀번호 로그인 폼 상태
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoginLoading, setIsLoginLoading] = useState(false);
 
   const API = import.meta.env.VITE_BASE_URL;
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     const refreshToken = localStorage.getItem("refresh_token");
-    const usertype = localStorage.getItem("usertype");
-    
-    if (token && refreshToken && usertype) {
+
+    if (token && refreshToken) {
       apiClient.get(`/users/validate_token`)
       .then(response => {
-        if (usertype === "leader") {
-          navigate("/leaderpage");
-        } else if (usertype === "user") {
-          navigate("/userpage");
-        }
+        navigate("/leaderpage");
       })
       .catch(error => {
         setIsCheckingAuth(false);
@@ -37,27 +35,40 @@ function LoginPage() {
     }
   }, [navigate]);
 
-  const handleGoogleLogin = async () => {
-    try {
-      setIsLoading(true);
-      const response = await axios.get(`${API}/users/google/login`);
-      const { auth_url } = response.data;
-      
-      window.location.href = auth_url;
-    } catch (error) {
-      console.error("구글 로그인 URL 요청 실패", error);
-      setAlert({ 
-        show: true, 
-        type: 'error', 
-        message: "구글 로그인을 시작할 수 없습니다." 
-      });
-      setIsLoading(false);
+  // 아이디/비밀번호 로그인
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    if (!username || !password) {
+      setAlert({ show: true, type: 'error', message: '아이디와 비밀번호를 입력해주세요.' });
+      return;
     }
-  }
+
+    try {
+      setIsLoginLoading(true);
+      const response = await axios.post(`${API}/users/login`, {
+        username,
+        password
+      });
+
+      const { access_token, refresh_token } = response.data;
+
+      localStorage.setItem("token", access_token);
+      localStorage.setItem("refresh_token", refresh_token);
+
+      navigate("/leaderpage");
+    } catch (error) {
+      console.error("로그인 실패", error);
+      const message = error.response?.data?.detail || "로그인에 실패했습니다.";
+      setAlert({ show: true, type: 'error', message });
+    } finally {
+      setIsLoginLoading(false);
+    }
+  };
 
   const handleCloseAlert = () => {
     setAlert({ ...alert, show: false });
   };
+
   if (isCheckingAuth) {
     return (
       <div className="login-page">
@@ -88,22 +99,43 @@ function LoginPage() {
       </div>
       <div className="login-container">
         <div className="login-form">
-          <h2 className="login-title">로그인</h2>
-          
-          <button 
-            onClick={handleGoogleLogin} 
-            className="google-login-button"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <span className="loading-spinner"></span>
-            ) : (
-              <>
-                <img src={googleIcon} alt="Google" className="google-icon" />
-                Google로 로그인
-              </>
-            )}
-          </button>
+          <h2 className="login-title">관리자 로그인</h2>
+
+          {/* 아이디/비밀번호 로그인 폼 */}
+          <form onSubmit={handleLogin} className="login-form-inputs">
+            <input
+              type="text"
+              placeholder="아이디"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="login-input"
+              disabled={isLoginLoading}
+            />
+            <input
+              type="password"
+              placeholder="비밀번호"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="login-input"
+              disabled={isLoginLoading}
+            />
+            <button
+              type="submit"
+              className="login-button"
+              disabled={isLoginLoading}
+            >
+              {isLoginLoading ? (
+                <span className="loading-spinner"></span>
+              ) : (
+                '로그인'
+              )}
+            </button>
+          </form>
+
+          <div className="register-login-link">
+            <span>계정이 없으신가요? </span>
+            <Link to="/register">회원가입</Link>
+          </div>
         </div>
       </div>
     </div>
