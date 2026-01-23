@@ -120,18 +120,13 @@ async def rotate_refresh_token(old_refresh_token: str, db: AsyncSession):
         
         new_access_token = create_access_token(data={"sub": user_id})
         new_refresh_token = create_refresh_token(data={"sub": user_id})
-        
+
         await save_refresh_token(user_id, new_refresh_token, db)
-        
-        result = await db.execute(select(User).where(User.user_id == user_id))
-        user = result.scalar_one_or_none()
-        usertype = "leader" if user.is_leader else "user"
-        
+
         return {
             "access_token": new_access_token,
             "refresh_token": new_refresh_token,
-            "token_type": "bearer",
-            "usertype": usertype
+            "token_type": "bearer"
         }
         
     except Exception as e:

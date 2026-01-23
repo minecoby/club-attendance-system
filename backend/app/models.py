@@ -9,9 +9,11 @@ class User(Base):
     __tablename__ = "users"
 
     user_id = Column(String(255), primary_key=True)
-    gmail = Column(String(255), unique=True, nullable=False)
+    gmail = Column(String(255), unique=True, nullable=True)
+    password_hash = Column(String(255), nullable=True)
     name = Column(String(100), nullable=False)
     is_leader = Column(Boolean, default=False)
+    google_refresh_token = Column(Text, nullable=True)  
 
 
 class RefreshToken(Base):
