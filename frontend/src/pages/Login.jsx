@@ -1,72 +1,79 @@
-import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+﻿import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
+import apiClient from "../utils/apiClient";
+import AlertModal from "../components/AlertModal";
+import googleIcon from "../assets/google.png";
 import "../styles/Login.css";
-import axios from 'axios';
-import apiClient from '../utils/apiClient';
-import AlertModal from '../components/AlertModal';
 
 function LoginPage() {
   const navigate = useNavigate();
-
-  const [alert, setAlert] = useState({ show: false, type: 'error', message: '' });
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-
-  // 아이디/비밀번호 로그인 폼 상태
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoginLoading, setIsLoginLoading] = useState(false);
-
   const API = import.meta.env.VITE_BASE_URL;
+
+  const [alert, setAlert] = useState({ show: false, type: "error", message: "" });
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [isAdminLoading, setIsAdminLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     const refreshToken = localStorage.getItem("refresh_token");
+    const usertype = localStorage.getItem("usertype");
 
-    if (token && refreshToken) {
-      apiClient.get(`/users/validate_token`)
-      .then(response => {
+    if (!token || !refreshToken) {
+      setIsCheckingAuth(false);
+      return;
+    }
+
+    apiClient
+      .get("/users/validate_token")
+      .then(() => {
+        if (usertype === "user") {
+          navigate("/userpage");
+          return;
+        }
         navigate("/leaderpage");
       })
-      .catch(error => {
-        setIsCheckingAuth(false);
-      });
-    } else {
-      setIsCheckingAuth(false);
-    }
+      .catch(() => setIsCheckingAuth(false));
   }, [navigate]);
 
-  // 아이디/비밀번호 로그인
-  const handleLogin = async (e) => {
+  const handleAdminLogin = async (e) => {
     e.preventDefault();
     if (!username || !password) {
-      setAlert({ show: true, type: 'error', message: '아이디와 비밀번호를 입력해주세요.' });
+      setAlert({ show: true, type: "error", message: "아이디와 비밀번호를 입력해주세요." });
       return;
     }
 
     try {
-      setIsLoginLoading(true);
-      const response = await axios.post(`${API}/users/login`, {
-        username,
-        password
-      });
-
+      setIsAdminLoading(true);
+      const response = await axios.post(`${API}/users/login`, { username, password });
       const { access_token, refresh_token } = response.data;
 
       localStorage.setItem("token", access_token);
       localStorage.setItem("refresh_token", refresh_token);
+      localStorage.setItem("usertype", "leader");
 
       navigate("/leaderpage");
     } catch (error) {
-      console.error("로그인 실패", error);
       const message = error.response?.data?.detail || "로그인에 실패했습니다.";
-      setAlert({ show: true, type: 'error', message });
+      setAlert({ show: true, type: "error", message });
     } finally {
-      setIsLoginLoading(false);
+      setIsAdminLoading(false);
     }
   };
 
-  const handleCloseAlert = () => {
-    setAlert({ ...alert, show: false });
+  const handleGoogleLogin = async () => {
+    try {
+      setIsGoogleLoading(true);
+      const response = await axios.get(`${API}/users/google/login`);
+      const { auth_url } = response.data;
+      window.location.href = auth_url;
+    } catch {
+      setAlert({ show: true, type: "error", message: "Google 로그인을 시작하지 못했습니다." });
+      setIsGoogleLoading(false);
+    }
   };
 
   if (isCheckingAuth) {
@@ -90,7 +97,12 @@ function LoginPage() {
 
   return (
     <div className="login-page">
-      <AlertModal show={alert.show} type={alert.type} message={alert.message} onClose={handleCloseAlert} />
+      <AlertModal
+        show={alert.show}
+        type={alert.type}
+        message={alert.message}
+        onClose={() => setAlert((prev) => ({ ...prev, show: false }))}
+      />
       <div className="login-brand-section">
         <div className="brand-content">
           <h1 className="brand-title">HANSSUP!</h1>
@@ -99,17 +111,16 @@ function LoginPage() {
       </div>
       <div className="login-container">
         <div className="login-form">
-          <h2 className="login-title">관리자 로그인</h2>
+          <h2 className="login-title">로그인</h2>
 
-          {/* 아이디/비밀번호 로그인 폼 */}
-          <form onSubmit={handleLogin} className="login-form-inputs">
+          <form onSubmit={handleAdminLogin} className="login-form-inputs">
             <input
               type="text"
-              placeholder="아이디"
+              placeholder="관리자 아이디"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="login-input"
-              disabled={isLoginLoading}
+              disabled={isAdminLoading || isGoogleLoading}
             />
             <input
               type="password"
@@ -117,24 +128,40 @@ function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="login-input"
-              disabled={isLoginLoading}
+              disabled={isAdminLoading || isGoogleLoading}
             />
-            <button
-              type="submit"
-              className="login-button"
-              disabled={isLoginLoading}
-            >
-              {isLoginLoading ? (
-                <span className="loading-spinner"></span>
-              ) : (
-                '로그인'
-              )}
+            <button type="submit" className="login-button" disabled={isAdminLoading || isGoogleLoading}>
+              {isAdminLoading ? <span className="loading-spinner"></span> : "관리자 로그인"}
             </button>
           </form>
 
+          <div className="login-divider">
+            <span>또는</span>
+          </div>
+
+          <button
+            onClick={handleGoogleLogin}
+            className="google-login-button"
+            disabled={isGoogleLoading || isAdminLoading}
+          >
+            {isGoogleLoading ? (
+              <span className="loading-spinner"></span>
+            ) : (
+              <>
+                <img src={googleIcon} alt="Google" className="google-icon" />
+                일반 유저 Google 로그인
+              </>
+            )}
+          </button>
+
           <div className="register-login-link">
-            <span>계정이 없으신가요? </span>
-            <Link to="/register">회원가입</Link>
+            <span>관리자 계정이 없으신가요? </span>
+            <Link to="/register">관리자 가입</Link>
+          </div>
+          <div className="legal-links">
+            <Link to="/privacy-policy">개인정보처리방침</Link>
+            <span className="legal-sep">|</span>
+            <Link to="/terms">이용약관</Link>
           </div>
         </div>
       </div>

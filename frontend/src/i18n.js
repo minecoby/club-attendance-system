@@ -26,8 +26,9 @@ const i18n = {
     language: '언어',
     // Navbar
     leaderPage: '리더 페이지',
+    userPage: '유저 페이지',
     settings: '환경설정',
-    // LeaderPage/QRAttendancePage 추가 키
+    // UserPage/LeaderPage/QRAttendancePage 추가 키
     selectClub: '동아리 선택:',
     startQR: '출석하기',
     inputAttendCode: '출석 코드 입력',
@@ -106,8 +107,9 @@ const i18n = {
     language: 'Language',
     // Navbar
     leaderPage: 'Leader Page',
+    userPage: 'User Page',
     settings: 'Settings',
-    // LeaderPage/QRAttendancePage 추가 키
+    // UserPage/LeaderPage/QRAttendancePage 추가 키
     selectClub: 'Select Club:',
     startQR: 'Start Attendance',
     inputAttendCode: 'Attendance Code Input',

@@ -69,6 +69,7 @@ apiClient.interceptors.response.use(
         // 리프레시 토큰이 없으면 로그인 페이지로
         localStorage.removeItem('token');
         localStorage.removeItem('refresh_token');
+        localStorage.removeItem('usertype');
         window.location.href = '/login';
         return Promise.reject(error);
       }
@@ -97,6 +98,7 @@ apiClient.interceptors.response.use(
         processQueue(refreshError, null);
         localStorage.removeItem('token');
         localStorage.removeItem('refresh_token');
+        localStorage.removeItem('usertype');
         window.location.href = '/login';
         return Promise.reject(refreshError);
       } finally {
