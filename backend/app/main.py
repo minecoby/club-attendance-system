@@ -7,6 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.logger import setup_loggers, get_api_logger, get_user_logger, get_attendance_logger, get_admin_logger, get_club_logger
 import time
 import json
+import re
+from urllib.parse import urlsplit, parse_qsl, urlencode, urlunsplit
 
 import os
 from fastapi_limiter import FastAPILimiter
@@ -15,6 +17,15 @@ from app.models import Base
 from app.db import engine
 
 app = FastAPI()
+
+ENVIRONMENT = os.getenv("ENV", "development").lower()
+_log_body_env = os.getenv("LOG_REQUEST_RESPONSE_BODY")
+if _log_body_env is None:
+    LOG_REQUEST_RESPONSE_BODY = ENVIRONMENT != "production"
+else:
+    LOG_REQUEST_RESPONSE_BODY = _log_body_env.lower() in {"1", "true", "yes", "on"}
+
+SENSITIVE_KEYS = {"password", "refresh_token", "access_token", "authorization", "code", "auth_code"}
 
 setup_loggers()
 api_logger = get_api_logger()
@@ -35,23 +46,71 @@ def get_logger_by_path(path: str):
     else:
         return api_logger
 
+
+def mask_sensitive_data(raw_text: str) -> str:
+    if not raw_text:
+        return raw_text
+
+    def _mask_in_obj(value):
+        if isinstance(value, dict):
+            return {
+                key: ("[REDACTED]" if str(key).lower() in SENSITIVE_KEYS else _mask_in_obj(val))
+                for key, val in value.items()
+            }
+        if isinstance(value, list):
+            return [_mask_in_obj(item) for item in value]
+        return value
+
+    try:
+        parsed = json.loads(raw_text)
+        return json.dumps(_mask_in_obj(parsed), ensure_ascii=False)
+    except Exception:
+        pass
+
+    masked = raw_text
+    masked = re.sub(
+        r"(?i)\b(password|refresh_token|access_token|authorization|code|auth_code)\s*=\s*([^&\s]+)",
+        r"\1=[REDACTED]",
+        masked,
+    )
+    masked = re.sub(
+        r'(?i)"(password|refresh_token|access_token|authorization|code|auth_code)"\s*:\s*"[^"]*"',
+        r'"\1":"[REDACTED]"',
+        masked,
+    )
+    masked = re.sub(r"(?i)\bBearer\s+[A-Za-z0-9\-._~+/]+=*", "Bearer [REDACTED]", masked)
+    return masked
+
+
+def mask_sensitive_query_params(url: str) -> str:
+    parts = urlsplit(url)
+    if not parts.query:
+        return url
+
+    query_pairs = parse_qsl(parts.query, keep_blank_values=True)
+    masked_pairs = [
+        (k, "[REDACTED]" if k.lower() in SENSITIVE_KEYS else v)
+        for k, v in query_pairs
+    ]
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(masked_pairs), parts.fragment))
+
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     start_time = time.time()
     
     client_ip = request.client.host if request.client else "unknown"
     method = request.method
-    url = str(request.url)
+    url = mask_sensitive_query_params(str(request.url))
     path = request.url.path
     
     logger = get_logger_by_path(path)
     
     body = ""
-    if method in ["POST", "PUT", "PATCH"]:
+    if LOG_REQUEST_RESPONSE_BODY and method in ["POST", "PUT", "PATCH"]:
         try:
             body = await request.body()
             if body:
-                body = body.decode('utf-8')[:500]  
+                body = mask_sensitive_data(body.decode('utf-8')[:500])
         except Exception as e:
             body = f"Error reading body: {str(e)}"
     
@@ -62,14 +121,14 @@ async def log_requests(request: Request, call_next):
     try:
         response = await call_next(request)
         
-        if response.status_code >= 400:
+        if LOG_REQUEST_RESPONSE_BODY and response.status_code >= 400:
             try:
                 response_body_bytes = b""
                 async for chunk in response.body_iterator:
                     response_body_bytes += chunk
                 
                 if response_body_bytes:
-                    response_body = response_body_bytes.decode('utf-8')[:1000]
+                    response_body = mask_sensitive_data(response_body_bytes.decode('utf-8')[:1000])
                     
                 from fastapi import Response as FastAPIResponse
                 response = FastAPIResponse(
@@ -118,6 +177,7 @@ app.add_middleware(
         "https://minecoby.com", 
         "https://api.minecoby.com", 
         "https://hanssup.minecoby.com"
+        # "*"
     ],
     allow_credentials=True,
     allow_methods=["*"],
