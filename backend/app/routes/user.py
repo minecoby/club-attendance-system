@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Depends, Security, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.db import get_db
@@ -15,6 +15,9 @@ import urllib.parse
 import requests
 import base64
 import json
+import os
+import secrets
+from datetime import datetime, timedelta
 from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -26,6 +29,29 @@ security = HTTPBearer()
 router = APIRouter(
     prefix="/users",
 )
+
+OAUTH_EXCHANGE_TTL_SECONDS = int(os.getenv("OAUTH_EXCHANGE_TTL_SECONDS", "120"))
+CONSENT_VERSION = os.getenv("CONSENT_VERSION", "2026-02-14")
+oauth_exchange_store = {}
+
+
+def _create_oauth_exchange_code(access_token: str, refresh_token: str, usertype: str) -> str:
+    now = datetime.utcnow()
+    expired_codes = [
+        key for key, value in oauth_exchange_store.items()
+        if value["expires_at"] <= now
+    ]
+    for expired_code in expired_codes:
+        oauth_exchange_store.pop(expired_code, None)
+
+    auth_code = secrets.token_urlsafe(32)
+    oauth_exchange_store[auth_code] = {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "usertype": usertype,
+        "expires_at": now + timedelta(seconds=OAUTH_EXCHANGE_TTL_SECONDS),
+    }
+    return auth_code
 
 
 @router.get("/google/login")
@@ -127,10 +153,14 @@ async def google_callback(code: str, state: str = None, db: AsyncSession = Depen
         from fastapi.responses import RedirectResponse
 
         # 앱에서 요청한 경우 앱으로, 아니면 웹으로 리다이렉트
-        if custom_redirect_uri:
-            redirect_url = f"{custom_redirect_uri}?access_token={jwt_access_token}&refresh_token={jwt_refresh_token}&user_type={usertype}"
-        else:
-            redirect_url = f"{FRONTEND_URL}/auth/callback?access_token={jwt_access_token}&refresh_token={jwt_refresh_token}&usertype={usertype}"
+        auth_code = _create_oauth_exchange_code(
+            access_token=jwt_access_token,
+            refresh_token=jwt_refresh_token,
+            usertype=usertype
+        )
+        redirect_base = custom_redirect_uri or f"{FRONTEND_URL}/auth/callback"
+        separator = "&" if "?" in redirect_base else "?"
+        redirect_url = f"{redirect_base}{separator}{urllib.parse.urlencode({'auth_code': auth_code})}"
 
         return RedirectResponse(url=redirect_url)
 
@@ -138,6 +168,23 @@ async def google_callback(code: str, state: str = None, db: AsyncSession = Depen
         raise HTTPException(status_code=500, detail=f"구글 API 요청 실패: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"로그인 처리 중 오류: {str(e)}")
+
+
+@router.post("/oauth/exchange", response_model=OAuthExchangeResponse)
+async def oauth_exchange(data: OAuthExchangeRequest):
+    payload = oauth_exchange_store.pop(data.auth_code, None)
+    if not payload:
+        raise HTTPException(status_code=400, detail="유효하지 않은 인증 코드입니다.")
+
+    if payload["expires_at"] <= datetime.utcnow():
+        raise HTTPException(status_code=400, detail="만료된 인증 코드입니다.")
+
+    return OAuthExchangeResponse(
+        access_token=payload["access_token"],
+        refresh_token=payload["refresh_token"],
+        token_type="bearer",
+        usertype=payload["usertype"],
+    )
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -175,10 +222,17 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/register", response_model=TokenResponse)
-async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
+async def register(
+    data: RegisterRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+):
     """관리자 회원가입 (동아리 생성 포함)"""
     from sqlalchemy.future import select
-    from app.models import User, Club, StuClub
+    from app.models import User, Club, StuClub, ConsentAgreement
+
+    if not data.agreed_to_terms or not data.agreed_to_privacy:
+        raise HTTPException(status_code=400, detail="이용약관 및 개인정보처리방침 동의가 필요합니다.")
 
     # 아이디 중복 확인
     result = await db.execute(select(User).where(User.user_id == data.username))
@@ -216,6 +270,16 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
             club_code=data.club_code
         )
         db.add(stu_club)
+
+        consent = ConsentAgreement(
+            user_id=data.username,
+            agreed_to_terms=data.agreed_to_terms,
+            agreed_to_privacy=data.agreed_to_privacy,
+            consent_version=CONSENT_VERSION,
+            agreed_ip=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+        )
+        db.add(consent)
 
         await db.commit()
 

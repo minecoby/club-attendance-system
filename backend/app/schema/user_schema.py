@@ -18,6 +18,12 @@ class TokenResponse(BaseModel):
     refresh_token: str
     token_type: str = "bearer"
 
+class OAuthExchangeRequest(BaseModel):
+    auth_code: str
+
+class OAuthExchangeResponse(TokenResponse):
+    usertype: str
+
 
 class LoginRequest(BaseModel):
     username: str
@@ -31,3 +37,5 @@ class RegisterRequest(BaseModel):
     email: str
     club_name: str
     club_code: str
+    agreed_to_terms: bool
+    agreed_to_privacy: bool

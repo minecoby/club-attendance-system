@@ -16,6 +16,21 @@ class User(Base):
     google_refresh_token = Column(Text, nullable=True)  
 
 
+class ConsentAgreement(Base):
+    __tablename__ = "consent_agreements"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String(255), ForeignKey("users.user_id"), nullable=False)
+    agreed_to_terms = Column(Boolean, nullable=False, default=False)
+    agreed_to_privacy = Column(Boolean, nullable=False, default=False)
+    consent_version = Column(String(50), nullable=False)
+    agreed_ip = Column(String(64), nullable=True)
+    user_agent = Column(String(255), nullable=True)
+    agreed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    user = relationship("User")
+
+
 class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
 

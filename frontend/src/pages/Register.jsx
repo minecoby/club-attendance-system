@@ -1,74 +1,93 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import "../styles/Login.css";
 import "../styles/Register.css";
-import axios from 'axios';
-import AlertModal from '../components/AlertModal';
+import axios from "axios";
+import AlertModal from "../components/AlertModal";
 
 function RegisterPage() {
   const navigate = useNavigate();
 
-  const [alert, setAlert] = useState({ show: false, type: 'error', message: '' });
+  const [alert, setAlert] = useState({ show: false, type: "error", message: "" });
   const [isLoading, setIsLoading] = useState(false);
 
-  // 폼 상태
   const [formData, setFormData] = useState({
-    username: '',
-    password: '',
-    passwordConfirm: '',
-    name: '',
-    email: '',
-    clubName: '',
-    clubCode: ''
+    username: "",
+    password: "",
+    passwordConfirm: "",
+    name: "",
+    email: "",
+    clubName: "",
+    clubCode: "",
+    agreedToTerms: false,
+    agreedToPrivacy: false,
   });
 
   const API = import.meta.env.VITE_BASE_URL;
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
-  // 랜덤 동아리 코드 생성
   const generateRandomCode = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let code = '';
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let code = "";
     for (let i = 0; i < 8; i++) {
       code += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    setFormData(prev => ({ ...prev, clubCode: code }));
+    setFormData((prev) => ({ ...prev, clubCode: code }));
   };
 
   const validateForm = () => {
-    if (!formData.username || !formData.password || !formData.passwordConfirm ||
-        !formData.name || !formData.email || !formData.clubName || !formData.clubCode) {
-      setAlert({ show: true, type: 'error', message: '모든 필드를 입력해주세요.' });
+    if (
+      !formData.username ||
+      !formData.password ||
+      !formData.passwordConfirm ||
+      !formData.name ||
+      !formData.email ||
+      !formData.clubName ||
+      !formData.clubCode
+    ) {
+      setAlert({ show: true, type: "error", message: "모든 필드를 입력해주세요." });
       return false;
     }
 
     if (formData.username.length < 4) {
-      setAlert({ show: true, type: 'error', message: '아이디는 4자 이상이어야 합니다.' });
+      setAlert({ show: true, type: "error", message: "아이디는 4자 이상이어야 합니다." });
       return false;
     }
 
     if (formData.password.length < 6) {
-      setAlert({ show: true, type: 'error', message: '비밀번호는 6자 이상이어야 합니다.' });
+      setAlert({ show: true, type: "error", message: "비밀번호는 6자 이상이어야 합니다." });
       return false;
     }
 
     if (formData.password !== formData.passwordConfirm) {
-      setAlert({ show: true, type: 'error', message: '비밀번호가 일치하지 않습니다.' });
+      setAlert({ show: true, type: "error", message: "비밀번호가 일치하지 않습니다." });
       return false;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      setAlert({ show: true, type: 'error', message: '올바른 이메일 형식이 아닙니다.' });
+      setAlert({ show: true, type: "error", message: "올바른 이메일 형식을 입력해주세요." });
       return false;
     }
 
     if (formData.clubCode.length < 4) {
-      setAlert({ show: true, type: 'error', message: '동아리 코드는 4자 이상이어야 합니다.' });
+      setAlert({ show: true, type: "error", message: "동아리 코드는 4자 이상이어야 합니다." });
+      return false;
+    }
+
+    if (!formData.agreedToTerms || !formData.agreedToPrivacy) {
+      setAlert({
+        show: true,
+        type: "error",
+        message: "이용약관 및 개인정보처리방침에 모두 동의해야 가입할 수 있습니다.",
+      });
       return false;
     }
 
@@ -88,31 +107,32 @@ function RegisterPage() {
         name: formData.name,
         email: formData.email,
         club_name: formData.clubName,
-        club_code: formData.clubCode
+        club_code: formData.clubCode,
+        agreed_to_terms: formData.agreedToTerms,
+        agreed_to_privacy: formData.agreedToPrivacy,
       });
 
       const { access_token, refresh_token } = response.data;
 
       localStorage.setItem("token", access_token);
       localStorage.setItem("refresh_token", refresh_token);
+      localStorage.setItem("usertype", "leader");
 
-      setAlert({ show: true, type: 'success', message: '회원가입이 완료되었습니다!' });
+      setAlert({ show: true, type: "success", message: "회원가입이 완료되었습니다." });
 
       setTimeout(() => {
         navigate("/leaderpage");
-      }, 1500);
-
+      }, 1200);
     } catch (error) {
-      console.error("회원가입 실패", error);
       const message = error.response?.data?.detail || "회원가입에 실패했습니다.";
-      setAlert({ show: true, type: 'error', message });
+      setAlert({ show: true, type: "error", message });
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleCloseAlert = () => {
-    setAlert({ ...alert, show: false });
+    setAlert((prev) => ({ ...prev, show: false }));
   };
 
   return (
@@ -214,22 +234,46 @@ function RegisterPage() {
               </div>
             </div>
 
-            <button
-              type="submit"
-              className="login-button"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <span className="loading-spinner"></span>
-              ) : (
-                '가입하기'
-              )}
+            <div className="consent-section">
+              <label className="consent-item">
+                <input
+                  type="checkbox"
+                  name="agreedToTerms"
+                  checked={formData.agreedToTerms}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                />
+                <span>
+                  <Link to="/terms">이용약관</Link> 동의 (필수)
+                </span>
+              </label>
+              <label className="consent-item">
+                <input
+                  type="checkbox"
+                  name="agreedToPrivacy"
+                  checked={formData.agreedToPrivacy}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                />
+                <span>
+                  <Link to="/privacy-policy">개인정보처리방침</Link> 동의 (필수)
+                </span>
+              </label>
+            </div>
+
+            <button type="submit" className="login-button" disabled={isLoading}>
+              {isLoading ? <span className="loading-spinner"></span> : "가입하기"}
             </button>
           </form>
 
           <div className="register-login-link">
             <span>이미 계정이 있으신가요? </span>
             <Link to="/login">로그인</Link>
+          </div>
+          <div className="legal-links">
+            <Link to="/privacy-policy">개인정보처리방침</Link>
+            <span className="legal-sep">|</span>
+            <Link to="/terms">이용약관</Link>
           </div>
         </div>
       </div>
