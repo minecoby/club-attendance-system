@@ -1,7 +1,7 @@
 ﻿import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import apiClient from "../utils/apiClient";
+import apiClient, { clearClientAuthState } from "../utils/apiClient";
 import AlertModal from "../components/AlertModal";
 import googleIcon from "../assets/google.png";
 import "../styles/Login.css";
@@ -18,25 +18,23 @@ function LoginPage() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const refreshToken = localStorage.getItem("refresh_token");
     const usertype = localStorage.getItem("usertype");
-
-    if (!token || !refreshToken) {
-      setIsCheckingAuth(false);
-      return;
-    }
 
     apiClient
       .get("/users/validate_token")
-      .then(() => {
-        if (usertype === "user") {
+      .then((res) => {
+        const resolvedUsertype = usertype || res.data?.usertype || "leader";
+        localStorage.setItem("usertype", resolvedUsertype);
+        if (resolvedUsertype === "user") {
           navigate("/userpage");
           return;
         }
         navigate("/leaderpage");
       })
-      .catch(() => setIsCheckingAuth(false));
+      .catch(() => {
+        clearClientAuthState();
+        setIsCheckingAuth(false);
+      });
   }, [navigate]);
 
   const handleAdminLogin = async (e) => {
@@ -48,13 +46,8 @@ function LoginPage() {
 
     try {
       setIsAdminLoading(true);
-      const response = await axios.post(`${API}/users/login`, { username, password });
-      const { access_token, refresh_token } = response.data;
-
-      localStorage.setItem("token", access_token);
-      localStorage.setItem("refresh_token", refresh_token);
+      await axios.post(`${API}/users/login`, { username, password }, { withCredentials: true });
       localStorage.setItem("usertype", "leader");
-
       navigate("/leaderpage");
     } catch (error) {
       const message = error.response?.data?.detail || "로그인에 실패했습니다.";
@@ -67,7 +60,7 @@ function LoginPage() {
   const handleGoogleLogin = async () => {
     try {
       setIsGoogleLoading(true);
-      const response = await axios.get(`${API}/users/google/login`);
+      const response = await axios.get(`${API}/users/google/login`, { withCredentials: true });
       const { auth_url } = response.data;
       window.location.href = auth_url;
     } catch {

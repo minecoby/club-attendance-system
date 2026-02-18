@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import apiClient from '../utils/apiClient';
 import { getCurrentPosition } from '../utils/geolocation';
 import dataCache from '../utils/dataCache';
@@ -8,8 +7,6 @@ import '../styles/Settings.css';
 import AlertModal from '../components/AlertModal';
 import LocationMapModal from '../components/LocationMapModal';
 import i18n from '../i18n';
-
-const API = import.meta.env.VITE_BASE_URL;
 
 function Settings({ theme, setTheme, language, setLanguage }) {
     const navigate = useNavigate();
@@ -231,21 +228,12 @@ function Settings({ theme, setTheme, language, setLanguage }) {
     // 로그아웃
     const handleLogout = async () => {
         try {
-            const token = localStorage.getItem('token');
-            if (token) {
-                await axios.post(`${API}/users/logout`, {}, {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                });
-            }
+            await apiClient.post('/users/logout');
         } catch (error) {
             console.error('로그아웃 요청 실패:', error);
             // 실패해도 로컬 토큰은 제거
         } finally {
             // 로컬 스토리지에서 모든 토큰 제거
-            localStorage.removeItem('token');
-            localStorage.removeItem('refresh_token');
             localStorage.removeItem('usertype');
             navigate('/');
         }
@@ -257,7 +245,7 @@ function Settings({ theme, setTheme, language, setLanguage }) {
             setLoading(true);
             await apiClient.delete('/users/delete_account');
             
-            localStorage.clear();
+            localStorage.removeItem('usertype');
             
             setAlert({ 
                 show: true, 
@@ -364,7 +352,7 @@ function Settings({ theme, setTheme, language, setLanguage }) {
                     <div className="settings-card-title">{i18n[language].userInfo}</div>
                     <div className="settings-card-content">
                         <div className="settings-row">
-                            <label>이메일</label>
+                            <label>{i18n[language].email || '이메일'}</label>
                             <input type="text" value={userInfo.gmail || ''} disabled className="settings-input" />
                         </div>
                         <div className="settings-row">

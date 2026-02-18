@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import apiClient from '../utils/apiClient';
 import { getCurrentPosition } from '../utils/geolocation';
@@ -10,31 +10,26 @@ function AttendRedirectPage({ language = 'ko' }) {
     const [messageType, setMessageType] = useState('info');
     const [showAlert, setShowAlert] = useState(false);
     const [processing, setProcessing] = useState(true);
-    
+
     const location = useLocation();
     const navigate = useNavigate();
     const { token: urlToken } = useParams();
 
     useEffect(() => {
         const processAttendance = async () => {
+            let code;
+            let club;
             try {
-                let code, club;
-                
                 if (urlToken) {
                     try {
-                        const base64 = urlToken
-                            .replace(/-/g, '+')
-                            .replace(/_/g, '/');
-                            
+                        const base64 = urlToken.replace(/-/g, '+').replace(/_/g, '/');
                         const padding = '='.repeat((4 - (base64.length % 4)) % 4);
                         const completeBase64 = base64 + padding;
-                        
                         const jsonString = decodeURIComponent(escape(atob(completeBase64)));
                         const data = JSON.parse(jsonString);
-                        
                         code = data.code;
                         club = data.club;
-                    } catch (decodeError) {
+                    } catch {
                         throw new Error('잘못된 출석 링크입니다.');
                     }
                 } else {
@@ -47,27 +42,43 @@ function AttendRedirectPage({ language = 'ko' }) {
                     throw new Error('잘못된 출석 링크입니다.');
                 }
 
-                // 토큰 확인
-                const token = localStorage.getItem('token');
-                
-                if (!token) {
-                    // 로그인 안된 상태 → 출석 정보 저장 후 로그인 페이지로
-                    localStorage.setItem('pendingAttendance', JSON.stringify({code, club}));
+                let locationData = {};
+                try {
+                    const position = await getCurrentPosition();
+                    locationData = {
+                        latitude: position.latitude,
+                        longitude: position.longitude,
+                    };
+                } catch (locationError) {
+                    console.log('위치 정보 없이 출석 시도:', locationError.message);
+                }
+
+                await apiClient.post('/attend/check_qr', {
+                    qr_code: code,
+                    ...locationData,
+                });
+
+                setMessage('출석이 완료되었습니다.');
+                setMessageType('success');
+                setShowAlert(true);
+                setProcessing(false);
+            } catch (error) {
+                if (error.response?.status === 401) {
+                    if (code && club) {
+                        localStorage.setItem('pendingAttendance', JSON.stringify({ code, club }));
+                    }
+                    localStorage.removeItem('usertype');
                     setMessage('로그인이 필요합니다. 로그인 페이지로 이동합니다.');
                     setMessageType('info');
                     setShowAlert(true);
                     setTimeout(() => {
                         window.location.href = '/login';
-                    }, 2000);
+                    }, 1500);
                     return;
                 }
 
-                // 이미 로그인된 상태 → 출석 처리
-                await processAttendanceWithRetry(code, club);
-
-            } catch (error) {
-                console.error('출석 처리 오류:', error);
-                setMessage(`❌ ${error.message || '출석 처리 중 오류가 발생했습니다.'}`);
+                const detail = error.response?.data?.detail || error.message || '출석 처리 중 오류가 발생했습니다.';
+                setMessage(`오류: ${detail}`);
                 setMessageType('error');
                 setShowAlert(true);
                 setProcessing(false);
@@ -75,89 +86,12 @@ function AttendRedirectPage({ language = 'ko' }) {
         };
 
         processAttendance();
-    }, [location]);
-
-    const processAttendanceWithRetry = async (code, club, isRetry = false) => {
-        try {
-            let locationData = {};
-            try {
-                const position = await getCurrentPosition();
-                locationData = {
-                    latitude: position.latitude,
-                    longitude: position.longitude
-                };
-            } catch (locationError) {
-                console.log('위치 정보 없이 출석 시도:', locationError.message);
-            }
-
-            await apiClient.post('/attend/check_qr', {
-                qr_code: code,
-                ...locationData
-            });
-
-            // 출석 성공
-            setMessage('✅ 출석이 완료되었습니다!');
-            setMessageType('success');
-            setShowAlert(true);
-            setProcessing(false);
-
-        } catch (error) {
-            if (error.response?.status === 401 && !isRetry) {
-                try {
-                    const refreshToken = localStorage.getItem('refresh_token');
-                    if (!refreshToken) {
-                        throw new Error('인증이 만료되었습니다. 다시 로그인해 주세요.');
-                    }
-
-                    // 토큰 갱신
-                    const refreshResponse = await apiClient.post('/users/refresh', {
-                        refresh_token: refreshToken
-                    });
-
-                    const { access_token, refresh_token: newRefreshToken } = refreshResponse.data;
-                    localStorage.setItem('token', access_token);
-                    localStorage.setItem('refresh_token', newRefreshToken);
-
-                    // 새 토큰으로 출석 재시도
-                    await processAttendanceWithRetry(code, club, true);
-
-                } catch (refreshError) {
-                    // 리프레시 토큰도 만료된 경우
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('refresh_token');
-                    localStorage.setItem('pendingAttendance', JSON.stringify({code, club}));
-                    
-                    setMessage('인증이 만료되었습니다. 다시 로그인해 주세요.');
-                    setMessageType('info');
-                    setShowAlert(true);
-                    setTimeout(() => {
-                        window.location.href = '/login';
-                    }, 2000);
-                }
-            } else {
-                let errorMsg = '출석 실패: ';
-                if (error.response?.data?.detail) {
-                    errorMsg += error.response.data.detail;
-                } else if (error.response?.data?.message) {
-                    errorMsg += error.response.data.message;
-                } else if (error.message) {
-                    errorMsg += error.message;
-                } else {
-                    errorMsg += '알 수 없는 오류';
-                }
-                
-                setMessage('❌ ' + errorMsg);
-                setMessageType('error');
-                setShowAlert(true);
-                setProcessing(false);
-            }
-        }
-    };
+    }, [location, urlToken]);
 
     const handleAlertClose = () => {
         setShowAlert(false);
-        setMessage("");
-        setMessageType("");
+        setMessage('');
+        setMessageType('');
         navigate('/userpage');
     };
 
@@ -172,13 +106,13 @@ function AttendRedirectPage({ language = 'ko' }) {
             padding: '20px',
             boxSizing: 'border-box'
         }}>
-            <AlertModal 
-                show={showAlert} 
-                type={messageType} 
-                message={message} 
-                onClose={handleAlertClose} 
+            <AlertModal
+                show={showAlert}
+                type={messageType}
+                message={message}
+                onClose={handleAlertClose}
             />
-            
+
             <div style={{
                 background: 'var(--card-bg)',
                 borderRadius: '15px',
@@ -202,7 +136,7 @@ function AttendRedirectPage({ language = 'ko' }) {
                             animation: 'spin 1s linear infinite',
                             marginBottom: '20px'
                         }} />
-                        <h2 style={{ 
+                        <h2 style={{
                             color: 'var(--primary)',
                             textAlign: 'center',
                             margin: 0,
@@ -212,7 +146,7 @@ function AttendRedirectPage({ language = 'ko' }) {
                         </h2>
                     </>
                 ) : (
-                    <h2 style={{ 
+                    <h2 style={{
                         color: 'var(--primary)',
                         textAlign: 'center',
                         margin: 0,
@@ -222,7 +156,7 @@ function AttendRedirectPage({ language = 'ko' }) {
                     </h2>
                 )}
             </div>
-            
+
             <style>{`
                 @keyframes spin {
                     0% { transform: rotate(0deg); }

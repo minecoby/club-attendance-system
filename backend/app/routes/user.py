@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Security, Request
+﻿from fastapi import APIRouter, Depends, Security, Request, Response, Cookie
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.db import get_db
@@ -18,13 +18,14 @@ import json
 import os
 import secrets
 from datetime import datetime, timedelta
+from typing import Optional
 from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 user_logger = get_user_logger()
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 router = APIRouter(
     prefix="/users",
@@ -32,7 +33,34 @@ router = APIRouter(
 
 OAUTH_EXCHANGE_TTL_SECONDS = int(os.getenv("OAUTH_EXCHANGE_TTL_SECONDS", "120"))
 CONSENT_VERSION = os.getenv("CONSENT_VERSION", "2026-02-14")
+COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() in {"1", "true", "yes", "on"}
 oauth_exchange_store = {}
+
+
+def _set_auth_cookies(response: Response, access_token: str, refresh_token: str):
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=COOKIE_SECURE,
+        samesite="lax",
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        path="/",
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=COOKIE_SECURE,
+        samesite="lax",
+        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+        path="/",
+    )
+
+
+def _clear_auth_cookies(response: Response):
+    response.delete_cookie(key="access_token", path="/", samesite="lax")
+    response.delete_cookie(key="refresh_token", path="/", samesite="lax")
 
 
 def _create_oauth_exchange_code(access_token: str, refresh_token: str, usertype: str) -> str:
@@ -171,13 +199,15 @@ async def google_callback(code: str, state: str = None, db: AsyncSession = Depen
 
 
 @router.post("/oauth/exchange", response_model=OAuthExchangeResponse)
-async def oauth_exchange(data: OAuthExchangeRequest):
+async def oauth_exchange(data: OAuthExchangeRequest, response: Response):
     payload = oauth_exchange_store.pop(data.auth_code, None)
     if not payload:
         raise HTTPException(status_code=400, detail="유효하지 않은 인증 코드입니다.")
 
     if payload["expires_at"] <= datetime.utcnow():
         raise HTTPException(status_code=400, detail="만료된 인증 코드입니다.")
+
+    _set_auth_cookies(response, payload["access_token"], payload["refresh_token"])
 
     return OAuthExchangeResponse(
         access_token=payload["access_token"],
@@ -188,7 +218,7 @@ async def oauth_exchange(data: OAuthExchangeRequest):
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
+async def login(data: LoginRequest, response: Response, db: AsyncSession = Depends(get_db)):
     """아이디/비밀번호 로그인 (관리자/리더 전용)"""
     from sqlalchemy.future import select
     from app.models import User
@@ -214,6 +244,8 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
 
     await save_refresh_token(user.user_id, jwt_refresh_token, db)
 
+    _set_auth_cookies(response, jwt_access_token, jwt_refresh_token)
+
     return TokenResponse(
         access_token=jwt_access_token,
         refresh_token=jwt_refresh_token,
@@ -225,6 +257,7 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
 async def register(
     data: RegisterRequest,
     request: Request,
+    response: Response,
     db: AsyncSession = Depends(get_db)
 ):
     """관리자 회원가입 (동아리 생성 포함)"""
@@ -289,6 +322,8 @@ async def register(
 
         await save_refresh_token(user.user_id, jwt_refresh_token, db)
 
+        _set_auth_cookies(response, jwt_access_token, jwt_refresh_token)
+
         return TokenResponse(
             access_token=jwt_access_token,
             refresh_token=jwt_refresh_token,
@@ -301,26 +336,47 @@ async def register(
 
 
 @router.post("/refresh", response_model=TokenResponse)
-async def refresh_token(data: RefreshTokenRequest, db: AsyncSession = Depends(get_db)):
+async def refresh_token(
+    response: Response,
+    data: Optional[RefreshTokenRequest] = None,
+    refresh_token_cookie: Optional[str] = Cookie(default=None, alias="refresh_token"),
+    db: AsyncSession = Depends(get_db)
+):
     try:
-        tokens = await rotate_refresh_token(data.refresh_token, db)
+        request_refresh_token = None
+        if data and data.refresh_token:
+            request_refresh_token = data.refresh_token
+        elif refresh_token_cookie:
+            request_refresh_token = refresh_token_cookie
+
+        if not request_refresh_token:
+            raise HTTPException(status_code=401, detail="토큰 갱신 실패")
+
+        tokens = await rotate_refresh_token(request_refresh_token, db)
+        _set_auth_cookies(response, tokens["access_token"], tokens["refresh_token"])
         return TokenResponse(**tokens)
     except HTTPException as e:
         raise e
     except Exception as e:
-        raise HTTPException(status_code=500, detail="토큰 갱신 실패")
+        raise HTTPException(status_code=500, detail="Token refresh failed.")
 
 
 @router.post("/logout")
-async def logout(credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
+async def logout(
+    request: Request,
+    response: Response,
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
+    db: AsyncSession = Depends(get_db)
+):
     try:
-        token = credentials.credentials
+        token = get_access_token_from_request(request, credentials)
         user = await get_current_user(token, db)
         from sqlalchemy import delete
         await db.execute(
             delete(RefreshToken).where(RefreshToken.user_id == user.user_id)
         )
         await db.commit()
+        _clear_auth_cookies(response)
 
         return {"message": "성공적으로 로그아웃되었습니다."}
     except Exception as e:
@@ -328,12 +384,13 @@ async def logout(credentials: HTTPAuthorizationCredentials = Security(security),
 
 
 @router.get("/get_mydata")
-async def get_mydata(credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
-    token = credentials.credentials
-    # 유저정보 불러오기
+async def get_mydata(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
+    db: AsyncSession = Depends(get_db)
+):
+    token = get_access_token_from_request(request, credentials)
     user = await get_current_user(token, db)
-
-    # 가입한 동아리 목록 불러오기
     club_data = await get_club_info(user.user_id, db)
     user_data = await get_user_info(user.user_id, db)
 
@@ -343,41 +400,55 @@ async def get_mydata(credentials: HTTPAuthorizationCredentials = Security(securi
 @router.put("/update")
 async def update_user(
     data: UpdateUserForm,
-    credentials: HTTPAuthorizationCredentials = Security(security),
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
     db: AsyncSession = Depends(get_db)
 ):
-    token = credentials.credentials
+    token = get_access_token_from_request(request, credentials)
     user = await get_current_user(token, db)
     updated_user = await update_user_info(user.user_id, data.name, db)
     return {"message": "사용자 정보가 수정되었습니다.", "user": {"user_id": updated_user.user_id, "name": updated_user.name}}
 
 
 @router.get("/validate_token")
-async def validate_token(credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
-    token = credentials.credentials
+async def validate_token(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
+    db: AsyncSession = Depends(get_db)
+):
+    token = get_access_token_from_request(request, credentials)
     try:
         user = await get_current_user(token, db)
-        return {"message": "토큰이 유효합니다.", "user_id": user.user_id}
+        return {
+            "message": "Token is valid.",
+            "user_id": user.user_id,
+            "usertype": "leader" if user.is_leader else "user"
+        }
     except HTTPException as e:
         raise HTTPException(status_code=401, detail="유효하지 않은 토큰입니다.")
 
 
 @router.delete("/delete_account")
-async def delete_account(credentials: HTTPAuthorizationCredentials = Security(security), db: AsyncSession = Depends(get_db)):
+async def delete_account(
+    request: Request,
+    response: Response,
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
+    db: AsyncSession = Depends(get_db)
+):
     try:
-        token = credentials.credentials
+        token = get_access_token_from_request(request, credentials)
         user = await get_current_user(token, db)
 
         # Google OAuth 토큰 revoke (실패 시 회원탈퇴 중단)
         if user.google_refresh_token:
             import httpx
             async with httpx.AsyncClient() as client:
-                response = await client.post(
+                revoke_response = await client.post(
                     "https://oauth2.googleapis.com/revoke",
                     params={"token": user.google_refresh_token},
                     headers={"Content-Type": "application/x-www-form-urlencoded"}
                 )
-                if response.status_code != 200:
+                if revoke_response.status_code != 200:
                     raise HTTPException(
                         status_code=500,
                         detail="Google 계정 연결 해제에 실패했습니다. 다시 시도해주세요."
@@ -403,6 +474,7 @@ async def delete_account(credentials: HTTPAuthorizationCredentials = Security(se
         )
 
         await db.commit()
+        _clear_auth_cookies(response)
 
         return {"message": "회원탈퇴가 완료되었습니다."}
 

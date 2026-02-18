@@ -6,9 +6,7 @@ import apiClient from '../utils/apiClient';
 import dataCache from '../utils/dataCache';
 import i18n from '../i18n';
 
-const API = import.meta.env.VITE_BASE_URL;
-
-function UserPage({ language, setLanguage }) {
+function UserPage({ language }) {
     const [attendanceList, setAttendanceList] = useState([]);
     const [showCodeModal, setShowCodeModal] = useState(false);
     const [attendanceCode, setAttendanceCode] = useState("");
@@ -39,9 +37,6 @@ function UserPage({ language, setLanguage }) {
 
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
-        if (!token) return;
-        
         const fetchClubInfo = async () => {
             const res = await apiClient.get('/clubs/get_club_info');
             if (Array.isArray(res.data) && res.data.length > 0) {
@@ -69,8 +64,7 @@ function UserPage({ language, setLanguage }) {
     }, []);
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
-        if (!token || !selectedClub) return;
+        if (!selectedClub) return;
         
         const fetchAttendance = async () => {
             const res = await apiClient.get(`/attend/load_myattend/${selectedClub}`);
@@ -103,10 +97,6 @@ function UserPage({ language, setLanguage }) {
         }
         localStorage.setItem("club_code", selectedClub);
         navigate('/code-attendance'); // 코드 출석 페이지로 이동
-    };
-
-    const handleOpenCodeModal = () => {
-        setShowCodeModal(true);
     };
 
     const handleCloseCodeModal = () => {

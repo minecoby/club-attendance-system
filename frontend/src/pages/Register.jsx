@@ -101,23 +101,22 @@ function RegisterPage() {
 
     try {
       setIsLoading(true);
-      const response = await axios.post(`${API}/users/register`, {
-        username: formData.username,
-        password: formData.password,
-        name: formData.name,
-        email: formData.email,
-        club_name: formData.clubName,
-        club_code: formData.clubCode,
-        agreed_to_terms: formData.agreedToTerms,
-        agreed_to_privacy: formData.agreedToPrivacy,
-      });
+      await axios.post(
+        `${API}/users/register`,
+        {
+          username: formData.username,
+          password: formData.password,
+          name: formData.name,
+          email: formData.email,
+          club_name: formData.clubName,
+          club_code: formData.clubCode,
+          agreed_to_terms: formData.agreedToTerms,
+          agreed_to_privacy: formData.agreedToPrivacy,
+        },
+        { withCredentials: true }
+      );
 
-      const { access_token, refresh_token } = response.data;
-
-      localStorage.setItem("token", access_token);
-      localStorage.setItem("refresh_token", refresh_token);
       localStorage.setItem("usertype", "leader");
-
       setAlert({ show: true, type: "success", message: "회원가입이 완료되었습니다." });
 
       setTimeout(() => {

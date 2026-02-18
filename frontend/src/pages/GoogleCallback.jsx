@@ -18,18 +18,18 @@ function GoogleCallback() {
       }
 
       try {
-        const response = await axios.post(`${API}/users/oauth/exchange`, {
-          auth_code: authCode,
-        });
-        const { access_token, refresh_token, usertype } = response.data;
+        const response = await axios.post(
+          `${API}/users/oauth/exchange`,
+          { auth_code: authCode },
+          { withCredentials: true }
+        );
 
-        if (!access_token || !refresh_token || !usertype) {
+        const { usertype } = response.data;
+        if (!usertype) {
           navigate("/login", { replace: true });
           return;
         }
 
-        localStorage.setItem("token", access_token);
-        localStorage.setItem("refresh_token", refresh_token);
         localStorage.setItem("usertype", usertype);
 
         const pendingAttendance = localStorage.getItem("pendingAttendance");

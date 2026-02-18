@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Optional
 from app.variable import *
 
 class User(BaseModel):
@@ -11,7 +12,7 @@ class UpdateUserForm(BaseModel):
 
 
 class RefreshTokenRequest(BaseModel):
-    refresh_token: str
+    refresh_token: Optional[str] = None
 
 class TokenResponse(BaseModel):
     access_token: str

@@ -182,11 +182,8 @@ function LeaderPage({ language, setLanguage }) {
     };
 
     const startWebSocket = () => {
-        const token = localStorage.getItem("token");
         const socket = new window.WebSocket(`${WS_API}/admin/attendance/${selectedDate}/ws`);
-        socket.onopen = () => {
-            socket.send("Bearer " + token);
-        };
+        socket.onopen = () => {};
         socket.onmessage = (event) => {
             if (modalMode === "code") {
                 setFixedCode(event.data);

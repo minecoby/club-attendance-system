@@ -1,11 +1,25 @@
-import { Navigate } from 'react-router-dom';
+﻿import { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
+import apiClient, { clearClientAuthState } from "../utils/apiClient";
 
 const AuthGuard = ({ children }) => {
-  const token = localStorage.getItem("token");
-  const refreshToken = localStorage.getItem("refresh_token");
+  const [status, setStatus] = useState("checking");
 
-  // 토큰이 없으면 로그인 페이지로 리다이렉트
-  if (!token || !refreshToken) {
+  useEffect(() => {
+    apiClient
+      .get("/users/validate_token")
+      .then(() => setStatus("ok"))
+      .catch(() => {
+        clearClientAuthState();
+        setStatus("unauthorized");
+      });
+  }, []);
+
+  if (status === "checking") {
+    return null;
+  }
+
+  if (status === "unauthorized") {
     return <Navigate to="/login" replace />;
   }
 

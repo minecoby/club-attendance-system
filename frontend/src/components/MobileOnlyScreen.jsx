@@ -1,13 +1,17 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import apiClient from '../utils/apiClient';
 import '../styles/MobileOnlyScreen.css';
 
 const MobileOnlyScreen = () => {
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("refresh_token");
+  const handleLogout = async () => {
+    try {
+      await apiClient.post('/users/logout');
+    } catch {
+      // ignore logout errors and proceed with local cleanup
+    }
     localStorage.removeItem("usertype");
     navigate("/login");
   };

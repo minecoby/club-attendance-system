@@ -171,14 +171,18 @@ async def log_requests(request: Request, call_next):
     
     return response
 
+cors_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ORIGINS",
+        "https://minecoby.com,https://api.minecoby.com,https://hanssup.minecoby.com,http://localhost:5173,http://localhost:3000",
+    ).split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://minecoby.com", 
-        "https://api.minecoby.com", 
-        "https://hanssup.minecoby.com"
-        # "*"
-    ],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
