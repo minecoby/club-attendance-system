@@ -11,6 +11,11 @@ function PrivacyPolicy() {
   return (
     <div className="policy-page">
       <div className="policy-card">
+        <div className="policy-top-back">
+          <button type="button" className="policy-back-button" onClick={handleGoBack}>
+            뒤로가기
+          </button>
+        </div>
         <h1>개인정보처리방침</h1>
         <p className="policy-date">시행일: 2026-02-14</p>
 
@@ -168,11 +173,6 @@ function PrivacyPolicy() {
 
         <p className="policy-date">부칙: 본 방침은 2026-02-14부터 시행합니다.</p>
 
-        <div className="policy-actions">
-          <button type="button" className="policy-back-button" onClick={handleGoBack}>
-            이전 화면으로 이동
-          </button>
-        </div>
       </div>
     </div>
   );

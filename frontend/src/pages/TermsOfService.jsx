@@ -11,6 +11,11 @@ function TermsOfService() {
   return (
     <div className="policy-page">
       <div className="policy-card">
+        <div className="policy-top-back">
+          <button type="button" className="policy-back-button" onClick={handleGoBack}>
+            뒤로가기
+          </button>
+        </div>
         <h1>이용약관</h1>
         <p className="policy-date">시행일: 2026-02-14</p>
 
@@ -32,11 +37,6 @@ function TermsOfService() {
         <h2>6. 문의처</h2>
         <p>서비스 문의: kimtaewoo2242@gmail.com</p>
 
-        <div className="policy-actions">
-          <button type="button" className="policy-back-button" onClick={handleGoBack}>
-            이전 화면으로 이동
-          </button>
-        </div>
       </div>
     </div>
   );
