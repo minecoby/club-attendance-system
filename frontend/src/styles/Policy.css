@@ -83,3 +83,17 @@
 .policy-actions a:hover {
   text-decoration: underline;
 }
+
+.policy-back-button {
+  border: 0;
+  background: #2563eb;
+  color: #fff;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.policy-back-button:hover {
+  background: #1d4ed8;
+}

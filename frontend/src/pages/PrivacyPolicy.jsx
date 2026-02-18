@@ -1,7 +1,13 @@
-﻿import { Link } from "react-router-dom";
+﻿import { useNavigate } from "react-router-dom";
 import "../styles/Policy.css";
 
 function PrivacyPolicy() {
+  const navigate = useNavigate();
+
+  const handleGoBack = () => {
+    navigate(-1);
+  };
+
   return (
     <div className="policy-page">
       <div className="policy-card">
@@ -163,8 +169,9 @@ function PrivacyPolicy() {
         <p className="policy-date">부칙: 본 방침은 2026-02-14부터 시행합니다.</p>
 
         <div className="policy-actions">
-          <Link to="/register">가입 페이지로 돌아가기</Link>
-          <Link to="/login">로그인으로 이동</Link>
+          <button type="button" className="policy-back-button" onClick={handleGoBack}>
+            이전 화면으로 이동
+          </button>
         </div>
       </div>
     </div>

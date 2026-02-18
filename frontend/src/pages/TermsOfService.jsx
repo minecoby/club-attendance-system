@@ -1,7 +1,13 @@
-﻿import { Link } from "react-router-dom";
+﻿import { useNavigate } from "react-router-dom";
 import "../styles/Policy.css";
 
 function TermsOfService() {
+  const navigate = useNavigate();
+
+  const handleGoBack = () => {
+    navigate(-1);
+  };
+
   return (
     <div className="policy-page">
       <div className="policy-card">
@@ -27,8 +33,9 @@ function TermsOfService() {
         <p>서비스 문의: kimtaewoo2242@gmail.com</p>
 
         <div className="policy-actions">
-          <Link to="/register">가입 페이지로 돌아가기</Link>
-          <Link to="/login">로그인으로 이동</Link>
+          <button type="button" className="policy-back-button" onClick={handleGoBack}>
+            이전 화면으로 이동
+          </button>
         </div>
       </div>
     </div>
