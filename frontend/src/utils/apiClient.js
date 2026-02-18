@@ -13,6 +13,12 @@ const apiClient = axios.create({
 
 let isRefreshing = false;
 let failedQueue = [];
+const PUBLIC_PATHS = new Set(["/", "/login", "/register", "/auth/callback", "/privacy-policy", "/terms"]);
+
+const isPublicPath = () => {
+  const pathname = window.location?.pathname || "";
+  return PUBLIC_PATHS.has(pathname);
+};
 
 const processQueue = (error) => {
   failedQueue.forEach(({ resolve, reject }) => {
@@ -54,7 +60,9 @@ apiClient.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError);
         clearClientAuthState();
-        window.location.href = "/login";
+        if (!isPublicPath()) {
+          window.location.href = "/login";
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
