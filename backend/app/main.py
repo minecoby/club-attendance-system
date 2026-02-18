@@ -175,7 +175,7 @@ cors_origins = [
     origin.strip()
     for origin in os.getenv(
         "CORS_ORIGINS",
-        "https://minecoby.com,https://api.minecoby.com,https://hanssup.minecoby.com,http://localhost:5173,http://localhost:3000",
+        "http://localhost:5173,http://localhost:3000",
     ).split(",")
     if origin.strip()
 ]
