@@ -14,10 +14,29 @@ const apiClient = axios.create({
 let isRefreshing = false;
 let failedQueue = [];
 const PUBLIC_PATHS = new Set(["/", "/login", "/register", "/auth/callback", "/privacy-policy", "/terms"]);
+const AUTH_REDIRECT_GUARD_KEY = "auth_redirect_in_progress";
 
 const isPublicPath = () => {
-  const pathname = window.location?.pathname || "";
+  const rawPathname = window.location?.pathname || "";
+  const pathname = rawPathname.length > 1 && rawPathname.endsWith("/")
+    ? rawPathname.slice(0, -1)
+    : rawPathname;
   return PUBLIC_PATHS.has(pathname);
+};
+
+const shouldRedirectToLogin = () => {
+  if (isPublicPath()) {
+    return false;
+  }
+  return sessionStorage.getItem(AUTH_REDIRECT_GUARD_KEY) !== "1";
+};
+
+const markRedirectStarted = () => {
+  sessionStorage.setItem(AUTH_REDIRECT_GUARD_KEY, "1");
+};
+
+const clearRedirectMark = () => {
+  sessionStorage.removeItem(AUTH_REDIRECT_GUARD_KEY);
 };
 
 const processQueue = (error) => {
@@ -54,14 +73,16 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
+        clearRedirectMark();
         await apiClient.post("/users/refresh", {});
         processQueue(null);
         return apiClient(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError);
         clearClientAuthState();
-        if (!isPublicPath()) {
-          window.location.href = "/login";
+        if (shouldRedirectToLogin()) {
+          markRedirectStarted();
+          window.location.replace("/login");
         }
         return Promise.reject(refreshError);
       } finally {

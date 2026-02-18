@@ -72,7 +72,7 @@ function AttendRedirectPage({ language = 'ko' }) {
                     setMessageType('info');
                     setShowAlert(true);
                     setTimeout(() => {
-                        window.location.href = '/login';
+                        navigate('/login', { replace: true });
                     }, 1500);
                     return;
                 }
