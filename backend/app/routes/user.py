@@ -545,7 +545,7 @@ async def delete_account(
         token = get_access_token_from_request(request, credentials)
         user = await get_current_user(token, db)
 
-        # Google OAuth 토큰 revoke (실패 시 회원탈퇴 중단)
+        # Google OAuth 토큰 revoke (이미 만료/폐기된 토큰은 탈퇴를 막지 않음)
         if user.google_refresh_token:
             import httpx
             async with httpx.AsyncClient() as client:
@@ -554,18 +554,33 @@ async def delete_account(
                     params={"token": user.google_refresh_token},
                     headers={"Content-Type": "application/x-www-form-urlencoded"}
                 )
-                if revoke_response.status_code != 200:
+                if revoke_response.status_code not in {200, 400}:
                     raise HTTPException(
                         status_code=500,
                         detail="Google 계정 연결 해제에 실패했습니다. 다시 시도해주세요."
                     )
 
         from sqlalchemy import delete
-        from app.models import RefreshToken, StuClub, Attendance
+        from app.models import RefreshToken, StuClub, Attendance, AttendanceDate, ConsentAgreement, User
+
+        # 리더가 생성한 출석일이 있으면 관련 출석 레코드도 함께 정리
+        from sqlalchemy import select
+        attendance_date_ids_result = await db.execute(
+            select(AttendanceDate.id).where(AttendanceDate.set_by == user.user_id)
+        )
+        attendance_date_ids = [row[0] for row in attendance_date_ids_result.fetchall()]
 
         await db.execute(
             delete(RefreshToken).where(RefreshToken.user_id == user.user_id)
         )
+
+        if attendance_date_ids:
+            await db.execute(
+                delete(Attendance).where(Attendance.attendance_date_id.in_(attendance_date_ids))
+            )
+            await db.execute(
+                delete(AttendanceDate).where(AttendanceDate.id.in_(attendance_date_ids))
+            )
 
         await db.execute(
             delete(Attendance).where(Attendance.user_id == user.user_id)
@@ -573,6 +588,10 @@ async def delete_account(
 
         await db.execute(
             delete(StuClub).where(StuClub.user_id == user.user_id)
+        )
+
+        await db.execute(
+            delete(ConsentAgreement).where(ConsentAgreement.user_id == user.user_id)
         )
 
         await db.execute(
