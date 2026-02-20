@@ -32,9 +32,11 @@ router = APIRouter(
 )
 
 OAUTH_EXCHANGE_TTL_SECONDS = int(os.getenv("OAUTH_EXCHANGE_TTL_SECONDS", "120"))
+GOOGLE_CONSENT_TTL_SECONDS = int(os.getenv("GOOGLE_CONSENT_TTL_SECONDS", "600"))
 CONSENT_VERSION = os.getenv("CONSENT_VERSION", "2026-02-14")
 COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() in {"1", "true", "yes", "on"}
 oauth_exchange_store = {}
+google_consent_store = {}
 
 
 def _set_auth_cookies(response: Response, access_token: str, refresh_token: str):
@@ -80,6 +82,23 @@ def _create_oauth_exchange_code(access_token: str, refresh_token: str, usertype:
         "expires_at": now + timedelta(seconds=OAUTH_EXCHANGE_TTL_SECONDS),
     }
     return auth_code
+
+
+def _create_google_consent_code(payload: dict) -> str:
+    now = datetime.utcnow()
+    expired_codes = [
+        key for key, value in google_consent_store.items()
+        if value["expires_at"] <= now
+    ]
+    for expired_code in expired_codes:
+        google_consent_store.pop(expired_code, None)
+
+    consent_code = secrets.token_urlsafe(32)
+    google_consent_store[consent_code] = {
+        **payload,
+        "expires_at": now + timedelta(seconds=GOOGLE_CONSENT_TTL_SECONDS),
+    }
+    return consent_code
 
 
 @router.get("/google/login")
@@ -149,46 +168,66 @@ async def google_callback(code: str, state: str = None, db: AsyncSession = Depen
             raise HTTPException(status_code=400, detail="사용자 정보를 가져올 수 없습니다.")
 
         from sqlalchemy.future import select
-        from app.models import User
+        from app.models import User, ConsentAgreement
 
         result = await db.execute(select(User).where(User.user_id == google_id))
         user = result.scalar_one_or_none()
+        has_consent = False
 
-        if not user:
-            user = User(
-                user_id=google_id,
-                gmail=email,
-                name=name,
-                is_leader=False,
-                google_refresh_token=google_refresh_token  # refresh_token 저장 (revoke용)
+        if user:
+            consent_result = await db.execute(
+                select(ConsentAgreement)
+                .where(ConsentAgreement.user_id == user.user_id)
+                .order_by(ConsentAgreement.id.desc())
+                .limit(1)
             )
-            db.add(user)
-            await db.commit()
-            await db.refresh(user)
-        else:
+            consent_record = consent_result.scalar_one_or_none()
+            has_consent = bool(
+                consent_record
+                and consent_record.agreed_to_terms
+                and consent_record.agreed_to_privacy
+            )
+
+        if user and has_consent:
             # 기존 사용자의 Google refresh 토큰 업데이트 (새로 발급된 경우만)
             if google_refresh_token:
                 user.google_refresh_token = google_refresh_token
                 await db.commit()
 
-        jwt_access_token = create_access_token(data={"sub": user.user_id})
-        jwt_refresh_token = create_refresh_token(data={"sub": user.user_id})
+            jwt_access_token = create_access_token(data={"sub": user.user_id})
+            jwt_refresh_token = create_refresh_token(data={"sub": user.user_id})
 
-        await save_refresh_token(user.user_id, jwt_refresh_token, db)
+            await save_refresh_token(user.user_id, jwt_refresh_token, db)
 
-        usertype = "leader" if user.is_leader else "user"
+            usertype = "leader" if user.is_leader else "user"
+
+            from fastapi.responses import RedirectResponse
+
+            # 앱에서 요청한 경우 앱으로, 아니면 웹으로 리다이렉트
+            auth_code = _create_oauth_exchange_code(
+                access_token=jwt_access_token,
+                refresh_token=jwt_refresh_token,
+                usertype=usertype
+            )
+            redirect_base = custom_redirect_uri or f"{FRONTEND_URL}/auth/callback"
+            separator = "&" if "?" in redirect_base else "?"
+            redirect_url = f"{redirect_base}{separator}{urllib.parse.urlencode({'auth_code': auth_code})}"
+            return RedirectResponse(url=redirect_url)
 
         from fastapi.responses import RedirectResponse
 
-        # 앱에서 요청한 경우 앱으로, 아니면 웹으로 리다이렉트
-        auth_code = _create_oauth_exchange_code(
-            access_token=jwt_access_token,
-            refresh_token=jwt_refresh_token,
-            usertype=usertype
-        )
+        consent_code = _create_google_consent_code({
+            "google_id": google_id,
+            "email": email,
+            "name": name,
+            "google_refresh_token": google_refresh_token,
+        })
         redirect_base = custom_redirect_uri or f"{FRONTEND_URL}/auth/callback"
         separator = "&" if "?" in redirect_base else "?"
-        redirect_url = f"{redirect_base}{separator}{urllib.parse.urlencode({'auth_code': auth_code})}"
+        redirect_url = (
+            f"{redirect_base}{separator}"
+            f"{urllib.parse.urlencode({'consent_code': consent_code, 'requires_consent': '1'})}"
+        )
 
         return RedirectResponse(url=redirect_url)
 
@@ -214,6 +253,73 @@ async def oauth_exchange(data: OAuthExchangeRequest, response: Response):
         refresh_token=payload["refresh_token"],
         token_type="bearer",
         usertype=payload["usertype"],
+    )
+
+
+@router.post("/google/consent", response_model=OAuthExchangeResponse)
+async def complete_google_consent(
+    data: GoogleConsentRequest,
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db)
+):
+    if not data.agreed_to_terms or not data.agreed_to_privacy:
+        raise HTTPException(status_code=400, detail="이용약관 및 개인정보처리방침 동의가 필요합니다.")
+
+    payload = google_consent_store.get(data.consent_code)
+    if not payload:
+        raise HTTPException(status_code=400, detail="유효하지 않은 동의 코드입니다.")
+    if payload["expires_at"] <= datetime.utcnow():
+        google_consent_store.pop(data.consent_code, None)
+        raise HTTPException(status_code=400, detail="만료된 동의 코드입니다.")
+
+    from sqlalchemy.future import select
+    from app.models import User, ConsentAgreement
+
+    try:
+        result = await db.execute(select(User).where(User.user_id == payload["google_id"]))
+        user = result.scalar_one_or_none()
+
+        if not user:
+            user = User(
+                user_id=payload["google_id"],
+                gmail=payload["email"],
+                name=payload["name"],
+                is_leader=False,
+                google_refresh_token=payload.get("google_refresh_token"),
+            )
+            db.add(user)
+            await db.flush()
+        elif payload.get("google_refresh_token"):
+            user.google_refresh_token = payload["google_refresh_token"]
+
+        consent = ConsentAgreement(
+            user_id=user.user_id,
+            agreed_to_terms=data.agreed_to_terms,
+            agreed_to_privacy=data.agreed_to_privacy,
+            consent_version=CONSENT_VERSION,
+            agreed_ip=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+        )
+        db.add(consent)
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise
+
+    google_consent_store.pop(data.consent_code, None)
+
+    jwt_access_token = create_access_token(data={"sub": user.user_id})
+    jwt_refresh_token = create_refresh_token(data={"sub": user.user_id})
+    await save_refresh_token(user.user_id, jwt_refresh_token, db)
+    _set_auth_cookies(response, jwt_access_token, jwt_refresh_token)
+
+    usertype = "leader" if user.is_leader else "user"
+    return OAuthExchangeResponse(
+        access_token=jwt_access_token,
+        refresh_token=jwt_refresh_token,
+        token_type="bearer",
+        usertype=usertype,
     )
 
 

@@ -13,7 +13,7 @@ const apiClient = axios.create({
 
 let isRefreshing = false;
 let failedQueue = [];
-const PUBLIC_PATHS = new Set(["/", "/login", "/register", "/auth/callback", "/privacy-policy", "/terms"]);
+const PUBLIC_PATHS = new Set(["/", "/login", "/register", "/auth/callback", "/google-consent", "/privacy-policy", "/terms"]);
 const AUTH_REDIRECT_GUARD_KEY = "auth_redirect_in_progress";
 
 const isPublicPath = () => {

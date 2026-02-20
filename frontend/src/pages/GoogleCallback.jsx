@@ -9,10 +9,16 @@ function GoogleCallback() {
 
   useEffect(() => {
     const authCode = searchParams.get("auth_code");
+    const consentCode = searchParams.get("consent_code");
+    const requiresConsent = searchParams.get("requires_consent") === "1";
     const error = searchParams.get("error");
 
     const handleExchange = async () => {
       if (error || !authCode) {
+        if (requiresConsent && consentCode) {
+          navigate(`/google-consent?consent_code=${encodeURIComponent(consentCode)}`, { replace: true });
+          return;
+        }
         navigate("/login", { replace: true });
         return;
       }

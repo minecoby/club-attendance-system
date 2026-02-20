@@ -2,6 +2,7 @@
 import Login from "../pages/Login";
 import Register from "../pages/Register";
 import GoogleCallback from "../pages/GoogleCallback";
+import GoogleConsent from "../pages/GoogleConsent";
 import PrivacyPolicy from "../pages/PrivacyPolicy";
 import TermsOfService from "../pages/TermsOfService";
 import UserPage from "../pages/UserPage";
@@ -15,7 +16,7 @@ import UserGuard from "../components/MobileGuard";
 
 const AppRouter = ({ theme, setTheme, language, setLanguage }) => {
   const location = useLocation();
-  const hideNavOnPaths = ["/", "/login", "/register", "/auth/callback", "/privacy-policy", "/terms"];
+  const hideNavOnPaths = ["/", "/login", "/register", "/auth/callback", "/google-consent", "/privacy-policy", "/terms"];
   const showNav = !hideNavOnPaths.includes(location.pathname);
 
   return (
@@ -26,6 +27,7 @@ const AppRouter = ({ theme, setTheme, language, setLanguage }) => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/auth/callback" element={<GoogleCallback />} />
+        <Route path="/google-consent" element={<GoogleConsent />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
 

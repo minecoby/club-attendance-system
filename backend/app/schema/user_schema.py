@@ -25,6 +25,11 @@ class OAuthExchangeRequest(BaseModel):
 class OAuthExchangeResponse(TokenResponse):
     usertype: str
 
+class GoogleConsentRequest(BaseModel):
+    consent_code: str
+    agreed_to_terms: bool
+    agreed_to_privacy: bool
+
 
 class LoginRequest(BaseModel):
     username: str
