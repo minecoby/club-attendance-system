@@ -503,7 +503,7 @@ function LeaderPage({ language, setLanguage }) {
                         </button>
                     </div>
                     {dropdownOpen && (
-                        <div className="date-dropdown" style={{ position: 'absolute', left: 0 }}>
+                        <div className="date-dropdown">
                             {dateList.length === 0 ? (
                                 <div className="date-dropdown-empty">{i18n[language].noDate || '날짜 없음'}</div>
                             ) : (
@@ -545,20 +545,20 @@ function LeaderPage({ language, setLanguage }) {
                         <>
                           <div className="qr-label">{i18n[language].attendWithQR || 'QR코드로 출석하세요'}</div>
                           <QRCode value={qrCode} size={200} />
-                          <button onClick={handleStartCode} style={{marginTop: '24px', background: '#ff9800', color: '#fff', fontWeight: 'bold', border: 'none', borderRadius: '8px', padding: '12px 24px', fontSize: '1.1rem', cursor: 'pointer'}}>{i18n[language].attendWithCode || '코드로 출석하기'}</button>
+                          <button onClick={handleStartCode} className="code-attendance-btn">{i18n[language].attendWithCode || '코드로 출석하기'}</button>
                         </>
                       )}
                       {modalMode === "code" && fixedCode && (
                         <>
                           <div className="qr-label">{i18n[language].inputCodeToAttend || '아래 코드를 입력하여 출석하세요'}</div>
-                          <div style={{fontSize: '2.5rem', fontWeight: 'bold', color: '#ff9800', margin: '30px 0'}}>{fixedCode}</div>
+                          <div className="fixed-attendance-code">{fixedCode}</div>
                         </>
                       )}
                     </div>
                   </div>
                 )}
 
-                <div className='attendance-table-wrap' style={{ overflow: 'visible' }}>
+                <div className='attendance-table-wrap'>
                     {loading ? (
                         <div className="attendance-message loading">{i18n[language].loading || '로딩 중...'}</div>
                     ) : error ? (
@@ -568,15 +568,15 @@ function LeaderPage({ language, setLanguage }) {
                     ) : selectedDate === "" ? (
                         // 전체 출석부 테이블 (원래 코드)
                         <>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                            <h2 className="attendance-title" style={{ margin: 0 }}>
+                        <div className="attendance-topbar">
+                            <h2 className="attendance-title">
                                 {i18n[language].allAttendance || '전체 출석부'}
                             </h2>
-                            <div style={{ display: 'flex', gap: '8px' }}>
+                            <div className="attendance-topbar-actions">
                                 <button className="download-excel-btn" onClick={handleDownloadExcel}>
                                     {i18n[language].downloadAttendance || '출석부 다운로드'}
                                 </button>
-                                <button className="delete-all-attendance-btn" style={{ background: '#f44336', color: 'white', border: 'none', borderRadius: '6px', padding: '8px 16px', fontWeight: 'bold', fontSize: '0.95rem', cursor: 'pointer' }} onClick={handleDeleteAllAttendance}>
+                                <button className="delete-all-attendance-btn" onClick={handleDeleteAllAttendance}>
                                     {i18n[language].deleteAllAttendance || '전체 삭제'}
                                 </button>
                             </div>
@@ -609,11 +609,11 @@ function LeaderPage({ language, setLanguage }) {
                     ) : editMode ? (
                         // 수정 모드 테이블
                         <>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                            <h2 className="attendance-title" style={{ margin: 0 }}>
+                        <div className="attendance-topbar">
+                            <h2 className="attendance-title">
                                 {selectedDate ? `${selectedDate} ${i18n[language].attendanceList || '출석부'}` : (i18n[language].allAttendance || '전체 출석부')}
                             </h2>
-                            <button className="save-attendance-btn" style={{ background: '#1976d2', color: 'white', border: 'none', borderRadius: '6px', padding: '8px 24px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer' }} onClick={handleSaveAttendance}>
+                            <button className="save-attendance-btn" onClick={handleSaveAttendance}>
                                 {i18n[language].saveAttendance || '저장하기'}
                             </button>
                         </div>
@@ -630,30 +630,13 @@ function LeaderPage({ language, setLanguage }) {
                                         <td>{user.name}</td>
                                         <td>
                                             <button
-                                                style={{
-                                                    background: user.status ? '#4caf50' : '#e0e0e0',
-                                                    color: user.status ? 'white' : 'black',
-                                                    marginRight: '8px',
-                                                    fontWeight: user.status ? 'bold' : 'normal',
-                                                    borderRadius: '6px',
-                                                    border: 'none',
-                                                    padding: '6px 16px',
-                                                    cursor: 'pointer'
-                                                }}
+                                                className={`attendance-status-btn ${user.status ? 'present' : 'muted'}`}
                                                 onClick={() => handleStatusToggle(user.user_id, true)}
                                             >
                                                 {i18n[language].attended || '출석'}
                                             </button>
                                             <button
-                                                style={{
-                                                    background: !user.status ? '#f44336' : '#e0e0e0',
-                                                    color: !user.status ? 'white' : 'black',
-                                                    fontWeight: !user.status ? 'bold' : 'normal',
-                                                    borderRadius: '6px',
-                                                    border: 'none',
-                                                    padding: '6px 16px',
-                                                    cursor: 'pointer'
-                                                }}
+                                                className={`attendance-status-btn ${!user.status ? 'absent' : 'muted'}`}
                                                 onClick={() => handleStatusToggle(user.user_id, false)}
                                             >
                                                 {i18n[language].absent || '결석'}
@@ -667,15 +650,15 @@ function LeaderPage({ language, setLanguage }) {
                     ) : (
                         // 날짜별 출석부 테이블
                         <>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                            <h2 className="attendance-title" style={{ margin: 0 }}>
+                        <div className="attendance-topbar">
+                            <h2 className="attendance-title">
                                 {selectedDate ? `${selectedDate} ${i18n[language].attendanceList || '출석부'}` : (i18n[language].allAttendance || '전체 출석부')}
                             </h2>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                                <button className="edit-attendance-btn" style={{ background: '#1976d2', color: 'white', border: 'none', borderRadius: '6px', padding: '8px 24px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer' }} onClick={handleEditClick}>
+                            <div className="attendance-topbar-actions">
+                                <button className="edit-attendance-btn" onClick={handleEditClick}>
                                     {i18n[language].editAttendance || '수정하기'}
                                 </button>
-                                <button className="delete-attendance-btn" style={{ background: '#f44336', color: 'white', border: 'none', borderRadius: '6px', padding: '8px 24px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer' }} onClick={handleDeleteDate}>
+                                <button className="delete-attendance-btn" onClick={handleDeleteDate}>
                                     {i18n[language].deleteDate || '삭제하기'}
                                 </button>
                             </div>
@@ -683,14 +666,14 @@ function LeaderPage({ language, setLanguage }) {
                         <table className="attendance-table">
                             <thead>
                                 <tr>
-                                    <th style={{ textAlign: 'center' }}>{i18n[language].name || '이름'}</th>
+                                    <th>{i18n[language].name || '이름'}</th>
                                     <th>{i18n[language].attendanceStatus || '출석 상태'}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {attendanceList.map(user => (
                                     <tr key={user.user_id}>
-                                        <td style={{ textAlign: 'center' }}>
+                                        <td>
                                             {user.name}
                                         </td>
                                         <td>

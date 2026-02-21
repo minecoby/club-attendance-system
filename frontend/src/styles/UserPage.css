@@ -1,152 +1,131 @@
-.userpage-section{
-    padding: 40px;
-    background-color: var(--bg);
-    min-height: 100vh;
-    width: 100vw;
-    box-sizing: border-box;
-    color: var(--text);
+.userpage-section {
+  padding: 24px 16px 30px;
+  min-height: calc(100vh - 80px);
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
 }
 
 .QR-section,
-.attendance-section{
-    margin-left: 2rem;
-}
-
-.QR-section {
-    margin-bottom: 30px;
+.attendance-section {
+  margin: 0;
 }
 
 .club-select-section {
-    background: linear-gradient(90deg, var(--card-bg) 60%, var(--primary-light) 100%);
-    border-radius: 14px;
-    box-shadow: 0 2px 12px var(--primary-light);
-    padding: 24px 20px 18px 20px;
-    margin-bottom: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center; 
-    gap: 18px;
-
+  background: linear-gradient(140deg, var(--card-bg) 0%, var(--card-bg-strong) 100%);
+  border: 1px solid var(--border);
+  box-shadow: var(--card-shadow);
+  border-radius: 18px;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
 }
 
 .club-select-label {
-    font-size: 1.08rem;
-    font-weight: 600;
-    color: var(--primary);
-    margin-right: 8px;
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .club-select-dropdown {
-    padding: 8px 14px;
-    border: 1.5px solid var(--primary-light);
-    border-radius: 7px;
-    font-size: 1rem;
-    background: var(--input-bg);
-    color: var(--text);
-    transition: border 0.2s, background 0.2s, color 0.2s;
-    min-width: 140px;
-}
-
-.club-select-dropdown:focus {
-    border: 1.5px solid var(--primary);
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+  min-width: 140px;
 }
 
 .startQR-button {
-    background: var(--primary);
-    color: #fff;
-    border: none;
-    border-radius: 7px;
-    font-weight: 700;
-    padding: 10px 28px;
-    font-size: 1.08rem;
-    cursor: pointer;
-    margin-left: 10px;
-    transition: background 0.18s;
+  border: 0;
+  padding: 11px 18px;
+  border-radius: 12px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
 }
 
-.startQR-button:hover{
-    background: var(--primary-dark);
+.attendance-section {
+  margin-top: 18px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: var(--card-shadow);
+  padding: 18px 16px;
 }
 
-.attendance-section{
-    margin-top: 40px;
+.attendance-section h2 {
+  margin-bottom: 14px;
+  font-size: 1.18rem;
+}
+
+.attendance-table-wrapper {
+  overflow-x: auto;
 }
 
 .attendance-table {
-    width: 100%;
-    border-collapse: collapse;
-    box-shadow: 0 4px 12px var(--shadow);
-    border-radius: 8px;
-    overflow: hidden;
-    background: var(--table-bg);
-    color: var(--text);
+  width: 100%;
+  min-width: 580px;
+  border-collapse: collapse;
+  background: var(--table-bg);
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 .attendance-table th,
 .attendance-table td {
-    padding: 12px 16px;
-    text-align: center;
-    border-bottom: 1px solid var(--border);
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+
+.attendance-table th {
+  background: var(--table-header-bg);
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .attendance-table td {
-    background-color: var(--card-bg);
-    font-weight: 600;
-}
-
-.attendance-list {
-    list-style: none;
-    padding: 5;
-    margin: 5;
-}
-
-.attendance-item {
-    padding: 10px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    justify-content: center;
-
+  background: var(--table-row-bg);
+  color: var(--text);
+  font-weight: 600;
 }
 
 .status.출석 {
-    color: var(--success);
+  color: var(--success);
 }
 
 .status.결석 {
-    color: var(--absent);
+  color: var(--absent);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 760px) {
   .userpage-section {
-    padding: 10px 2px;
+    padding: 16px 10px 22px;
   }
-  .QR-section,
-  .attendance-section {
-    margin-left: 0;
-  }
+
   .club-select-section {
-    flex-direction: column;
-    align-items: stretch;
+    grid-template-columns: 1fr;
     gap: 10px;
-    padding: 16px 6px 12px 6px;
-    min-width: 0;
+    padding: 15px 13px;
   }
+
   .club-select-label {
-    font-size: 1rem;
-    margin-right: 0;
-    text-align: center;
-    margin-bottom: 2px;
+    font-size: 0.84rem;
   }
-  .club-select-dropdown {
-    min-width: 0;
-    width: 100%;
-    font-size: 0.98rem;
-    padding: 8px 6px;
-  }
+
+  .club-select-dropdown,
   .startQR-button {
     width: 100%;
-    margin-left: 0;
-    font-size: 1.01rem;
-    padding: 10px 0;
+  }
+
+  .attendance-section {
+    padding: 14px 10px;
   }
 }
