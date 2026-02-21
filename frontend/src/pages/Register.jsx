@@ -116,12 +116,16 @@ function RegisterPage() {
         { withCredentials: true }
       );
 
-      localStorage.setItem("usertype", "leader");
-      setAlert({ show: true, type: "success", message: "회원가입이 완료되었습니다." });
+      localStorage.removeItem("usertype");
+      setAlert({
+        show: true,
+        type: "success",
+        message: "가입 신청이 완료되었습니다. 관리자 승인 후 로그인할 수 있습니다.",
+      });
 
       setTimeout(() => {
-        navigate("/leaderpage");
-      }, 1200);
+        navigate("/login");
+      }, 1600);
     } catch (error) {
       const message = error.response?.data?.detail || "회원가입에 실패했습니다.";
       setAlert({ show: true, type: "error", message });
@@ -146,6 +150,15 @@ function RegisterPage() {
       <div className="login-container">
         <div className="login-form register-form">
           <h2 className="login-title">관리자 가입</h2>
+          <div className="register-approval-notice">
+            <p className="register-approval-title">관리자 계정 가입 절차 안내</p>
+            <ul className="register-approval-list">
+              <li>가입을 완료하면 계정은 즉시 사용 상태가 아닌 승인 대기 상태로 등록됩니다.</li>
+              <li>운영자가 별도로 승인한 뒤에만 관리자 로그인이 가능합니다.</li>
+              <li>승인 전에는 아이디/비밀번호가 올바르더라도 로그인할 수 없습니다.</li>
+              <li>승인 시 가입한 이메일로 안내 메일이 발송되니, 정확한 이메일을 입력하고 수신 가능 여부를 꼭 확인해주세요.</li>
+            </ul>
+          </div>
 
           <form onSubmit={handleSubmit} className="login-form-inputs">
             <div className="register-section">

@@ -13,6 +13,7 @@ class User(Base):
     password_hash = Column(String(255), nullable=True)
     name = Column(String(100), nullable=False)
     is_leader = Column(Boolean, default=False)
+    is_leader_approved = Column(Boolean, default=True, nullable=False)
     google_refresh_token = Column(Text, nullable=True)  
 
 

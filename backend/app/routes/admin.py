@@ -253,3 +253,4 @@ async def update_location_settings(data: LocationSettingRequest, request: Reques
         data.radius_km,
         db
     )
+

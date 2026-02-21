@@ -343,6 +343,8 @@ async def login(data: LoginRequest, response: Response, db: AsyncSession = Depen
     # 리더 권한 확인
     if not user.is_leader:
         raise HTTPException(status_code=403, detail="관리자 권한이 없습니다.")
+    if not user.is_leader_approved:
+        raise HTTPException(status_code=403, detail="관리자 승인 대기 중입니다. 승인 후 로그인 가능합니다.")
 
     # 토큰 생성
     jwt_access_token = create_access_token(data={"sub": user.user_id})
@@ -359,11 +361,10 @@ async def login(data: LoginRequest, response: Response, db: AsyncSession = Depen
     )
 
 
-@router.post("/register", response_model=TokenResponse)
+@router.post("/register", response_model=RegisterResponse)
 async def register(
     data: RegisterRequest,
     request: Request,
-    response: Response,
     db: AsyncSession = Depends(get_db)
 ):
     """관리자 회원가입 (동아리 생성 포함)"""
@@ -391,7 +392,8 @@ async def register(
             gmail=data.email,
             password_hash=password_hash,
             name=data.name,
-            is_leader=True
+            is_leader=True,
+            is_leader_approved=False,
         )
         db.add(user)
 
@@ -422,18 +424,9 @@ async def register(
 
         await db.commit()
 
-        # 토큰 생성 및 반환 (자동 로그인)
-        jwt_access_token = create_access_token(data={"sub": user.user_id})
-        jwt_refresh_token = create_refresh_token(data={"sub": user.user_id})
-
-        await save_refresh_token(user.user_id, jwt_refresh_token, db)
-
-        _set_auth_cookies(response, jwt_access_token, jwt_refresh_token)
-
-        return TokenResponse(
-            access_token=jwt_access_token,
-            refresh_token=jwt_refresh_token,
-            token_type="bearer"
+        return RegisterResponse(
+            message="가입 신청이 완료되었습니다. 관리자 승인 후 로그인할 수 있습니다.",
+            pending_approval=True
         )
 
     except Exception as e:

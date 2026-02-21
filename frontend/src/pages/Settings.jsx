@@ -100,6 +100,7 @@ function Settings({ theme, setTheme, language, setLanguage }) {
         });
     };
 
+
     // 위치 설정 불러오기
     const loadLocationSettings = async () => {
         try {

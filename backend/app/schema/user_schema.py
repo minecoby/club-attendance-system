@@ -45,3 +45,8 @@ class RegisterRequest(BaseModel):
     club_code: str
     agreed_to_terms: bool
     agreed_to_privacy: bool
+
+
+class RegisterResponse(BaseModel):
+    message: str
+    pending_approval: bool

@@ -12,6 +12,33 @@
   background: var(--table-row-bg);
 }
 
+.register-approval-notice {
+  margin-bottom: 14px;
+  padding: 12px 13px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border));
+  background: color-mix(in srgb, var(--danger-bg) 60%, white 40%);
+  color: var(--text);
+  font-size: 0.86rem;
+}
+
+.register-approval-title {
+  margin: 0 0 8px;
+  font-weight: 800;
+  color: var(--danger);
+}
+
+.register-approval-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 5px;
+}
+
+.register-approval-list li {
+  line-height: 1.38;
+}
+
 .register-section-title {
   font-size: 0.88rem;
   text-transform: uppercase;
