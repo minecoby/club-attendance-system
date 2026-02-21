@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import apiClient from '../utils/apiClient';
 import { getCurrentPosition } from '../utils/geolocation';
 import dataCache from '../utils/dataCache';
@@ -415,6 +415,15 @@ function Settings({ theme, setTheme, language, setLanguage }) {
                         {userInfo.is_leader && (
                             <div className="settings-warning">{i18n[language].leaderNoWithdraw}</div>
                         )}
+                        <div className="settings-policy-links">
+                            <Link to="/privacy-policy" className="settings-policy-link">
+                                개인정보처리방침
+                            </Link>
+                            <span className="settings-policy-sep">|</span>
+                            <Link to="/terms" className="settings-policy-link">
+                                이용약관
+                            </Link>
+                        </div>
                     </div>
                 </div>
 
