@@ -7,6 +7,7 @@ from app.schema.user_schema import *
 from app.services.user_service import *
 from app.services.service import *
 from app.logger import get_user_logger
+from app.utils.request_ip import get_client_ip
 
 from app.services.club_service import get_club_info
 
@@ -298,7 +299,7 @@ async def complete_google_consent(
             agreed_to_terms=data.agreed_to_terms,
             agreed_to_privacy=data.agreed_to_privacy,
             consent_version=CONSENT_VERSION,
-            agreed_ip=request.client.host if request.client else None,
+            agreed_ip=get_client_ip(request),
             user_agent=request.headers.get("user-agent"),
         )
         db.add(consent)
@@ -417,7 +418,7 @@ async def register(
             agreed_to_terms=data.agreed_to_terms,
             agreed_to_privacy=data.agreed_to_privacy,
             consent_version=CONSENT_VERSION,
-            agreed_ip=request.client.host if request.client else None,
+            agreed_ip=get_client_ip(request),
             user_agent=request.headers.get("user-agent"),
         )
         db.add(consent)

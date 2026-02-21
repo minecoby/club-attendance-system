@@ -15,6 +15,7 @@ from fastapi_limiter import FastAPILimiter
 from redis.asyncio import Redis
 from app.models import Base
 from app.db import engine
+from app.utils.request_ip import get_client_ip
 
 app = FastAPI()
 
@@ -98,7 +99,7 @@ def mask_sensitive_query_params(url: str) -> str:
 async def log_requests(request: Request, call_next):
     start_time = time.time()
     
-    client_ip = request.client.host if request.client else "unknown"
+    client_ip = get_client_ip(request) or "unknown"
     method = request.method
     url = mask_sensitive_query_params(str(request.url))
     path = request.url.path
