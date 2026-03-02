@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../utils/apiClient';
-import { getCurrentPosition } from '../utils/geolocation';
 import AlertModal from '../components/AlertModal';
 import i18n from '../i18n';
 
@@ -39,7 +38,7 @@ function CodeAttendancePage({ language, setLanguage }) {
 
             let locationData = {};
             try {
-                const position = await getCurrentPosition();
+                const position = { latitude: undefined, longitude: undefined };
                 locationData = {
                     latitude: position.latitude,
                     longitude: position.longitude
