@@ -19,7 +19,7 @@ const MobileOnlyScreen = () => {
   return (
     <div className="mobile-only-container">
       <div className="mobile-only-content">
-        <h1 className="mobile-title">HANSSUP!</h1>
+        <h1 className="mobile-title">HANSSUP</h1>
         <p className="mobile-description">
           HANSSUP은 모바일 전용 출석 체크 서비스입니다.
         </p>

@@ -143,8 +143,8 @@ function RegisterPage() {
       <AlertModal show={alert.show} type={alert.type} message={alert.message} onClose={handleCloseAlert} />
       <div className="login-brand-section">
         <div className="brand-content">
-          <h1 className="brand-title">HANSSUP!</h1>
-          <p className="brand-subtitle">간편한 동아리 출석체크 플랫폼</p>
+          <h1 className="brand-title">HANSSUP</h1>
+          <p className="brand-subtitle">동아리 운영과 출석 관리를 한곳에서</p>
         </div>
       </div>
       <div className="login-container">

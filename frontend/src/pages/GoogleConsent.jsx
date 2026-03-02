@@ -85,7 +85,7 @@ function GoogleConsent() {
       />
       <div className="login-brand-section">
         <div className="brand-content">
-          <h1 className="brand-title">HANSSUP!</h1>
+          <h1 className="brand-title">HANSSUP</h1>
           <p className="brand-subtitle">Google 로그인 약관 동의</p>
         </div>
       </div>

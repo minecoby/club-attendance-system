@@ -74,7 +74,7 @@ function LoginPage() {
       <div className="login-page">
         <div className="login-brand-section">
           <div className="brand-content">
-            <h1 className="brand-title">HANSSUP!</h1>
+            <h1 className="brand-title">HANSSUP</h1>
             <p className="brand-subtitle">동아리 운영과 출석 관리를 한곳에서</p>
           </div>
         </div>
@@ -98,7 +98,7 @@ function LoginPage() {
       />
       <div className="login-brand-section">
         <div className="brand-content">
-          <h1 className="brand-title">HANSSUP!</h1>
+          <h1 className="brand-title">HANSSUP</h1>
           <p className="brand-subtitle">동아리 운영과 출석 관리를 한곳에서</p>
         </div>
       </div>
