@@ -13,6 +13,7 @@ import CodeAttendancePage from "../pages/CodeAttendancePage";
 import AttendRedirectPage from "../pages/AttendRedirectPage";
 import AuthGuard from "../components/AuthGuard";
 import UserGuard from "../components/MobileGuard";
+import RouteSeo from "../components/RouteSeo";
 
 const AppRouter = ({ theme, setTheme, language, setLanguage }) => {
   const location = useLocation();
@@ -21,6 +22,7 @@ const AppRouter = ({ theme, setTheme, language, setLanguage }) => {
 
   return (
     <>
+      <RouteSeo />
       {showNav && <Navbar language={language} />}
       <Routes>
         <Route path="/" element={<Login />} />

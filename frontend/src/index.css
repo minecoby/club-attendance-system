@@ -76,6 +76,10 @@ body,
   padding: 0;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   min-width: 320px;
   background: radial-gradient(circle at 10% 10%, rgba(63, 120, 181, 0.13), transparent 28%),
@@ -138,4 +142,20 @@ button:hover:not(:disabled) {
 button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(63, 120, 181, 0.45);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
