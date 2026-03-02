@@ -156,6 +156,19 @@ function LoginPage() {
             <span className="legal-sep">|</span>
             <Link to="/terms">이용약관</Link>
           </div>
+
+          <section className="login-service-intro" aria-label="서비스 소개">
+            <h3>HANSSUP 소개</h3>
+            <p>
+              HANSSUP은 동아리 운영진과 구성원이 출석 체크, 구성원 관리, 활동 기록 확인을 한곳에서 처리할 수 있는
+              동아리 운영 플랫폼입니다.
+            </p>
+            <ul>
+              <li>대상 사용자: 동아리 운영진 및 구성원</li>
+              <li>핵심 기능: 출석체크, 구성원관리, 일정 관리 같은 기능을 사용할 수 있습니다.</li>
+              <li>문의: kimtaewoo2242@gmail.com</li>
+            </ul>
+          </section>
         </div>
       </div>
     </div>

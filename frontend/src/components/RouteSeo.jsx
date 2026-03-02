@@ -12,12 +12,12 @@ const routeMeta = {
   "/login": {
     title: "로그인 | HANSSUP",
     description: "HANSSUP 관리자 및 사용자 로그인 페이지입니다.",
-    index: true,
+    index: false,
   },
   "/register": {
     title: "관리자 가입 | HANSSUP",
     description: "HANSSUP 관리자 계정을 생성하고 동아리 운영을 시작하세요.",
-    index: true,
+    index: false,
   },
   "/privacy-policy": {
     title: "개인정보처리방침 | HANSSUP",

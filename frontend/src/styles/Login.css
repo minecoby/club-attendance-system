@@ -190,6 +190,36 @@
   margin: 0 8px;
 }
 
+.login-service-intro {
+  margin-top: 16px;
+  padding: 14px 14px 12px;
+  border-radius: 12px;
+  background: var(--card-bg-strong);
+  border: 1px solid var(--border);
+}
+
+.login-service-intro h3 {
+  font-size: 0.98rem;
+  margin: 0 0 6px;
+}
+
+.login-service-intro p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.login-service-intro ul {
+  margin: 8px 0 0 16px;
+  padding: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.login-service-intro li {
+  margin-bottom: 3px;
+}
+
 .loading-container {
   width: 100%;
   min-height: 240px;
