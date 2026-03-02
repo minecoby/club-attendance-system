@@ -17,7 +17,7 @@ function PrivacyPolicy() {
           </button>
         </div>
         <h1>개인정보처리방침</h1>
-        <p className="policy-date">시행일: 2026-02-14</p>
+        <p className="policy-date">시행일: 2026-03-03</p>
 
         <p>
           minecoby(이하 "회사")는 회사가 제공하는 서비스(HANSSUP)를 이용하는 개인의 개인정보를 보호하기 위해
@@ -171,7 +171,7 @@ function PrivacyPolicy() {
           통해 사전에 안내합니다.
         </p>
 
-        <p className="policy-date">부칙: 본 방침은 2026-02-14부터 시행합니다.</p>
+        <p className="policy-date">부칙: 본 방침은 2026-03-03부터 시행합니다.</p>
 
       </div>
     </div>
