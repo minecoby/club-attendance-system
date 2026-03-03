@@ -10,6 +10,7 @@ import i18n from '../i18n';
 
 function Settings({ theme, setTheme, language, setLanguage }) {
     const navigate = useNavigate();
+    const MEMBERS_PER_PAGE = 8;
     
     // 사용자 정보 상태
     const [userInfo, setUserInfo] = useState({
@@ -30,6 +31,7 @@ function Settings({ theme, setTheme, language, setLanguage }) {
     const [profileImgUrl, setProfileImgUrl] = useState('');
     // 유저목록 관련 상태
     const [members, setMembers] = useState([]);
+    const [membersPage, setMembersPage] = useState(1);
     // 탈퇴 모달 상태
     const [showQuitModal, setShowQuitModal] = useState(false);
     const [quitTargetClub, setQuitTargetClub] = useState(null);
@@ -308,6 +310,24 @@ function Settings({ theme, setTheme, language, setLanguage }) {
         setAlert({ ...alert, show: false });
     };
 
+    useEffect(() => {
+        setMembersPage(1);
+    }, [members]);
+
+    const totalMemberPages = Math.max(1, Math.ceil(members.length / MEMBERS_PER_PAGE));
+    const pagedMembers = members.slice(
+        (membersPage - 1) * MEMBERS_PER_PAGE,
+        membersPage * MEMBERS_PER_PAGE
+    );
+
+    const handlePrevMembersPage = () => {
+        setMembersPage(prev => Math.max(1, prev - 1));
+    };
+
+    const handleNextMembersPage = () => {
+        setMembersPage(prev => Math.min(totalMemberPages, prev + 1));
+    };
+
     return (
         <div className="settings-root">
             <AlertModal show={alert.show} type={alert.type} message={alert.message} onClose={handleCloseAlert} />
@@ -515,14 +535,35 @@ function Settings({ theme, setTheme, language, setLanguage }) {
 
                 {/* 유저 목록 관리 카드 (리더만 표시) */}
                 {userInfo.is_leader && (
-                    <div className="settings-card wide-card">
+                    <div className="settings-card">
                         <div className="settings-card-title">유저 목록 관리</div>
                         <div className="settings-card-content">
                             <div className="settings-club-list">
                                 <div className="settings-club-list-title">동아리 멤버 목록</div>
                                 {members.length === 0 && <div className="settings-empty">멤버가 없습니다.</div>}
+                                {members.length > 0 && (
+                                    <div className="members-pagination">
+                                        <button
+                                            className="settings-btn small"
+                                            onClick={handlePrevMembersPage}
+                                            disabled={membersPage === 1}
+                                        >
+                                            이전
+                                        </button>
+                                        <span className="members-page-indicator">
+                                            {membersPage} / {totalMemberPages}
+                                        </span>
+                                        <button
+                                            className="settings-btn small"
+                                            onClick={handleNextMembersPage}
+                                            disabled={membersPage === totalMemberPages}
+                                        >
+                                            다음
+                                        </button>
+                                    </div>
+                                )}
                                 <div className="members-grid">
-                                    {members.map(member => (
+                                    {pagedMembers.map(member => (
                                         <div key={member.user_id} className="member-card">
                                             <div className="member-info">
                                                 <span className="member-name">{member.name}</span>

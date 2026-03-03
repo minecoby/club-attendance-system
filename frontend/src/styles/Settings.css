@@ -163,14 +163,24 @@
   font-size: 0.83rem;
 }
 
-.wide-card {
-  grid-column: 1 / -1;
-}
-
 .members-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
+}
+
+.members-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.members-page-indicator {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 700;
 }
 
 .member-card {
@@ -234,5 +244,9 @@
 
   .settings-club-li .settings-btn {
     width: auto;
+  }
+
+  .members-pagination {
+    flex-wrap: wrap;
   }
 }
