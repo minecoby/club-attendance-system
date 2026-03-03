@@ -448,26 +448,6 @@ function Settings({ theme, setTheme, language, setLanguage }) {
                     </div>
                 </div>
 
-                {/* 환경 설정 카드 */}
-                <div className="settings-card">
-                    <div className="settings-card-title">{i18n[language].envSettings}</div>
-                    <div className="settings-card-content">
-                        <div className="settings-row">
-                            <label>{i18n[language].theme}</label>
-                            <button className="settings-btn" onClick={handleThemeToggle}>
-                                {theme === 'light' ? i18n[language].light : i18n[language].dark} {i18n[language].mode}
-                            </button>
-                        </div>
-                        <div className="settings-row">
-                            <label>{i18n[language].language}</label>
-                            <select value={language} onChange={handleLanguageChange} className="settings-input" style={{maxWidth:120}}>
-                                <option value="ko">한국어</option>
-                                <option value="en">English</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
                 {/* 위치 설정 카드 (리더만 표시) */}
                 {userInfo.is_leader && (
                     <div className="settings-card">
@@ -533,9 +513,29 @@ function Settings({ theme, setTheme, language, setLanguage }) {
                     </div>
                 )}
 
+                {/* 환경 설정 카드 */}
+                <div className="settings-card">
+                    <div className="settings-card-title">{i18n[language].envSettings}</div>
+                    <div className="settings-card-content">
+                        <div className="settings-row">
+                            <label>{i18n[language].theme}</label>
+                            <button className="settings-btn" onClick={handleThemeToggle}>
+                                {theme === 'light' ? i18n[language].light : i18n[language].dark} {i18n[language].mode}
+                            </button>
+                        </div>
+                        <div className="settings-row">
+                            <label>{i18n[language].language}</label>
+                            <select value={language} onChange={handleLanguageChange} className="settings-input" style={{maxWidth:120}}>
+                                <option value="ko">한국어</option>
+                                <option value="en">English</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
                 {/* 유저 목록 관리 카드 (리더만 표시) */}
                 {userInfo.is_leader && (
-                    <div className="settings-card">
+                    <div className="settings-card settings-card-full-row">
                         <div className="settings-card-title">유저 목록 관리</div>
                         <div className="settings-card-content">
                             <div className="settings-club-list">
