@@ -2,6 +2,7 @@
 import "../styles/LeaderPage.css";
 import axios from 'axios';
 import apiClient from '../utils/apiClient';
+import dataCache from '../utils/dataCache';
 import QRCode from "react-qr-code";
 import AlertModal from '../components/AlertModal';
 import Calendar from '../components/Calendar';
@@ -248,7 +249,9 @@ function LeaderPage({ language, setLanguage }) {
 
     // 출석 데이터 새로고침 함수
     const reloadAttendance = () => {
-        setSelectedDate(prev => prev); // selectedDate가 바뀌지 않아도 useEffect 트리거
+        if (selectedDate) {
+            fetchAttendance(selectedDate);
+        }
     };
 
     // 코드 출석 시작 핸들러 (모달 내부에서 QR→코드 전환)
@@ -272,6 +275,10 @@ function LeaderPage({ language, setLanguage }) {
                 if (ws) {
                     ws.close();
                     setWs(null);
+                }
+                const clubCode = localStorage.getItem("club_code");
+                if (clubCode) {
+                    dataCache.clearCache(`attendanceList_${clubCode}`);
                 }
                 setShowQR(false);
                 setQrCode("");
@@ -547,7 +554,7 @@ function LeaderPage({ language, setLanguage }) {
                 {showQR && (
                   <div className="qr-modal-bg" onClick={handleCloseQR}>
                     <div className="qr-modal-card" onClick={e=>e.stopPropagation()}>
-                      <button className="qr-close-btn" onClick={handleCloseQR}>횞</button>
+                      <button className="qr-close-btn" onClick={handleCloseQR}>X</button>
                       {modalMode === "qr" && qrCode && (
                         <>
                           <div className="qr-label">{i18n[language].attendWithQR || 'QR코드로 출석하세요'}</div>
