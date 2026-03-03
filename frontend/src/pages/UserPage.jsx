@@ -207,7 +207,6 @@ function UserPage({ language }) {
             <table className="attendance-table">
               <thead>
                 <tr>
-                  <th>{i18n[language].clubName || "동아리"}</th>
                   <th>{i18n[language].date || "날짜"}</th>
                   <th>{i18n[language].attendanceStatus || "출석 상태"}</th>
                 </tr>
@@ -215,7 +214,6 @@ function UserPage({ language }) {
               <tbody>
                 {attendanceList.map((item, index) => (
                   <tr key={`${item.date}-${index}`}>
-                    <td>{selectedClubName}</td>
                     <td>{item.date}</td>
                     <td className={`status ${item.status === true ? "present" : "absent"}`}>
                       {item.status === true
@@ -226,7 +224,7 @@ function UserPage({ language }) {
                 ))}
                 {attendanceList.length === 0 && (
                   <tr>
-                    <td colSpan={3} className="empty-row">
+                    <td colSpan={2} className="empty-row">
                       출석 기록이 없습니다.
                     </td>
                   </tr>

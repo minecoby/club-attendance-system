@@ -167,18 +167,20 @@
 
 .attendance-table {
   width: 100%;
-  min-width: 520px;
+  min-width: 0;
   border-collapse: collapse;
   background: var(--table-bg);
   border-radius: 12px;
   overflow: hidden;
+  table-layout: fixed;
 }
 
 .attendance-table th,
 .attendance-table td {
-  padding: 12px 10px;
+  padding: 12px 6px;
   border-bottom: 1px solid var(--border);
   text-align: center;
+  word-break: keep-all;
 }
 
 .attendance-table th {
@@ -256,5 +258,15 @@
   .schedule-section,
   .attendance-section {
     padding: 14px 10px;
+  }
+
+  .attendance-table {
+    table-layout: fixed;
+  }
+
+  .attendance-table th,
+  .attendance-table td {
+    font-size: 0.86rem;
+    padding: 10px 4px;
   }
 }
