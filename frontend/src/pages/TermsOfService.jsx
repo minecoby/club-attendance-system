@@ -101,7 +101,7 @@ function TermsOfService() {
         </p>
 
         <h2>제12조(문의처)</h2>
-        <p>서비스 문의: kimtaewoo2242@gmail.com</p>
+        <p>서비스 문의: support@minecoby.com</p>
       </div>
     </div>
   );

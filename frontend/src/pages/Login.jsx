@@ -166,7 +166,7 @@ function LoginPage() {
             <ul>
               <li>대상 사용자: 동아리 운영진 및 구성원</li>
               <li>핵심 기능: 출석체크, 구성원관리, 일정 관리 같은 기능을 사용할 수 있습니다.</li>
-              <li>문의: kimtaewoo2242@gmail.com</li>
+              <li>문의: support@minecoby.com</li>
             </ul>
           </section>
         </div>
