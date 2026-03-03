@@ -40,7 +40,11 @@ async def attend_date(user_id: str, date_id, db: AsyncSession):
     existing_attendance = result.scalars().first()
 
     if existing_attendance:
-        raise HTTPException(status_code=409, detail="이미 출석이 등록되었습니다.")
+        if existing_attendance.status is True:
+            raise HTTPException(status_code=409, detail="이미 출석이 등록되었습니다.")
+        existing_attendance.status = True
+        await db.commit()
+        return
 
     new_attendance = Attendance(
         user_id=user_id,
@@ -49,7 +53,6 @@ async def attend_date(user_id: str, date_id, db: AsyncSession):
     )
     db.add(new_attendance)
     await db.commit()
-
 async def load_myattend(club_code, user_id: str, db: AsyncSession):
     result = await db.execute(
         select(AttendanceDate)
