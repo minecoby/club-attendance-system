@@ -7,8 +7,10 @@ from app.db import get_db
 from app.variable import *
 from app.schema.club_schema import *
 from app.services.club_service import *
+from app.services.schedule_service import list_member_schedules
 from app.services.service import *
 from app.models import User, StuClub
+from app.schema.schedule_schema import ScheduleResponse
 from app.logger import get_club_logger
 
 club_logger = get_club_logger()
@@ -83,3 +85,15 @@ async def get_members(
     )
     members = [{"user_id": r.user_id, "name": r.name} for r in result.all()]
     return members
+
+
+@router.get("/{club_code}/schedules", response_model=list[ScheduleResponse])
+async def get_club_schedules(
+    club_code: str,
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
+    db: AsyncSession = Depends(get_db),
+):
+    token = get_access_token_from_request(request, credentials)
+    user = await get_current_user(token, db)
+    return await list_member_schedules(club_code, user.user_id, db)

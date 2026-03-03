@@ -2,21 +2,16 @@
   padding: 24px 16px 30px;
   min-height: calc(100vh - 80px);
   width: 100%;
-  max-width: 1120px;
+  max-width: 1360px;
   margin: 0 auto;
 }
 
-.QR-section,
-.attendance-section {
-  margin: 0;
-}
-
 .club-select-section {
-  background: linear-gradient(140deg, var(--card-bg) 0%, var(--card-bg-strong) 100%);
+  background: var(--card-bg);
   border: 1px solid var(--border);
   box-shadow: var(--card-shadow);
   border-radius: 18px;
-  padding: 20px;
+  padding: 16px;
   display: grid;
   grid-template-columns: auto 1fr auto;
   gap: 12px;
@@ -25,10 +20,9 @@
 
 .club-select-label {
   color: var(--text);
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  white-space: nowrap;
 }
 
 .club-select-dropdown {
@@ -37,7 +31,7 @@
   border: 1px solid var(--border);
   background: var(--input-bg);
   color: var(--text);
-  min-width: 140px;
+  min-width: 160px;
 }
 
 .startQR-button {
@@ -47,20 +41,124 @@
   background: var(--primary);
   color: #fff;
   font-weight: 700;
+  white-space: nowrap;
 }
 
+.user-summary-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.summary-card {
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  border-radius: 14px;
+  padding: 12px;
+  display: grid;
+  gap: 6px;
+}
+
+.summary-label {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.summary-value {
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.user-tabs {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.user-tab-btn {
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text);
+  border-radius: 10px;
+  min-height: 38px;
+  padding: 8px 12px;
+  font-weight: 700;
+}
+
+.user-tab-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.user-content-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.schedule-section,
 .attendance-section {
-  margin-top: 18px;
+  margin: 0;
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 18px;
   box-shadow: var(--card-shadow);
-  padding: 18px 16px;
+  padding: 16px;
 }
 
+.schedule-section h2,
 .attendance-section h2 {
-  margin-bottom: 14px;
-  font-size: 1.18rem;
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+}
+
+.panel-hidden {
+  display: none;
+}
+
+.schedule-list {
+  display: grid;
+  gap: 10px;
+}
+
+.schedule-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  background: var(--table-row-bg);
+}
+
+.schedule-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.schedule-date {
+  color: var(--muted);
+  font-size: 0.84rem;
+  white-space: nowrap;
+}
+
+.schedule-desc {
+  margin: 8px 0 0;
+  color: var(--text);
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.empty-message {
+  margin: 0;
+  color: var(--muted);
 }
 
 .attendance-table-wrapper {
@@ -69,7 +167,7 @@
 
 .attendance-table {
   width: 100%;
-  min-width: 580px;
+  min-width: 520px;
   border-collapse: collapse;
   background: var(--table-bg);
   border-radius: 12px;
@@ -97,12 +195,46 @@
   font-weight: 600;
 }
 
-.status.출석 {
+.status.present {
   color: var(--success);
 }
 
-.status.결석 {
+.status.absent {
   color: var(--absent);
+}
+
+.empty-row {
+  color: var(--muted);
+}
+
+@media (min-width: 1100px) {
+  .user-tabs {
+    display: none;
+  }
+
+  .user-content-grid {
+    grid-template-columns: 1fr 1.15fr;
+    align-items: start;
+  }
+
+  .panel-hidden {
+    display: block;
+  }
+}
+
+@media (max-width: 900px) {
+  .user-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .schedule-card-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .schedule-date {
+    white-space: normal;
+  }
 }
 
 @media (max-width: 760px) {
@@ -113,11 +245,7 @@
   .club-select-section {
     grid-template-columns: 1fr;
     gap: 10px;
-    padding: 15px 13px;
-  }
-
-  .club-select-label {
-    font-size: 0.84rem;
+    padding: 14px 12px;
   }
 
   .club-select-dropdown,
@@ -125,6 +253,7 @@
     width: 100%;
   }
 
+  .schedule-section,
   .attendance-section {
     padding: 14px 10px;
   }

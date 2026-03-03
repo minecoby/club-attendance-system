@@ -8,7 +8,14 @@ from app.schema.admin_schema import *
 from app.services.admin_service import *
 from app.services.club_service import get_club_admin
 from app.services.location_service import get_club_location_settings, update_club_location
+from app.services.schedule_service import (
+    create_schedule,
+    list_schedules_by_club,
+    delete_schedule_for_club,
+    update_schedule_for_club,
+)
 from app.services.service import *
+from app.schema.schedule_schema import ScheduleCreateRequest, ScheduleUpdateRequest, ScheduleResponse
 from app.logger import get_admin_logger
 from datetime import datetime
 from app.models import AttendanceDate
@@ -254,3 +261,80 @@ async def update_location_settings(data: LocationSettingRequest, request: Reques
         db
     )
 
+
+@router.post("/schedules", response_model=ScheduleResponse)
+async def add_schedule(
+    data: ScheduleCreateRequest,
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
+    db: AsyncSession = Depends(get_db),
+):
+    token = get_access_token_from_request(request, credentials)
+    user = await get_current_user(token, db)
+    if not user.is_leader:
+        raise HTTPException(status_code=403, detail="오로지 관리자권한이 있는사람만 추가가능합니다.")
+
+    club_code = await get_leader_club_code(user.user_id, db)
+    return await create_schedule(
+        club_code=club_code,
+        title=data.title,
+        description=data.description,
+        scheduled_at=data.scheduled_at,
+        created_by=user.user_id,
+        db=db,
+    )
+
+
+@router.get("/schedules", response_model=list[ScheduleResponse])
+async def get_schedules(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
+    db: AsyncSession = Depends(get_db),
+):
+    token = get_access_token_from_request(request, credentials)
+    user = await get_current_user(token, db)
+    if not user.is_leader:
+        raise HTTPException(status_code=403, detail="오로지 관리자권한이 있는사람만 조회가능합니다.")
+
+    club_code = await get_leader_club_code(user.user_id, db)
+    return await list_schedules_by_club(club_code, db)
+
+
+@router.delete("/schedules/{schedule_id}")
+async def remove_schedule(
+    schedule_id: int,
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
+    db: AsyncSession = Depends(get_db),
+):
+    token = get_access_token_from_request(request, credentials)
+    user = await get_current_user(token, db)
+    if not user.is_leader:
+        raise HTTPException(status_code=403, detail="오로지 관리자권한이 있는사람만 삭제가능합니다.")
+
+    club_code = await get_leader_club_code(user.user_id, db)
+    return await delete_schedule_for_club(schedule_id, club_code, db)
+
+
+@router.put("/schedules/{schedule_id}", response_model=ScheduleResponse)
+async def update_schedule(
+    schedule_id: int,
+    data: ScheduleUpdateRequest,
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
+    db: AsyncSession = Depends(get_db),
+):
+    token = get_access_token_from_request(request, credentials)
+    user = await get_current_user(token, db)
+    if not user.is_leader:
+        raise HTTPException(status_code=403, detail="오로지 관리자권한이 있는사람만 수정가능합니다.")
+
+    club_code = await get_leader_club_code(user.user_id, db)
+    return await update_schedule_for_club(
+        schedule_id=schedule_id,
+        club_code=club_code,
+        title=data.title,
+        description=data.description,
+        scheduled_at=data.scheduled_at,
+        db=db,
+    )

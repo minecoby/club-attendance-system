@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import "../styles/LeaderPage.css";
 import axios from 'axios';
 import apiClient from '../utils/apiClient';
 import QRCode from "react-qr-code";
 import AlertModal from '../components/AlertModal';
 import Calendar from '../components/Calendar';
+import ScheduleManager from '../components/ScheduleManager';
 import i18n from '../i18n';
 
 const API = import.meta.env.VITE_BASE_URL;
@@ -93,7 +94,7 @@ function LeaderPage({ language, setLanguage }) {
                     setDateList(dates);
                 }
             } catch (err) {
-                setError("날짜 목록을 불러오는 중 오류가 발생했습니다."); // 오류 메시지 추가
+                setError("날짜 목록을 불러오는 중 오류가 발생했습니다.");
             }
         };
         if (today) {
@@ -148,7 +149,7 @@ function LeaderPage({ language, setLanguage }) {
             setAlert({
                 show: true,
                 type: 'info',
-                message: '출석할 날짜를 선택한 후 출석을 진행해주세요.',
+                message: '출석 날짜를 선택한 뒤 출석을 진행해주세요.',
                 confirm: false,
                 onConfirm: null
             });
@@ -162,7 +163,7 @@ function LeaderPage({ language, setLanguage }) {
                 setAlert({
                     show: true,
                     type: 'warning',
-                    message: '이미 출석한 기록이 있는 날짜입니다. \n데이터를 초기화 후 출석을 시작하시겠습니까?',
+                    message: '이미 출석 기록이 있는 날짜입니다.\n데이터를 초기화하고 출석을 시작하시겠습니까?',
                     confirm: true,
                     onConfirm: async () => {
                         try {
@@ -174,7 +175,7 @@ function LeaderPage({ language, setLanguage }) {
                     }
                 });
             } else {
-                setError("날짜 추가 중 오류가 발생했습니다."); // 오류 메시지 추가
+                setError("날짜 추가 중 오류가 발생했습니다.");
             }
             return;
         }
@@ -256,7 +257,7 @@ function LeaderPage({ language, setLanguage }) {
             ws.send("code_attendance_accepted");
             setModalMode("code");
         } else {
-            setAlert({ show: true, type: 'error', message: 'QR 출석이 시작된 후에만 코드 출석으로 전환할 수 있습니다.', confirm: false, onConfirm: null });
+            setAlert({ show: true, type: 'error', message: 'QR 출석을 시작한 후에만 코드 출석으로 전환할 수 있습니다.', confirm: false, onConfirm: null });
         }
     };
 
@@ -290,7 +291,6 @@ function LeaderPage({ language, setLanguage }) {
         setAlert({ ...alert, show: false });
     };
 
-
     const handleToggleInlineCalendar = () => {
         if (showInlineCalendar) {
             setIsCalendarClosing(true);
@@ -313,6 +313,8 @@ function LeaderPage({ language, setLanguage }) {
         }, 200);
         setDropdownOpen(false);
     };
+
+
 
     // 페이지 벗어날 때 웹소켓 종료 및 출석 데이터 새로고침
     useEffect(() => {
@@ -472,7 +474,12 @@ function LeaderPage({ language, setLanguage }) {
                 confirm={alert.confirm}
                 onConfirm={handleConfirmAlert}
             />
-            <div className="leader-header-card">
+            <div className="leader-main-grid">
+                <div className="leader-column-left">
+                    <ScheduleManager />
+                </div>
+                <div className="leader-column-right">
+                    <div className="leader-header-card">
                 <div className="leader-header-left">
                     <div className="leader-date-label">{i18n[language].attendanceDate || '출석 날짜'}</div>
                     <div className="leader-date-controls">
@@ -482,7 +489,7 @@ function LeaderPage({ language, setLanguage }) {
                                 onClick={handleToggleInlineCalendar}
                                 title={showInlineCalendar ? (i18n[language].closeCalendar || '캘린더 닫기') : (i18n[language].openCalendar || '캘린더 열기')}
                             >
-                                {showInlineCalendar ? '⟫' : '⟪'}
+                                {showInlineCalendar ? '<<' : '>>'}
                             </button>
                             <div className="leader-date-value">
                                 {selectedDate ? selectedDate : (i18n[language].all || '전체')}
@@ -491,7 +498,7 @@ function LeaderPage({ language, setLanguage }) {
                                     onClick={() => setDropdownOpen((v) => !v)}
                                     aria-label={i18n[language].openDateDropdown || '날짜 선택 드롭다운 열기'}
                                 >
-                                    {dropdownOpen ? '▲' : '▼'}
+                                    {dropdownOpen ? '<<' : '>>'}
                                 </button>
                             </div>
                         </div>
@@ -540,7 +547,7 @@ function LeaderPage({ language, setLanguage }) {
                 {showQR && (
                   <div className="qr-modal-bg" onClick={handleCloseQR}>
                     <div className="qr-modal-card" onClick={e=>e.stopPropagation()}>
-                      <button className="qr-close-btn" onClick={handleCloseQR}>×</button>
+                      <button className="qr-close-btn" onClick={handleCloseQR}>횞</button>
                       {modalMode === "qr" && qrCode && (
                         <>
                           <div className="qr-label">{i18n[language].attendWithQR || 'QR코드로 출석하세요'}</div>
@@ -564,7 +571,7 @@ function LeaderPage({ language, setLanguage }) {
                     ) : error ? (
                         <div className="attendance-message error">{i18n[language].error || error}</div>
                     ) : attendanceList.length === 0 ? (
-                        <div className="attendance-message empty">{i18n[language].noAttendance || '출석기록이 없습니다.'}</div>
+                        <div className="attendance-message empty">{i18n[language].noAttendance || '출석 기록이 없습니다.'}</div>
                     ) : selectedDate === "" ? (
                         // 전체 출석부 테이블 (원래 코드)
                         <>
@@ -596,7 +603,7 @@ function LeaderPage({ language, setLanguage }) {
                                         <td>{user.name}</td>
                                         {dateList.map(date => (
                                             <td key={date}>
-                                                <span className={`status-badge ${user[date] === true ? "출석" : "결석"}`}>
+                                                <span className={`status-badge ${user[date] === true ? "present" : "absent"}`}>
                                                     {user[date] === true ? (i18n[language].attended || '출석') : (i18n[language].absent || '결석')}
                                                 </span>
                                             </td>
@@ -677,7 +684,7 @@ function LeaderPage({ language, setLanguage }) {
                                             {user.name}
                                         </td>
                                         <td>
-                                            <span className={`status-badge ${user.status === true ? "출석" : "결석"}`}>
+                                            <span className={`status-badge ${user.status === true ? "present" : "absent"}`}>
                                                 {user.status === true ? (i18n[language].attended || '출석') : (i18n[language].absent || '결석')}
                                             </span>
                                         </td>
@@ -688,9 +695,14 @@ function LeaderPage({ language, setLanguage }) {
                         </>
                     )}
                 </div>
+                </div>
             </div>
         </div>
+    </div>
     );
 }
 
 export default LeaderPage;
+
+
+

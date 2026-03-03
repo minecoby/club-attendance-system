@@ -50,7 +50,7 @@ class Club(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     club_name = Column(String(100), nullable=False)
-    club_code = Column(String(20), unique=True, nullable=False)
+    club_code = Column(String(20, collation="utf8mb4_bin"), unique=True, nullable=False)
     location_enabled = Column(Boolean, default=False)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
@@ -63,7 +63,7 @@ class StuClub(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(String(255), ForeignKey("users.user_id"), nullable=False)
-    club_code = Column(String(20), ForeignKey("clubs.club_code"), nullable=False)
+    club_code = Column(String(20, collation="utf8mb4_bin"), ForeignKey("clubs.club_code"), nullable=False)
 
     user = relationship("User")
     club = relationship("Club", back_populates="members")
@@ -73,7 +73,7 @@ class AttendanceDate(Base):
     __tablename__ = "attendance_dates"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    club_code = Column(String(20), ForeignKey("clubs.club_code"), nullable=False)
+    club_code = Column(String(20, collation="utf8mb4_bin"), ForeignKey("clubs.club_code"), nullable=False)
     date = Column(Date, nullable=False)
     set_by = Column(String(255), ForeignKey("users.user_id"), nullable=False)
 
@@ -95,3 +95,15 @@ class Attendance(Base):
     __table_args__ = (
         UniqueConstraint('user_id', 'attendance_date_id', name='unique_user_attendance_date'),
     )
+
+
+class ClubSchedule(Base):
+    __tablename__ = "club_schedules"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    club_code = Column(String(20, collation="utf8mb4_bin"), ForeignKey("clubs.club_code"), nullable=False)
+    title = Column(String(120), nullable=False)
+    description = Column(Text, nullable=True)
+    scheduled_at = Column(DateTime, nullable=False)
+    created_by = Column(String(255), ForeignKey("users.user_id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
