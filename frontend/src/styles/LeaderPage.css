@@ -79,6 +79,7 @@
 }
 
 .leader-date-value {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -143,10 +144,9 @@
 
 .date-dropdown {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 7px);
   left: 0;
   z-index: 14;
-  margin-top: 7px;
   min-width: 160px;
   max-height: 250px;
   overflow-y: auto;

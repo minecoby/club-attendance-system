@@ -505,8 +505,25 @@ function LeaderPage({ language, setLanguage }) {
                                     onClick={() => setDropdownOpen((v) => !v)}
                                     aria-label={i18n[language].openDateDropdown || '날짜 선택 드롭다운 열기'}
                                 >
-                                    {dropdownOpen ? '<<' : '>>'}
+                                    {dropdownOpen ? '▴' : '▾'}
                                 </button>
+                                {dropdownOpen && (
+                                    <div className="date-dropdown">
+                                        {dateList.length === 0 ? (
+                                            <div className="date-dropdown-empty">{i18n[language].noDate || '날짜 없음'}</div>
+                                        ) : (
+                                            dateList.map((date) => (
+                                                <div
+                                                    key={date}
+                                                    className={`date-dropdown-item${selectedDate === date ? ' selected' : ''}`}
+                                                    onClick={() => handleDateClick(date)}
+                                                >
+                                                    {date}
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <button className="all-attendance-btn" onClick={handleAllAttendanceClick}>
@@ -516,23 +533,6 @@ function LeaderPage({ language, setLanguage }) {
                             {i18n[language].goToday || '오늘로 돌아가기'}
                         </button>
                     </div>
-                    {dropdownOpen && (
-                        <div className="date-dropdown">
-                            {dateList.length === 0 ? (
-                                <div className="date-dropdown-empty">{i18n[language].noDate || '날짜 없음'}</div>
-                            ) : (
-                                dateList.map((date) => (
-                                    <div
-                                        key={date}
-                                        className={`date-dropdown-item${selectedDate === date ? ' selected' : ''}`}
-                                        onClick={() => handleDateClick(date)}
-                                    >
-                                        {date}
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    )}
                     {showInlineCalendar && (
                         <div className={`inline-calendar-container ${isCalendarClosing ? 'closing' : ''}`}>
                             <Calendar 
