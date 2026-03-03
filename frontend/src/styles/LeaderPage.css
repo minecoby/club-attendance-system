@@ -1,8 +1,8 @@
 ﻿.leader-page {
-  width: 100%;
-  max-width: 1360px;
+  width: min(1360px, calc(100% - 24px));
   margin: 0 auto;
-  padding: 20px 14px 28px;
+  box-sizing: border-box;
+  padding: 20px 0 28px;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -375,6 +375,10 @@
 }
 
 @media (max-width: 880px) {
+  .leader-page {
+    width: calc(100% - 16px);
+  }
+
   .leader-main-grid {
     grid-template-columns: 1fr;
   }
@@ -407,3 +411,4 @@
     flex: 1;
   }
 }
+
