@@ -10,6 +10,11 @@ function RegisterPage() {
 
   const [alert, setAlert] = useState({ show: false, type: "error", message: "" });
   const [isLoading, setIsLoading] = useState(false);
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
+  const [emailCode, setEmailCode] = useState("");
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [emailVerificationToken, setEmailVerificationToken] = useState("");
 
   const [formData, setFormData] = useState({
     username: "",
@@ -31,6 +36,12 @@ function RegisterPage() {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+
+    if (name === "email") {
+      setEmailVerified(false);
+      setEmailVerificationToken("");
+      setEmailCode("");
+    }
   };
 
   const generateRandomCode = () => {
@@ -91,7 +102,64 @@ function RegisterPage() {
       return false;
     }
 
+    if (!emailVerified || !emailVerificationToken) {
+      setAlert({ show: true, type: "error", message: "이메일 인증을 완료해주세요." });
+      return false;
+    }
+
     return true;
+  };
+
+  const handleSendVerificationCode = async () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setAlert({ show: true, type: "error", message: "올바른 이메일 형식을 입력해주세요." });
+      return;
+    }
+
+    try {
+      setIsSendingCode(true);
+      await axios.post(`${API}/users/email/send-code`, { email: formData.email }, { withCredentials: true });
+      setEmailVerified(false);
+      setEmailVerificationToken("");
+      setAlert({ show: true, type: "success", message: "인증 코드를 이메일로 보냈습니다." });
+    } catch (error) {
+      const message = error.response?.data?.detail || "인증 코드 발송에 실패했습니다.";
+      setAlert({ show: true, type: "error", message });
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!formData.email) {
+      setAlert({ show: true, type: "error", message: "이메일을 먼저 입력해주세요." });
+      return;
+    }
+
+    if (!emailCode.trim()) {
+      setAlert({ show: true, type: "error", message: "인증 코드를 입력해주세요." });
+      return;
+    }
+
+    try {
+      setIsVerifyingCode(true);
+      const response = await axios.post(
+        `${API}/users/email/verify-code`,
+        { email: formData.email, code: emailCode.trim() },
+        { withCredentials: true }
+      );
+      setEmailVerified(true);
+      setEmailVerificationToken(response.data.verification_token);
+      setAlert({ show: true, type: "success", message: "이메일 인증이 완료되었습니다." });
+    } catch (error) {
+      setEmailVerified(false);
+      setEmailVerificationToken("");
+      const message = error.response?.data?.detail || "인증 코드 확인에 실패했습니다.";
+      setAlert({ show: true, type: "error", message });
+    } finally {
+      setIsVerifyingCode(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -108,6 +176,7 @@ function RegisterPage() {
           password: formData.password,
           name: formData.name,
           email: formData.email,
+          email_verification_token: emailVerificationToken,
           club_name: formData.clubName,
           club_code: formData.clubCode,
           agreed_to_terms: formData.agreedToTerms,
@@ -208,8 +277,37 @@ function RegisterPage() {
                 value={formData.email}
                 onChange={handleChange}
                 className="login-input"
-                disabled={isLoading}
+                disabled={isLoading || isSendingCode || isVerifyingCode || emailVerified}
               />
+              <div className="email-verify-row">
+                <button
+                  type="button"
+                  className="random-code-button"
+                  onClick={handleSendVerificationCode}
+                  disabled={isLoading || isSendingCode || isVerifyingCode || !formData.email || emailVerified}
+                >
+                  {isSendingCode ? "발송 중..." : "인증코드 발송"}
+                </button>
+                <input
+                  type="text"
+                  name="emailCode"
+                  placeholder="인증코드 6자리"
+                  value={emailCode}
+                  onChange={(e) => setEmailCode(e.target.value)}
+                  className="login-input email-code-input"
+                  disabled={isLoading || isSendingCode || isVerifyingCode || emailVerified}
+                  maxLength={6}
+                />
+                <button
+                  type="button"
+                  className="random-code-button"
+                  onClick={handleVerifyCode}
+                  disabled={isLoading || isSendingCode || isVerifyingCode || emailVerified || !emailCode.trim()}
+                >
+                  {isVerifyingCode ? "확인 중..." : "코드 확인"}
+                </button>
+              </div>
+              {emailVerified && <p className="email-verified-text">이메일 인증이 완료되었습니다.</p>}
             </div>
 
             <div className="register-section">
@@ -273,7 +371,11 @@ function RegisterPage() {
               </label>
             </div>
 
-            <button type="submit" className="login-button" disabled={isLoading}>
+            <button
+              type="submit"
+              className="login-button"
+              disabled={isLoading || isSendingCode || isVerifyingCode || !emailVerified}
+            >
               {isLoading ? <span className="loading-spinner"></span> : "가입하기"}
             </button>
           </form>

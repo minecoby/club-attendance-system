@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import Optional
 from app.variable import *
 
@@ -40,7 +40,8 @@ class RegisterRequest(BaseModel):
     username: str
     password: str
     name: str
-    email: str
+    email: EmailStr
+    email_verification_token: str
     club_name: str
     club_code: str
     agreed_to_terms: bool
@@ -50,3 +51,17 @@ class RegisterRequest(BaseModel):
 class RegisterResponse(BaseModel):
     message: str
     pending_approval: bool
+
+
+class EmailVerificationSendRequest(BaseModel):
+    email: EmailStr
+
+
+class EmailVerificationVerifyRequest(BaseModel):
+    email: EmailStr
+    code: str
+
+
+class EmailVerificationVerifyResponse(BaseModel):
+    message: str
+    verification_token: str

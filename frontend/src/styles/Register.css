@@ -53,6 +53,24 @@
   gap: 8px;
 }
 
+.email-verify-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.email-code-input {
+  margin-bottom: 0;
+}
+
+.email-verified-text {
+  margin: 8px 2px 0;
+  font-size: 0.84rem;
+  color: var(--primary);
+  font-weight: 700;
+}
+
 .random-code-button {
   border: 1px solid var(--primary);
   background: transparent;
@@ -97,6 +115,10 @@
 
 @media (max-width: 600px) {
   .club-code-input-wrapper {
+    grid-template-columns: 1fr;
+  }
+
+  .email-verify-row {
     grid-template-columns: 1fr;
   }
 

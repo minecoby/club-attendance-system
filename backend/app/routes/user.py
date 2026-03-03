@@ -18,8 +18,10 @@ import base64
 import json
 import os
 import secrets
+import smtplib
 from datetime import datetime, timedelta
 from typing import Optional
+from email.message import EmailMessage
 from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -36,8 +38,22 @@ OAUTH_EXCHANGE_TTL_SECONDS = int(os.getenv("OAUTH_EXCHANGE_TTL_SECONDS", "120"))
 GOOGLE_CONSENT_TTL_SECONDS = int(os.getenv("GOOGLE_CONSENT_TTL_SECONDS", "600"))
 CONSENT_VERSION = os.getenv("CONSENT_VERSION", "2026-02-14")
 COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() in {"1", "true", "yes", "on"}
+EMAIL_VERIFY_CODE_TTL_SECONDS = int(os.getenv("EMAIL_VERIFY_CODE_TTL_SECONDS", "300"))
+EMAIL_VERIFY_COOLDOWN_SECONDS = int(os.getenv("EMAIL_VERIFY_COOLDOWN_SECONDS", "60"))
+EMAIL_VERIFY_MAX_ATTEMPTS = int(os.getenv("EMAIL_VERIFY_MAX_ATTEMPTS", "5"))
+EMAIL_VERIFICATION_TOKEN_TTL_SECONDS = int(os.getenv("EMAIL_VERIFICATION_TOKEN_TTL_SECONDS", "1800"))
+
+SMTP_HOST = os.getenv("SMTP_HOST")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USER = os.getenv("SMTP_USER")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+SMTP_FROM_EMAIL = os.getenv("SMTP_FROM_EMAIL") or SMTP_USER
+SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "true").lower() in {"1", "true", "yes", "on"}
+
 oauth_exchange_store = {}
 google_consent_store = {}
+email_verification_code_store = {}
+email_verification_token_store = {}
 
 
 def _set_auth_cookies(response: Response, access_token: str, refresh_token: str):
@@ -100,6 +116,51 @@ def _create_google_consent_code(payload: dict) -> str:
         "expires_at": now + timedelta(seconds=GOOGLE_CONSENT_TTL_SECONDS),
     }
     return consent_code
+
+
+def _cleanup_email_verification_store():
+    now = datetime.utcnow()
+
+    expired_emails = [
+        email for email, value in email_verification_code_store.items()
+        if value["expires_at"] <= now
+    ]
+    for email in expired_emails:
+        email_verification_code_store.pop(email, None)
+
+    expired_tokens = [
+        token for token, value in email_verification_token_store.items()
+        if value["expires_at"] <= now
+    ]
+    for token in expired_tokens:
+        email_verification_token_store.pop(token, None)
+
+
+def _send_verification_email(to_email: str, code: str):
+    if not SMTP_HOST or not SMTP_FROM_EMAIL:
+        raise HTTPException(status_code=500, detail="이메일 인증 설정이 완료되지 않았습니다.")
+
+    msg = EmailMessage()
+    msg["Subject"] = "[HANSSUP] 이메일 인증 코드 안내"
+    msg["From"] = SMTP_FROM_EMAIL
+    msg["To"] = to_email
+    msg.set_content(
+        f"인증 코드: {code}\n"
+        f"유효 시간: {EMAIL_VERIFY_CODE_TTL_SECONDS // 60}분\n"
+        "본인이 요청하지 않았다면 이 메일을 무시해주세요."
+    )
+
+    try:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10) as server:
+            if SMTP_USE_TLS:
+                server.starttls()
+            if SMTP_USER and SMTP_PASSWORD:
+                server.login(SMTP_USER, SMTP_PASSWORD)
+            server.send_message(msg)
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=500, detail="인증 메일 발송에 실패했습니다.")
 
 
 @router.get("/google/login")
@@ -324,6 +385,84 @@ async def complete_google_consent(
     )
 
 
+@router.post("/email/send-code")
+async def send_email_verification_code(
+    data: EmailVerificationSendRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    from sqlalchemy.future import select
+    from app.models import User
+
+    _cleanup_email_verification_store()
+
+    email = str(data.email).lower()
+    now = datetime.utcnow()
+    existing_code = email_verification_code_store.get(email)
+
+    if existing_code and existing_code["cooldown_until"] > now:
+        raise HTTPException(status_code=429, detail="인증 코드는 잠시 후 다시 요청할 수 있습니다.")
+
+    email_result = await db.execute(select(User).where(User.gmail == email))
+    if email_result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="이미 사용 중인 이메일입니다.")
+
+    code = f"{secrets.randbelow(900000) + 100000}"
+    _send_verification_email(email, code)
+
+    email_verification_code_store[email] = {
+        "code": code,
+        "expires_at": now + timedelta(seconds=EMAIL_VERIFY_CODE_TTL_SECONDS),
+        "cooldown_until": now + timedelta(seconds=EMAIL_VERIFY_COOLDOWN_SECONDS),
+        "attempts_left": EMAIL_VERIFY_MAX_ATTEMPTS,
+    }
+
+    used_tokens = [
+        token for token, value in email_verification_token_store.items()
+        if value["email"] == email
+    ]
+    for token in used_tokens:
+        email_verification_token_store.pop(token, None)
+
+    return {"message": "인증 코드가 이메일로 발송되었습니다."}
+
+
+@router.post("/email/verify-code", response_model=EmailVerificationVerifyResponse)
+async def verify_email_verification_code(data: EmailVerificationVerifyRequest):
+    _cleanup_email_verification_store()
+
+    email = str(data.email).lower()
+    code = data.code.strip()
+    now = datetime.utcnow()
+    saved_data = email_verification_code_store.get(email)
+
+    if not saved_data:
+        raise HTTPException(status_code=400, detail="인증 코드 요청 기록이 없습니다.")
+    if saved_data["expires_at"] <= now:
+        email_verification_code_store.pop(email, None)
+        raise HTTPException(status_code=400, detail="인증 코드가 만료되었습니다.")
+    if saved_data["attempts_left"] <= 0:
+        email_verification_code_store.pop(email, None)
+        raise HTTPException(status_code=400, detail="인증 시도 횟수를 초과했습니다. 코드를 다시 요청해주세요.")
+
+    if saved_data["code"] != code:
+        saved_data["attempts_left"] -= 1
+        if saved_data["attempts_left"] <= 0:
+            email_verification_code_store.pop(email, None)
+        raise HTTPException(status_code=400, detail="인증 코드가 올바르지 않습니다.")
+
+    email_verification_code_store.pop(email, None)
+    verification_token = secrets.token_urlsafe(32)
+    email_verification_token_store[verification_token] = {
+        "email": email,
+        "expires_at": now + timedelta(seconds=EMAIL_VERIFICATION_TOKEN_TTL_SECONDS),
+    }
+
+    return EmailVerificationVerifyResponse(
+        message="이메일 인증이 완료되었습니다.",
+        verification_token=verification_token
+    )
+
+
 @router.post("/login", response_model=TokenResponse)
 async def login(data: LoginRequest, response: Response, db: AsyncSession = Depends(get_db)):
     """아이디/비밀번호 로그인 (관리자/리더 전용)"""
@@ -375,10 +514,24 @@ async def register(
     if not data.agreed_to_terms or not data.agreed_to_privacy:
         raise HTTPException(status_code=400, detail="이용약관 및 개인정보처리방침 동의가 필요합니다.")
 
+    _cleanup_email_verification_store()
+    verification_data = email_verification_token_store.get(data.email_verification_token)
+    if (
+        not verification_data
+        or verification_data["expires_at"] <= datetime.utcnow()
+        or verification_data["email"] != str(data.email).lower()
+    ):
+        raise HTTPException(status_code=400, detail="이메일 인증이 필요합니다. 다시 인증해주세요.")
+
     # 아이디 중복 확인
     result = await db.execute(select(User).where(User.user_id == data.username))
     if result.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="이미 사용 중인 아이디입니다.")
+
+    # 이메일 중복 확인
+    result = await db.execute(select(User).where(User.gmail == str(data.email).lower()))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="이미 사용 중인 이메일입니다.")
 
     # 동아리 코드 중복 확인
     result = await db.execute(select(Club).where(Club.club_code == data.club_code))
@@ -390,7 +543,7 @@ async def register(
         password_hash = pwd_context.hash(data.password)
         user = User(
             user_id=data.username,
-            gmail=data.email,
+            gmail=str(data.email).lower(),
             password_hash=password_hash,
             name=data.name,
             is_leader=True,
@@ -424,6 +577,7 @@ async def register(
         db.add(consent)
 
         await db.commit()
+        email_verification_token_store.pop(data.email_verification_token, None)
 
         return RegisterResponse(
             message="가입 신청이 완료되었습니다. 관리자 승인 후 로그인할 수 있습니다.",
