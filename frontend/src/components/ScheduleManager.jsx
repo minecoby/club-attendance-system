@@ -10,16 +10,37 @@ const initialForm = {
 };
 
 function toDateTimeParts(isoString) {
+  const normalized = String(isoString || "").replace(" ", "T");
+  const [datePart, timePartRaw = ""] = normalized.split("T");
+  if (/^\d{4}-\d{2}-\d{2}$/.test(datePart) && timePartRaw.length >= 5) {
+    return {
+      date: datePart,
+      time: timePartRaw.slice(0, 5),
+    };
+  }
+
   const d = new Date(isoString);
-  const offset = d.getTimezoneOffset();
-  const local = new Date(d.getTime() - offset * 60000);
+  if (Number.isNaN(d.getTime())) {
+    return { date: "", time: "19:00" };
+  }
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mi = String(d.getMinutes()).padStart(2, "0");
   return {
-    date: local.toISOString().slice(0, 10),
-    time: local.toISOString().slice(11, 16),
+    date: `${yyyy}-${mm}-${dd}`,
+    time: `${hh}:${mi}`,
   };
 }
 
 function formatDateTime(isoString) {
+  const normalized = String(isoString || "").replace(" ", "T");
+  const [datePart, timePartRaw = ""] = normalized.split("T");
+  if (/^\d{4}-\d{2}-\d{2}$/.test(datePart) && timePartRaw.length >= 5) {
+    const [yyyy, mm, dd] = datePart.split("-");
+    return `${yyyy}.${mm}.${dd} ${timePartRaw.slice(0, 5)}`;
+  }
   return new Date(isoString).toLocaleString("ko-KR", {
     year: "numeric",
     month: "2-digit",
@@ -94,7 +115,7 @@ function ScheduleManager() {
 
     setSaving(true);
     try {
-      const scheduledAt = new Date(`${form.date}T${form.time}:00`).toISOString();
+      const scheduledAt = `${form.date}T${form.time}:00`;
       const payload = {
         title: form.title.trim(),
         description: form.description.trim() || null,

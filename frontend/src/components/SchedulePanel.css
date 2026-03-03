@@ -29,7 +29,9 @@
   margin: 6px 0 0;
   color: var(--muted);
   font-size: 0.88rem;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .schedule-head-actions {
@@ -152,6 +154,7 @@
 .schedule-list {
   display: grid;
   gap: 10px;
+  min-width: 0;
 }
 
 .schedule-item {
@@ -159,6 +162,7 @@
   border-radius: 12px;
   background: var(--table-row-bg);
   padding: 12px;
+  min-width: 0;
 }
 
 .schedule-item.editing {
@@ -171,9 +175,14 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
+  min-width: 0;
 }
 
 .schedule-item-title {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   line-height: 1.35;
 }
 
@@ -194,6 +203,8 @@
   margin: 7px 0 0;
   color: var(--text);
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   line-height: 1.4;
 }
 

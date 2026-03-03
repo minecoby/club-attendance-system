@@ -6,6 +6,22 @@ import apiClient from "../utils/apiClient";
 import dataCache from "../utils/dataCache";
 import i18n from "../i18n";
 
+function formatScheduleDateTime(isoString) {
+  const normalized = String(isoString || "").replace(" ", "T");
+  const [datePart, timePartRaw = ""] = normalized.split("T");
+  if (/^\d{4}-\d{2}-\d{2}$/.test(datePart) && timePartRaw.length >= 5) {
+    const [yyyy, mm, dd] = datePart.split("-");
+    return `${yyyy}.${mm}.${dd} ${timePartRaw.slice(0, 5)}`;
+  }
+  return new Date(isoString).toLocaleString("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function UserPage({ language }) {
   const [attendanceList, setAttendanceList] = useState([]);
   const [scheduleList, setScheduleList] = useState([]);
@@ -188,13 +204,7 @@ function UserPage({ language }) {
                   <div className="schedule-card-head">
                     <strong>{item.title}</strong>
                     <span className="schedule-date">
-                      {new Date(item.scheduled_at).toLocaleString("ko-KR", {
-                        year: "numeric",
-                        month: "2-digit",
-                        day: "2-digit",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {formatScheduleDateTime(item.scheduled_at)}
                     </span>
                   </div>
                   {item.description && <p className="schedule-desc">{item.description}</p>}
