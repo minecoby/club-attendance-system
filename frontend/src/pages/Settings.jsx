@@ -418,11 +418,11 @@ function Settings({ theme, setTheme, language, setLanguage }) {
                         )}
                         <div className="settings-policy-links">
                             <Link to="/privacy-policy" className="settings-policy-link">
-                                개인정보처리방침
+                                {i18n[language].privacyPolicy || "개인정보처리방침"}
                             </Link>
                             <span className="settings-policy-sep">|</span>
                             <Link to="/terms" className="settings-policy-link">
-                                이용약관
+                                {i18n[language].termsOfService || "이용약관"}
                             </Link>
                         </div>
                     </div>

@@ -57,7 +57,7 @@ function UserPage({ language }) {
         1000 * 60 * 3
       )
       .catch((error) => {
-        console.error("동아리 정보 불러오기 실패:", error);
+        console.error("Failed to load club info:", error);
       });
   }, []);
 
@@ -80,7 +80,7 @@ function UserPage({ language }) {
         1000 * 60 * 2
       )
       .catch((error) => {
-        console.error("출석 정보 불러오기 실패:", error);
+        console.error("Failed to load attendance:", error);
       });
   }, [selectedClub]);
 
@@ -107,9 +107,6 @@ function UserPage({ language }) {
     fetchSchedules();
   }, [selectedClub]);
 
-  const selectedClubName =
-    clubList.find((club) => club.club_code === selectedClub)?.club_name || "-";
-
   const handleClubChange = (e) => {
     const newClub = e.target.value;
     setSelectedClub(newClub);
@@ -118,7 +115,11 @@ function UserPage({ language }) {
 
   const handleStartQR = () => {
     if (!selectedClub) {
-      setAlert({ show: true, type: "error", message: "동아리를 선택하세요." });
+      setAlert({
+        show: true,
+        type: "error",
+        message: language === "en" ? "Please select a club." : "동아리를 선택하세요.",
+      });
       return;
     }
     localStorage.setItem("club_code", selectedClub);
@@ -135,7 +136,7 @@ function UserPage({ language }) {
 
       <div className="club-select-section">
         <label htmlFor="club-select" className="club-select-label">
-          {i18n[language].selectClub || "동아리 선택"}
+          {i18n[language]?.selectClub || "동아리 선택"}
         </label>
         <select
           id="club-select"
@@ -150,7 +151,7 @@ function UserPage({ language }) {
           ))}
         </select>
         <button onClick={handleStartQR} className="startQR-button">
-          {i18n[language].startQR || "출석하기"}
+          {i18n[language]?.startQR || "출석하기"}
         </button>
       </div>
 
@@ -160,24 +161,26 @@ function UserPage({ language }) {
           onClick={() => setActiveTab("attendance")}
           type="button"
         >
-          내 출석부
+          {i18n[language]?.myAttendance || "내 출석부"}
         </button>
         <button
           className={`user-tab-btn ${activeTab === "schedule" ? "active" : ""}`}
           onClick={() => setActiveTab("schedule")}
           type="button"
         >
-          동아리 일정
+          {i18n[language]?.scheduleTab || "동아리 일정"}
         </button>
       </div>
 
       <div className="user-content-grid">
         <section className={`schedule-section ${activeTab !== "schedule" ? "panel-hidden" : ""}`}>
-          <h2>동아리 일정</h2>
+          <h2>{i18n[language]?.scheduleTab || "동아리 일정"}</h2>
           {scheduleLoading ? (
-            <p className="empty-message">일정을 불러오는 중입니다.</p>
+            <p className="empty-message">{i18n[language]?.loading || "로딩 중..."}</p>
           ) : scheduleList.length === 0 ? (
-            <p className="empty-message">예정된 일정이 없습니다.</p>
+            <p className="empty-message">
+              {language === "en" ? "No upcoming schedules." : "예정된 일정이 없습니다."}
+            </p>
           ) : (
             <div className="schedule-list">
               {scheduleList.map((item) => (
@@ -202,13 +205,13 @@ function UserPage({ language }) {
         </section>
 
         <section className={`attendance-section ${activeTab !== "attendance" ? "panel-hidden" : ""}`}>
-          <h2>{i18n[language].myAttendance || "내 출석부"}</h2>
+          <h2>{i18n[language]?.myAttendance || "내 출석부"}</h2>
           <div className="attendance-table-wrapper">
             <table className="attendance-table">
               <thead>
                 <tr>
-                  <th>{i18n[language].date || "날짜"}</th>
-                  <th>{i18n[language].attendanceStatus || "출석 상태"}</th>
+                  <th>{i18n[language]?.date || "날짜"}</th>
+                  <th>{i18n[language]?.attendanceStatus || "출석 상태"}</th>
                 </tr>
               </thead>
               <tbody>
@@ -217,15 +220,15 @@ function UserPage({ language }) {
                     <td>{item.date}</td>
                     <td className={`status ${item.status === true ? "present" : "absent"}`}>
                       {item.status === true
-                        ? i18n[language].attended || "출석"
-                        : i18n[language].absent || "결석"}
+                        ? i18n[language]?.attended || "출석"
+                        : i18n[language]?.absent || "결석"}
                     </td>
                   </tr>
                 ))}
                 {attendanceList.length === 0 && (
                   <tr>
                     <td colSpan={2} className="empty-row">
-                      출석 기록이 없습니다.
+                      {i18n[language]?.noAttendance || "출석 기록이 없습니다."}
                     </td>
                   </tr>
                 )}
