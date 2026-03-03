@@ -244,6 +244,10 @@ function Settings({ theme, setTheme, language, setLanguage }) {
 
     // 회원탈퇴
     const handleDeleteAccount = async () => {
+        if (userInfo.is_leader) {
+            setAlert({ show: true, type: 'warning', message: i18n[language].leaderNoWithdraw || '리더 계정은 회원탈퇴할 수 없습니다.' });
+            return;
+        }
         try {
             setLoading(true);
             await apiClient.delete('/users/delete_account');
@@ -429,7 +433,17 @@ function Settings({ theme, setTheme, language, setLanguage }) {
                     <div className="settings-card-content">
                         <div className="settings-row">
                             <button className="settings-btn" onClick={handleLogout}>{i18n[language].logout}</button>
-                            <button className="settings-btn danger" onClick={() => setShowDeleteAccountModal(true)}>
+                            <button
+                                className="settings-btn danger"
+                                onClick={() => {
+                                    if (userInfo.is_leader) {
+                                        setAlert({ show: true, type: 'warning', message: i18n[language].leaderNoWithdraw || '리더 계정은 회원탈퇴할 수 없습니다.' });
+                                        return;
+                                    }
+                                    setShowDeleteAccountModal(true);
+                                }}
+                                disabled={userInfo.is_leader}
+                            >
                                 {i18n[language].withdraw}
                             </button>
                         </div>
