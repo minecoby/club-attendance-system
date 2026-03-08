@@ -21,6 +21,11 @@ export const prefetchLocation = () => {
 export const getCachedPosition = () => cachedPosition;
 
 /**
+ * 캐시된 위치 정보를 삭제합니다.
+ */
+export const clearCachedPosition = () => { cachedPosition = null; };
+
+/**
  * Geolocation API를 사용하여 현재 위치를 가져옵니다.
  * @returns {Promise<{latitude: number, longitude: number}>}
  */

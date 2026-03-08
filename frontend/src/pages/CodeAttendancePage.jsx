@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../utils/apiClient';
-import { prefetchLocation, getCachedPosition } from '../utils/geolocation';
+import { prefetchLocation, getCachedPosition, clearCachedPosition } from '../utils/geolocation';
 import AlertModal from '../components/AlertModal';
 import i18n from '../i18n';
 
@@ -52,6 +52,7 @@ function CodeAttendancePage({ language, setLanguage }) {
                 ...locationData
             });
 
+            clearCachedPosition();
             setAttendanceCompleted(true);
             setMessage('✅ 출석이 완료되었습니다!');
             setMessageType('success');
