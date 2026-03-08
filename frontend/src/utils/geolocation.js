@@ -91,11 +91,13 @@ export const requestLocationPermission = () => {
         }
         navigator.geolocation.getCurrentPosition(
             () => resolve('granted'),
-            (error) => {
+            async (error) => {
                 if (error.code === error.PERMISSION_DENIED) {
                     resolve('denied');
                 } else {
-                    resolve('granted'); // TIMEOUT / POSITION_UNAVAILABLE = 권한은 허용된 상태
+                    // TIMEOUT / POSITION_UNAVAILABLE 시 실제 권한 상태 재확인
+                    const actual = await checkLocationPermission();
+                    resolve(actual === 'granted' ? 'granted' : 'denied');
                 }
             },
             { timeout: 3000, maximumAge: 0, enableHighAccuracy: false }
