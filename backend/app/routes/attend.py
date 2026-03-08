@@ -10,6 +10,7 @@ from app.variable import *
 from app.services.service import *
 from app.services.club_service import *
 from app.services.attend_service import *
+from app.services.location_service import validate_location
 from app.routes.admin import attendance_ws
 from app.schema.attend_schema import *
 from app.schema.club_schema import *
@@ -47,6 +48,7 @@ async def check_attendance(
 
     date = current["date"]
     date_id = await get_date_id(date, data.club_code, db)
+    await validate_location(data.club_code, data.latitude, data.longitude, db)
     await asyncio.gather(attend_date(user.user_id, date_id, db))
 
     return {"message": "출석을 확인했습니다."}
@@ -83,6 +85,7 @@ async def check_qr_attendance(
 
     date = current["date"]
     date_id = await get_date_id(date, club_code, db)
+    await validate_location(club_code, data.latitude, data.longitude, db)
     await asyncio.gather(attend_date(user.user_id, date_id, db))
 
     return {"message": "출석을 확인했습니다."}

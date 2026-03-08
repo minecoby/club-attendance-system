@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../utils/apiClient';
+import { prefetchLocation, getCachedPosition } from '../utils/geolocation';
 import AlertModal from '../components/AlertModal';
 import i18n from '../i18n';
 
@@ -13,6 +14,10 @@ function CodeAttendancePage({ language, setLanguage }) {
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
     
     const navigate = useNavigate();
+
+    useEffect(() => {
+        prefetchLocation();
+    }, []);
 
     // 윈도우 리사이즈 감지
     useEffect(() => {
@@ -36,16 +41,10 @@ function CodeAttendancePage({ language, setLanguage }) {
                 }
             }
 
-            let locationData = {};
-            try {
-                const position = { latitude: undefined, longitude: undefined };
-                locationData = {
-                    latitude: position.latitude,
-                    longitude: position.longitude
-                };
-            } catch (locationError) {
-                console.log('위치 정보 없이 출석 시도:', locationError.message);
-            }
+            const position = getCachedPosition();
+            const locationData = position
+                ? { latitude: position.latitude, longitude: position.longitude }
+                : {};
 
             await apiClient.post('/attend/check', {
                 club_code: clubCode,

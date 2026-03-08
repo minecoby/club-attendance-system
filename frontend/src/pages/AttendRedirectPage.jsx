@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import apiClient from '../utils/apiClient';
+import { getCachedPosition } from '../utils/geolocation';
 import AlertModal from '../components/AlertModal';
 import i18n from '../i18n';
 
@@ -42,8 +43,10 @@ function AttendRedirectPage({ language = 'ko' }) {
                 }
 
 
+                const position = getCachedPosition();
                 await apiClient.post('/attend/check_qr', {
                     qr_code: code,
+                    ...(position ? { latitude: position.latitude, longitude: position.longitude } : {})
                 });
 
                 setMessage('출석이 완료되었습니다.');

@@ -5,6 +5,7 @@ import AlertModal from "../components/AlertModal";
 import apiClient from "../utils/apiClient";
 import dataCache from "../utils/dataCache";
 import i18n from "../i18n";
+import { checkLocationPermission, requestLocationPermission } from "../utils/geolocation";
 
 function formatScheduleDateTime(isoString) {
   const normalized = String(isoString || "").replace(" ", "T");
@@ -129,15 +130,23 @@ function UserPage({ language }) {
     localStorage.setItem("userPage_selectedClub", newClub);
   };
 
-  const handleStartQR = () => {
+  const handleStartQR = async () => {
     if (!selectedClub) {
-      setAlert({
-        show: true,
-        type: "error",
-        message: language === "en" ? "Please select a club." : "동아리를 선택하세요.",
-      });
+      setAlert({ show: true, type: "error", message: i18n[language].selectClubFirst });
       return;
     }
+
+    let permission = await checkLocationPermission();
+
+    if (permission === 'prompt') {
+      permission = await requestLocationPermission();
+    }
+
+    if (permission === 'denied') {
+      setAlert({ show: true, type: "error", message: i18n[language].locationPermissionRequired });
+      return;
+    }
+
     localStorage.setItem("club_code", selectedClub);
     navigate("/qr-attendance");
   };

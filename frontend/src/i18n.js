@@ -81,6 +81,8 @@ const i18n = {
     scheduleTab: "동아리 일정",
     privacyPolicy: "개인정보처리방침",
     termsOfService: "이용약관",
+    locationPermissionRequired: "위치 권한을 허용해야 출석할 수 있습니다. 브라우저 설정에서 위치 권한을 허용해주세요.",
+    selectClubFirst: "동아리를 선택하세요.",
   },
   en: {
     userInfo: "User Info",
@@ -164,6 +166,8 @@ const i18n = {
     scheduleTab: "Club Schedule",
     privacyPolicy: "Privacy Policy",
     termsOfService: "Terms of Service",
+    locationPermissionRequired: "Location permission is required. Please allow it in your browser settings.",
+    selectClubFirst: "Please select a club.",
   },
 };
 

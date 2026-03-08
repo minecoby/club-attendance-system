@@ -1,5 +1,6 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { prefetchLocation } from "../utils/geolocation";
 import jsQR from "jsqr";
 import AlertModal from "../components/AlertModal";
 import i18n from "../i18n";
@@ -66,6 +67,10 @@ async function decodeWithJsQr(file) {
 function QRAttendanceCameraPage({ language = "ko" }) {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    prefetchLocation();
+  }, []);
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [capturedName, setCapturedName] = useState("");
