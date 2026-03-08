@@ -6,6 +6,7 @@ import {
   getCameraCapabilities,
   getCameraStream,
   getCurrentZoom,
+  optimizeTrackForQr,
   setCameraZoom,
   stopCameraStream,
 } from "../utils/camera";
@@ -152,6 +153,7 @@ function QRAttendanceCameraPage({ language = "ko" }) {
         streamRef.current = stream;
         const [track] = stream.getVideoTracks();
         trackRef.current = track;
+        await optimizeTrackForQr(track);
 
         const capabilities = getCameraCapabilities(track);
         if (capabilities?.zoom) {
