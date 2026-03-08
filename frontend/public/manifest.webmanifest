@@ -1,0 +1,29 @@
+{
+  "name": "HANSSUP",
+  "short_name": "HANSSUP",
+  "description": "동아리 운영과 출석 관리를 한곳에서 처리하는 HANSSUP 서비스",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#3f78b5",
+  "background_color": "#f4f7fb",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
