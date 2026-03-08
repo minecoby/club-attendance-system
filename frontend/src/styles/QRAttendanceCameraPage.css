@@ -1,79 +1,60 @@
 .qr-camera-page {
   min-height: calc(100vh - 80px);
-  padding: 20px 16px 28px;
+  padding: 24px 16px 28px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
 .qr-camera-header h2 {
-  font-size: 1.35rem;
+  font-size: 1.4rem;
   color: var(--primary);
 }
 
 .qr-camera-header p {
-  margin-top: 4px;
+  margin-top: 6px;
   color: var(--muted);
 }
 
-.qr-camera-frame {
-  position: relative;
+.qr-capture-card {
   width: min(94vw, 560px);
-  aspect-ratio: 3 / 4;
   margin: 0 auto;
-  border-radius: 18px;
-  overflow: hidden;
-  background: #000;
-  box-shadow: var(--card-shadow);
-}
-
-.qr-camera-video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.qr-camera-guide {
-  position: absolute;
-  inset: 50% auto auto 50%;
-  width: min(58vw, 260px);
-  aspect-ratio: 1 / 1;
-  transform: translate(-50%, -50%);
-  border: 2px solid rgba(255, 255, 255, 0.8);
   border-radius: 16px;
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.24);
-  pointer-events: none;
-}
-
-.qr-camera-loading {
-  position: absolute;
-  left: 50%;
-  bottom: 18px;
-  transform: translateX(-50%);
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.58);
-  color: #fff;
-  font-size: 0.9rem;
-}
-
-.qr-zoom-control {
-  width: min(94vw, 560px);
-  margin: 0 auto;
-  padding: 12px 14px;
   border: 1px solid var(--border);
-  border-radius: 14px;
   background: var(--card-bg);
+  box-shadow: var(--shadow);
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.qr-zoom-control label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
+.qr-capture-input {
+  display: none;
 }
 
-.qr-zoom-control input[type="range"] {
-  width: 100%;
+.qr-capture-btn {
+  min-height: 52px;
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+}
+
+.qr-capture-btn:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
+.qr-capture-hint {
+  color: var(--muted);
+  font-size: 0.94rem;
+  line-height: 1.45;
+}
+
+.qr-captured-name {
+  color: var(--text);
+  font-size: 0.92rem;
+  word-break: break-all;
 }
 
 .qr-camera-actions {

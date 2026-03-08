@@ -1,20 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import jsQR from "jsqr";
 import AlertModal from "../components/AlertModal";
 import i18n from "../i18n";
-import {
-  getCameraCapabilities,
-  getCameraStream,
-  getCurrentZoom,
-  optimizeTrackForQr,
-  setCameraZoom,
-  stopCameraStream,
-} from "../utils/camera";
 import "../styles/QRAttendanceCameraPage.css";
-
-function clamp(value, min, max) {
-  return Math.min(max, Math.max(min, value));
-}
 
 function extractAttendancePath(rawValue) {
   if (!rawValue) return null;
@@ -39,187 +28,109 @@ function extractAttendancePath(rawValue) {
   return `/attend/${encodeURIComponent(value)}`;
 }
 
+async function decodeWithBarcodeDetector(file) {
+  if (!("BarcodeDetector" in window)) return null;
+
+  const imageBitmap = await createImageBitmap(file);
+  try {
+    const detector = new window.BarcodeDetector({ formats: ["qr_code"] });
+    const results = await detector.detect(imageBitmap);
+    return results?.[0]?.rawValue || null;
+  } finally {
+    imageBitmap.close();
+  }
+}
+
+async function decodeWithJsQr(file) {
+  const imageBitmap = await createImageBitmap(file);
+  const canvas = document.createElement("canvas");
+  canvas.width = imageBitmap.width;
+  canvas.height = imageBitmap.height;
+
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) {
+    imageBitmap.close();
+    return null;
+  }
+
+  context.drawImage(imageBitmap, 0, 0, imageBitmap.width, imageBitmap.height);
+  imageBitmap.close();
+
+  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+  const result = jsQR(imageData.data, imageData.width, imageData.height, {
+    inversionAttempts: "attemptBoth",
+  });
+  return result?.data || null;
+}
+
 function QRAttendanceCameraPage({ language = "ko" }) {
   const navigate = useNavigate();
-  const videoRef = useRef(null);
-  const streamRef = useRef(null);
-  const trackRef = useRef(null);
-  const rafRef = useRef(null);
-  const detectorRef = useRef(null);
-  const scanCanvasRef = useRef(document.createElement("canvas"));
-  const scannedRef = useRef(false);
+  const fileInputRef = useRef(null);
 
-  const [isInitializing, setIsInitializing] = useState(true);
-  const [zoomRange, setZoomRange] = useState(null);
-  const [zoomValue, setZoomValue] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [capturedName, setCapturedName] = useState("");
   const [alert, setAlert] = useState({
     show: false,
     type: "info",
     message: "",
   });
 
-  const stopScanningLoop = useCallback(() => {
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
-  }, []);
+  const handleCaptureClick = () => {
+    fileInputRef.current?.click();
+  };
 
-  const cleanup = useCallback(() => {
-    stopScanningLoop();
-    stopCameraStream(streamRef.current);
-    streamRef.current = null;
-    trackRef.current = null;
-  }, [stopScanningLoop]);
+  const handleImageChange = async (event) => {
+    const [file] = event.target.files || [];
+    event.target.value = "";
+    if (!file) return;
 
-  const scanFrame = useCallback(() => {
-    if (scannedRef.current) return;
-    const video = videoRef.current;
-    const detector = detectorRef.current;
+    setCapturedName(file.name || "");
+    setIsProcessing(true);
 
-    if (
-      !video ||
-      !detector ||
-      video.readyState < 2 ||
-      !video.videoWidth ||
-      !video.videoHeight
-    ) {
-      rafRef.current = requestAnimationFrame(scanFrame);
-      return;
-    }
+    try {
+      let decodedValue = await decodeWithBarcodeDetector(file);
+      if (!decodedValue) {
+        decodedValue = await decodeWithJsQr(file);
+      }
 
-    const canvas = scanCanvasRef.current;
-    const context = canvas.getContext("2d", { willReadFrequently: true });
-    if (!context) {
-      rafRef.current = requestAnimationFrame(scanFrame);
-      return;
-    }
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    detector
-      .detect(canvas)
-      .then((barcodes) => {
-        if (!barcodes || barcodes.length === 0) return;
-        const rawValue = barcodes[0]?.rawValue;
-        const attendancePath = extractAttendancePath(rawValue);
-        if (!attendancePath) return;
-
-        scannedRef.current = true;
-        cleanup();
-        navigate(attendancePath);
-      })
-      .catch(() => {
-        // Continue scanning on transient detection failures.
-      })
-      .finally(() => {
-        if (!scannedRef.current) {
-          rafRef.current = requestAnimationFrame(scanFrame);
-        }
-      });
-  }, [cleanup, navigate]);
-
-  useEffect(() => {
-    let mounted = true;
-
-    const init = async () => {
-      try {
-        if (!navigator.mediaDevices?.getUserMedia) {
-          throw new Error(
-            language === "en"
-              ? "This browser does not support camera access."
-              : "이 브라우저는 카메라 접근을 지원하지 않습니다."
-          );
-        }
-
-        if (!("BarcodeDetector" in window)) {
-          throw new Error(
-            language === "en"
-              ? "QR scanning is not supported on this browser."
-              : "이 브라우저에서는 QR 스캔을 지원하지 않습니다."
-          );
-        }
-
-        detectorRef.current = new window.BarcodeDetector({ formats: ["qr_code"] });
-
-        const stream = await getCameraStream();
-        if (!mounted) {
-          stopCameraStream(stream);
-          return;
-        }
-
-        streamRef.current = stream;
-        const [track] = stream.getVideoTracks();
-        trackRef.current = track;
-        await optimizeTrackForQr(track);
-
-        const capabilities = getCameraCapabilities(track);
-        if (capabilities?.zoom) {
-          const min = Number(capabilities.zoom.min ?? 1);
-          const max = Number(capabilities.zoom.max ?? min);
-          const step = Number(capabilities.zoom.step ?? 0.1);
-          const current = getCurrentZoom(track) ?? min;
-          setZoomRange({ min, max, step });
-          setZoomValue(current);
-        }
-
-        const video = videoRef.current;
-        if (!video) return;
-        video.srcObject = stream;
-        await video.play();
-        if (!mounted) return;
-
-        setIsInitializing(false);
-        scannedRef.current = false;
-        rafRef.current = requestAnimationFrame(scanFrame);
-      } catch (error) {
-        const fallbackMessage =
-          language === "en"
-            ? "Unable to start QR camera."
-            : "QR 카메라를 시작할 수 없습니다.";
+      if (!decodedValue) {
         setAlert({
           show: true,
           type: "error",
-          message: error?.message || fallbackMessage,
+          message:
+            language === "en"
+              ? "No QR code was found in the captured image."
+              : "촬영한 이미지에서 QR 코드를 찾지 못했습니다.",
         });
-        setIsInitializing(false);
+        return;
       }
-    };
 
-    init();
+      const attendancePath = extractAttendancePath(decodedValue);
+      if (!attendancePath) {
+        setAlert({
+          show: true,
+          type: "error",
+          message:
+            language === "en"
+              ? "The QR value is not a valid attendance link."
+              : "QR 값이 유효한 출석 링크 형식이 아닙니다.",
+        });
+        return;
+      }
 
-    return () => {
-      mounted = false;
-      cleanup();
-    };
-  }, [cleanup, language, scanFrame]);
-
-  const handleZoomChange = async (event) => {
-    const track = trackRef.current;
-    const range = zoomRange;
-    if (!track || !range) return;
-
-    const nextValue = clamp(Number(event.target.value), range.min, range.max);
-    try {
-      await setCameraZoom(track, nextValue);
-      setZoomValue(nextValue);
-    } catch {
+      navigate(attendancePath);
+    } catch (error) {
       setAlert({
         show: true,
         type: "error",
         message:
           language === "en"
-            ? "Failed to apply camera zoom."
-            : "카메라 줌 적용에 실패했습니다.",
+            ? "Failed to decode the captured image."
+            : "촬영한 이미지 디코딩에 실패했습니다.",
       });
+    } finally {
+      setIsProcessing(false);
     }
-  };
-
-  const handleBack = () => {
-    cleanup();
-    navigate("/userpage");
   };
 
   return (
@@ -235,40 +146,45 @@ function QRAttendanceCameraPage({ language = "ko" }) {
         <h2>{i18n[language]?.attendWithQR || "QR코드로 출석하기"}</h2>
         <p>
           {language === "en"
-            ? "Align the QR code inside the camera view."
-            : "카메라 화면에 QR 코드를 맞춰주세요."}
+            ? "Capture a photo with your device camera, then decode the QR."
+            : "기기 카메라 앱으로 촬영 후 QR 코드를 인식합니다."}
         </p>
       </div>
 
-      <div className="qr-camera-frame">
-        <video ref={videoRef} playsInline muted autoPlay className="qr-camera-video" />
-        <div className="qr-camera-guide" />
-        {isInitializing && (
-          <div className="qr-camera-loading">
-            {i18n[language]?.loading || "로딩 중..."}
-          </div>
-        )}
+      <div className="qr-capture-card">
+        <input
+          ref={fileInputRef}
+          id="qr-capture-input"
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleImageChange}
+          className="qr-capture-input"
+        />
+        <button
+          type="button"
+          className="qr-capture-btn"
+          onClick={handleCaptureClick}
+          disabled={isProcessing}
+        >
+          {isProcessing
+            ? language === "en"
+              ? "Processing..."
+              : "처리 중..."
+            : language === "en"
+            ? "Scan QR"
+            : "QR 촬영하기"}
+        </button>
+        <p className="qr-capture-hint">
+          {language === "en"
+            ? "The device camera app opens. Use hardware zoom and autofocus before capturing."
+            : "기기 기본 카메라 앱이 열립니다. 촬영 전에 하드웨어 줌과 자동초점을 사용하세요."}
+        </p>
+        {capturedName && <p className="qr-captured-name">{capturedName}</p>}
       </div>
 
-      {zoomRange && (
-        <div className="qr-zoom-control">
-          <label htmlFor="hardware-zoom">
-            {language === "en" ? "Camera Zoom" : "카메라 줌"}: {zoomValue?.toFixed(1)}x
-          </label>
-          <input
-            id="hardware-zoom"
-            type="range"
-            min={zoomRange.min}
-            max={zoomRange.max}
-            step={zoomRange.step}
-            value={zoomValue ?? zoomRange.min}
-            onChange={handleZoomChange}
-          />
-        </div>
-      )}
-
       <div className="qr-camera-actions">
-        <button type="button" onClick={handleBack}>
+        <button type="button" onClick={() => navigate("/userpage")}>
           {i18n[language]?.back || "뒤로가기"}
         </button>
         <button type="button" onClick={() => navigate("/code-attendance")}>
