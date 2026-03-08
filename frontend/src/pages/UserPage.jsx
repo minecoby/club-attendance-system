@@ -139,7 +139,7 @@ function UserPage({ language }) {
       return;
     }
     localStorage.setItem("club_code", selectedClub);
-    navigate("/code-attendance");
+    navigate("/qr-attendance");
   };
 
   const handleCloseAlert = () => {

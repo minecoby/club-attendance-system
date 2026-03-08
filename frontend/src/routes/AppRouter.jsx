@@ -10,6 +10,7 @@ import LeaderPage from "../pages/LeaderPage";
 import Settings from "../pages/Settings";
 import Navbar from "../components/Navbar";
 import CodeAttendancePage from "../pages/CodeAttendancePage";
+import QRAttendanceCameraPage from "../pages/QRAttendanceCameraPage";
 import AttendRedirectPage from "../pages/AttendRedirectPage";
 import AuthGuard from "../components/AuthGuard";
 import UserGuard from "../components/MobileGuard";
@@ -59,6 +60,21 @@ const AppRouter = ({ theme, setTheme, language, setLanguage }) => {
             <AuthGuard>
               <UserGuard>
                 <Settings theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} />
+              </UserGuard>
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/qr-attendance"
+          element={
+            <AuthGuard>
+              <UserGuard>
+                <QRAttendanceCameraPage
+                  theme={theme}
+                  setTheme={setTheme}
+                  language={language}
+                  setLanguage={setLanguage}
+                />
               </UserGuard>
             </AuthGuard>
           }
