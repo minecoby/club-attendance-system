@@ -24,10 +24,6 @@
   border-color: #d58d2f;
 }
 
-.pwa-banner-ready {
-  border-color: #2f9f73;
-}
-
 .pwa-banner-update {
   display: flex;
   align-items: center;
