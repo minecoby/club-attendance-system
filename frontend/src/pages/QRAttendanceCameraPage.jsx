@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { prefetchLocation } from "../utils/geolocation";
 import imageCompression from "browser-image-compression";
-import jsQR from "jsqr";
+import QrScanner from "qr-scanner";
 import AlertModal from "../components/AlertModal";
 import i18n from "../i18n";
 import "../styles/QRAttendanceCameraPage.css";
@@ -43,78 +43,93 @@ async function preprocessImage(file, maxSize = 1200) {
   return compressed;
 }
 
-async function fileToImageData(file, grayscale = false) {
+async function applyContrastAndThreshold(file, contrast = 1.5, threshold = null) {
   const bitmap = await createImageBitmap(file);
   const canvas = document.createElement("canvas");
   canvas.width = bitmap.width;
   canvas.height = bitmap.height;
-
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  if (!ctx) {
-    bitmap.close();
-    return null;
-  }
-
   ctx.drawImage(bitmap, 0, 0);
   bitmap.close();
 
-  if (grayscale) {
-    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const d = imgData.data;
-    for (let i = 0; i < d.length; i += 4) {
-      const avg = d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
-      d[i] = d[i + 1] = d[i + 2] = avg;
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const d = imgData.data;
+
+  for (let i = 0; i < d.length; i += 4) {
+    // 그레이스케일
+    let gray = d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
+    // 대비 강화
+    gray = ((gray / 255 - 0.5) * contrast + 0.5) * 255;
+    gray = Math.max(0, Math.min(255, gray));
+    // 이진화
+    if (threshold !== null) {
+      gray = gray > threshold ? 255 : 0;
     }
-    ctx.putImageData(imgData, 0, 0);
+    d[i] = d[i + 1] = d[i + 2] = gray;
   }
 
-  return ctx.getImageData(0, 0, canvas.width, canvas.height);
+  ctx.putImageData(imgData, 0, 0);
+
+  return new Promise((resolve) =>
+    canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.95)
+  );
 }
 
 /**
- * BarcodeDetector API (Android Chrome 등 지원 브라우저)
+ * qr-scanner로 디코딩 시도
  */
-async function decodeWithBarcodeDetector(file) {
-  if (!("BarcodeDetector" in window)) return null;
-
-  const bitmap = await createImageBitmap(file);
+async function scanImage(blob) {
   try {
-    const detector = new window.BarcodeDetector({ formats: ["qr_code"] });
-    const results = await detector.detect(bitmap);
-    return results?.[0]?.rawValue || null;
-  } finally {
-    bitmap.close();
+    const result = await QrScanner.scanImage(blob, {
+      returnDetailedScanResult: true,
+    });
+    return result?.data || null;
+  } catch {
+    return null;
   }
 }
 
 /**
- * jsQR 디코딩 (grayscale + inversionAttempts)
+ * 여러 전처리 전략으로 QR 디코딩 시도
  */
-async function decodeWithJsQr(file, grayscale = false) {
-  const imageData = await fileToImageData(file, grayscale);
-  if (!imageData) return null;
-
-  const result = jsQR(imageData.data, imageData.width, imageData.height, {
-    inversionAttempts: "attemptBoth",
-  });
-  return result?.data || null;
-}
-
-
 async function decodeQR(originalFile) {
   const processed = await preprocessImage(originalFile, 1200);
 
-  let value = await decodeWithBarcodeDetector(processed);
+  // 2단계: BarcodeDetector (Android Chrome 등)
+  if ("BarcodeDetector" in window) {
+    try {
+      const bitmap = await createImageBitmap(processed);
+      const detector = new window.BarcodeDetector({ formats: ["qr_code"] });
+      const results = await detector.detect(bitmap);
+      bitmap.close();
+      if (results?.[0]?.rawValue) return results[0].rawValue;
+    } catch {
+      // fallthrough
+    }
+  }
+
+  // 3단계: qr-scanner 기본 시도
+  let value = await scanImage(processed);
   if (value) return value;
 
-  value = await decodeWithJsQr(processed, false);
+  // 4단계: 대비 강화 (1.5x)
+  const highContrast = await applyContrastAndThreshold(processed, 1.5);
+  value = await scanImage(highContrast);
   if (value) return value;
 
-  value = await decodeWithJsQr(processed, true);
+  // 5단계: 이진화 (threshold 128)
+  const binarized = await applyContrastAndThreshold(processed, 1.5, 128);
+  value = await scanImage(binarized);
   if (value) return value;
 
+  // 6단계: 더 작은 해상도로 재시도
   const smaller = await preprocessImage(originalFile, 800);
-  value = await decodeWithJsQr(smaller, true);
+  value = await scanImage(smaller);
+  if (value) return value;
+
+  // 7단계: 작은 해상도 + 이진화
+  const smallBinarized = await applyContrastAndThreshold(smaller, 1.8, 120);
+  value = await scanImage(smallBinarized);
   if (value) return value;
 
   return null;
