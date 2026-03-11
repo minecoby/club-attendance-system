@@ -1,8 +1,11 @@
+import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from fastapi import HTTPException
 from app.models import Club
-from app.utils.geo import is_within_radius
+from app.utils.geo import is_within_radius, haversine_distance
+
+logger = logging.getLogger("location")
 
 
 async def get_club_location_settings(club_code: str, db: AsyncSession) -> dict:
@@ -44,15 +47,23 @@ async def validate_location(
         )
 
     if club.latitude is None or club.longitude is None:
+        logger.warning("[위치검증] club=%s | 동아리 좌표 미설정 → 검증 스킵", club_code)
         return
 
-    if not is_within_radius(
-        user_latitude,
-        user_longitude,
-        club.latitude,
-        club.longitude,
-        club.radius_km
-    ):
+    distance = haversine_distance(user_latitude, user_longitude, club.latitude, club.longitude)
+    within = distance <= club.radius_km
+
+    logger.info(
+        "[위치검증] club=%s | 사용자=(%s, %s) | 동아리=(%s, %s) | 반경=%skm | 거리=%skm | 결과=%s",
+        club_code,
+        user_latitude, user_longitude,
+        club.latitude, club.longitude,
+        club.radius_km,
+        round(distance, 4),
+        "통과" if within else "거부"
+    )
+
+    if not within:
         raise HTTPException(
             status_code=400,
             detail="출석 허용 범위를 벗어났습니다."
