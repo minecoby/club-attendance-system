@@ -1,11 +1,11 @@
-import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from fastapi import HTTPException
 from app.models import Club
 from app.utils.geo import is_within_radius, haversine_distance
+from app.logger import get_attendance_logger
 
-logger = logging.getLogger("location")
+logger = get_attendance_logger()
 
 
 async def get_club_location_settings(club_code: str, db: AsyncSession) -> dict:
