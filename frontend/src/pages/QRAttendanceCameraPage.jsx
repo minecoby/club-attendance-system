@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { prefetchLocation } from "../utils/geolocation";
+import imageCompression from "browser-image-compression";
 import jsQR from "jsqr";
 import AlertModal from "../components/AlertModal";
 import i18n from "../i18n";
@@ -29,39 +30,94 @@ function extractAttendancePath(rawValue) {
   return `/attend/${encodeURIComponent(value)}`;
 }
 
-async function decodeWithBarcodeDetector(file) {
-  if (!("BarcodeDetector" in window)) return null;
-
-  const imageBitmap = await createImageBitmap(file);
-  try {
-    const detector = new window.BarcodeDetector({ formats: ["qr_code"] });
-    const results = await detector.detect(imageBitmap);
-    return results?.[0]?.rawValue || null;
-  } finally {
-    imageBitmap.close();
-  }
+/**
+ * iOS Safari용 이미지 전처리
+ */
+async function preprocessImage(file, maxSize = 1200) {
+  const compressed = await imageCompression(file, {
+    maxWidthOrHeight: maxSize,
+    useWebWorker: true,
+    fileType: "image/jpeg",
+    initialQuality: 0.9,
+  });
+  return compressed;
 }
 
-async function decodeWithJsQr(file) {
-  const imageBitmap = await createImageBitmap(file);
+async function fileToImageData(file, grayscale = false) {
+  const bitmap = await createImageBitmap(file);
   const canvas = document.createElement("canvas");
-  canvas.width = imageBitmap.width;
-  canvas.height = imageBitmap.height;
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
 
-  const context = canvas.getContext("2d", { willReadFrequently: true });
-  if (!context) {
-    imageBitmap.close();
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) {
+    bitmap.close();
     return null;
   }
 
-  context.drawImage(imageBitmap, 0, 0, imageBitmap.width, imageBitmap.height);
-  imageBitmap.close();
+  ctx.drawImage(bitmap, 0, 0);
+  bitmap.close();
 
-  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+  if (grayscale) {
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const d = imgData.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const avg = d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
+      d[i] = d[i + 1] = d[i + 2] = avg;
+    }
+    ctx.putImageData(imgData, 0, 0);
+  }
+
+  return ctx.getImageData(0, 0, canvas.width, canvas.height);
+}
+
+/**
+ * BarcodeDetector API (Android Chrome 등 지원 브라우저)
+ */
+async function decodeWithBarcodeDetector(file) {
+  if (!("BarcodeDetector" in window)) return null;
+
+  const bitmap = await createImageBitmap(file);
+  try {
+    const detector = new window.BarcodeDetector({ formats: ["qr_code"] });
+    const results = await detector.detect(bitmap);
+    return results?.[0]?.rawValue || null;
+  } finally {
+    bitmap.close();
+  }
+}
+
+/**
+ * jsQR 디코딩 (grayscale + inversionAttempts)
+ */
+async function decodeWithJsQr(file, grayscale = false) {
+  const imageData = await fileToImageData(file, grayscale);
+  if (!imageData) return null;
+
   const result = jsQR(imageData.data, imageData.width, imageData.height, {
     inversionAttempts: "attemptBoth",
   });
   return result?.data || null;
+}
+
+
+async function decodeQR(originalFile) {
+  const processed = await preprocessImage(originalFile, 1200);
+
+  let value = await decodeWithBarcodeDetector(processed);
+  if (value) return value;
+
+  value = await decodeWithJsQr(processed, false);
+  if (value) return value;
+
+  value = await decodeWithJsQr(processed, true);
+  if (value) return value;
+
+  const smaller = await preprocessImage(originalFile, 800);
+  value = await decodeWithJsQr(smaller, true);
+  if (value) return value;
+
+  return null;
 }
 
 function QRAttendanceCameraPage({ language = "ko" }) {
@@ -93,10 +149,7 @@ function QRAttendanceCameraPage({ language = "ko" }) {
     setIsProcessing(true);
 
     try {
-      let decodedValue = await decodeWithBarcodeDetector(file);
-      if (!decodedValue) {
-        decodedValue = await decodeWithJsQr(file);
-      }
+      const decodedValue = await decodeQR(file);
 
       if (!decodedValue) {
         setAlert({
