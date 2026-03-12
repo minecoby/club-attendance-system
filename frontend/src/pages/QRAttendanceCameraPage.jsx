@@ -146,6 +146,7 @@ function QRAttendanceCameraPage({ language = "ko" }) {
     show: false,
     type: "info",
     message: "",
+    onClose: null,
   });
 
   const handleCaptureClick = () => {
@@ -202,6 +203,7 @@ function QRAttendanceCameraPage({ language = "ko" }) {
           language === "en"
             ? "Attendance recorded successfully."
             : "출석이 완료되었습니다.",
+        onClose: () => navigate("/userpage"),
       });
     } catch (error) {
       setAlert({
@@ -223,7 +225,11 @@ function QRAttendanceCameraPage({ language = "ko" }) {
         show={alert.show}
         type={alert.type}
         message={alert.message}
-        onClose={() => setAlert((prev) => ({ ...prev, show: false }))}
+        onClose={() => {
+          const cb = alert.onClose;
+          setAlert((prev) => ({ ...prev, show: false, onClose: null }));
+          if (cb) cb();
+        }}
       />
 
       <div className="qr-camera-header">
