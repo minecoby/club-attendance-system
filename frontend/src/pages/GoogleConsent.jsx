@@ -50,18 +50,6 @@ function GoogleConsent() {
       const { usertype } = response.data;
       localStorage.setItem("usertype", usertype || "user");
 
-      const pendingAttendance = localStorage.getItem("pendingAttendance");
-      if (pendingAttendance) {
-        try {
-          const { code, club } = JSON.parse(pendingAttendance);
-          localStorage.removeItem("pendingAttendance");
-          navigate(`/attend?code=${code}&club=${club}`, { replace: true });
-          return;
-        } catch {
-          localStorage.removeItem("pendingAttendance");
-        }
-      }
-
       if (usertype === "leader") {
         navigate("/leaderpage", { replace: true });
         return;

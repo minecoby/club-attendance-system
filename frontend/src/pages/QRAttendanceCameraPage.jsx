@@ -1,33 +1,30 @@
 import { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { prefetchLocation } from "../utils/geolocation";
+import { prefetchLocation, getCachedPosition, clearCachedPosition } from "../utils/geolocation";
 import imageCompression from "browser-image-compression";
 import QrScanner from "qr-scanner";
+import apiClient from "../utils/apiClient";
 import AlertModal from "../components/AlertModal";
 import i18n from "../i18n";
 import "../styles/QRAttendanceCameraPage.css";
 
-function extractAttendancePath(rawValue) {
+function decodeAttendanceToken(rawValue) {
   if (!rawValue) return null;
   const value = String(rawValue).trim();
   if (!value) return null;
 
-  if (value.startsWith("/attend")) {
-    return value;
-  }
-
-  if (/^https?:\/\//i.test(value)) {
-    try {
-      const parsed = new URL(value);
-      if (parsed.pathname.startsWith("/attend")) {
-        return `${parsed.pathname}${parsed.search || ""}`;
-      }
-    } catch {
-      return null;
+  try {
+    const base64 = value.replace(/-/g, '+').replace(/_/g, '/');
+    const padding = '='.repeat((4 - (base64.length % 4)) % 4);
+    const jsonString = decodeURIComponent(escape(atob(base64 + padding)));
+    const data = JSON.parse(jsonString);
+    if (data.code && data.club) {
+      return data;
     }
+    return null;
+  } catch {
+    return null;
   }
-
-  return `/attend/${encodeURIComponent(value)}`;
 }
 
 /**
@@ -178,20 +175,34 @@ function QRAttendanceCameraPage({ language = "ko" }) {
         return;
       }
 
-      const attendancePath = extractAttendancePath(decodedValue);
-      if (!attendancePath) {
+      const attendanceData = decodeAttendanceToken(decodedValue);
+      if (!attendanceData) {
         setAlert({
           show: true,
           type: "error",
           message:
             language === "en"
-              ? "The QR value is not a valid attendance link."
-              : "QR 값이 유효한 출석 링크 형식이 아닙니다.",
+              ? "The QR value is not a valid attendance code."
+              : "QR 값이 유효한 출석 코드가 아닙니다.",
         });
         return;
       }
 
-      navigate(attendancePath);
+      const position = getCachedPosition();
+      await apiClient.post('/attend/check_qr', {
+        qr_code: attendanceData.code,
+        ...(position ? { latitude: position.latitude, longitude: position.longitude } : {})
+      });
+      clearCachedPosition();
+
+      setAlert({
+        show: true,
+        type: "success",
+        message:
+          language === "en"
+            ? "Attendance recorded successfully."
+            : "출석이 완료되었습니다.",
+      });
     } catch (error) {
       setAlert({
         show: true,
