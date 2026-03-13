@@ -8,7 +8,7 @@ def setup_loggers():
         os.makedirs(log_dir)
     
     formatter = logging.Formatter(
-        '%(asctime)s - %(levelname)s - %(message)s',
+        '[%(asctime)s] %(levelname)-5s | %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
     

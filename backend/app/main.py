@@ -16,6 +16,7 @@ from redis.asyncio import Redis
 from app.models import Base
 from app.db import engine
 from app.utils.request_ip import get_client_ip
+import base64
 
 app = FastAPI()
 
@@ -95,15 +96,40 @@ def mask_sensitive_query_params(url: str) -> str:
     ]
     return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(masked_pairs), parts.fragment))
 
+def _extract_user_from_request(request: Request) -> str:
+    try:
+        token = None
+        auth_header = request.headers.get("authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+        else:
+            token = request.cookies.get("access_token")
+
+        if token:
+            payload_part = token.split(".")[1]
+            padding = 4 - len(payload_part) % 4
+            if padding != 4:
+                payload_part += "=" * padding
+            payload = json.loads(base64.urlsafe_b64decode(payload_part))
+            name = payload.get("name")
+            user_id = payload.get("sub", "")
+            if name:
+                return f"{name}({user_id})"
+            elif user_id:
+                return user_id
+    except Exception:
+        pass
+    return "anonymous"
+
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     start_time = time.time()
-    
+
     client_ip = get_client_ip(request) or "unknown"
     method = request.method
-    url = mask_sensitive_query_params(str(request.url))
     path = request.url.path
-    
+    user_info = _extract_user_from_request(request)
+
     logger = get_logger_by_path(path)
     
     body = ""
@@ -152,16 +178,16 @@ async def log_requests(request: Request, call_next):
     
     process_time = round(time.time() - start_time, 3)
     
-    log_message = f"{client_ip} - {method} {url} - Status: {response.status_code} - Time: {process_time}s"
-    
+    log_message = f"{client_ip} | {user_info} | {method} {path} | {response.status_code} | {process_time}s"
+
     if body:
-        log_message += f" - Request Body: {body}"
-        
+        log_message += f"\n  >> Body: {body}"
+
     if response_body:
-        log_message += f" - Response Body: {response_body}"
-        
+        log_message += f"\n  << Response: {response_body}"
+
     if error_detail:
-        log_message += error_detail
+        log_message += f"\n  !! {error_detail.strip(' - ')}"
     
     if response.status_code >= 500:
         logger.error(log_message)

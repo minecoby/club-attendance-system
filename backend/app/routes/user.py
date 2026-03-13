@@ -256,7 +256,7 @@ async def google_callback(code: str, state: str = None, db: AsyncSession = Depen
                 user.google_refresh_token = google_refresh_token
                 await db.commit()
 
-            jwt_access_token = create_access_token(data={"sub": user.user_id})
+            jwt_access_token = create_access_token(data={"sub": user.user_id, "name": user.name})
             jwt_refresh_token = create_refresh_token(data={"sub": user.user_id})
 
             await save_refresh_token(user.user_id, jwt_refresh_token, db)
@@ -371,7 +371,7 @@ async def complete_google_consent(
 
     google_consent_store.pop(data.consent_code, None)
 
-    jwt_access_token = create_access_token(data={"sub": user.user_id})
+    jwt_access_token = create_access_token(data={"sub": user.user_id, "name": user.name})
     jwt_refresh_token = create_refresh_token(data={"sub": user.user_id})
     await save_refresh_token(user.user_id, jwt_refresh_token, db)
     _set_auth_cookies(response, jwt_access_token, jwt_refresh_token)
@@ -487,7 +487,7 @@ async def login(data: LoginRequest, response: Response, db: AsyncSession = Depen
         raise HTTPException(status_code=403, detail="관리자 승인 대기 중입니다. 승인 후 로그인 가능합니다.")
 
     # 토큰 생성
-    jwt_access_token = create_access_token(data={"sub": user.user_id})
+    jwt_access_token = create_access_token(data={"sub": user.user_id, "name": user.name})
     jwt_refresh_token = create_refresh_token(data={"sub": user.user_id})
 
     await save_refresh_token(user.user_id, jwt_refresh_token, db)

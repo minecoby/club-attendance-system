@@ -115,10 +115,14 @@ async def rotate_refresh_token(old_refresh_token: str, db: AsyncSession):
     try:
 
         user_id = await verify_refresh_token(old_refresh_token, db)
-        
+
         await delete_refresh_token(old_refresh_token, db)
-        
-        new_access_token = create_access_token(data={"sub": user_id})
+
+        result = await db.execute(select(User).where(User.user_id == user_id))
+        user = result.scalar_one_or_none()
+        user_name = user.name if user else None
+
+        new_access_token = create_access_token(data={"sub": user_id, "name": user_name})
         new_refresh_token = create_refresh_token(data={"sub": user_id})
 
         await save_refresh_token(user_id, new_refresh_token, db)
