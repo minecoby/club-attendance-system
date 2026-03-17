@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../utils/apiClient';
-import { prefetchLocation, getCachedPosition, clearCachedPosition } from '../utils/geolocation';
 import AlertModal from '../components/AlertModal';
 import i18n from '../i18n';
 
@@ -14,10 +13,6 @@ function CodeAttendancePage({ language, setLanguage }) {
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
     
     const navigate = useNavigate();
-
-    useEffect(() => {
-        prefetchLocation();
-    }, []);
 
     // 윈도우 리사이즈 감지
     useEffect(() => {
@@ -41,18 +36,10 @@ function CodeAttendancePage({ language, setLanguage }) {
                 }
             }
 
-            const position = getCachedPosition();
-            const locationData = position
-                ? { latitude: position.latitude, longitude: position.longitude }
-                : {};
-
             await apiClient.post('/attend/check', {
                 club_code: clubCode,
                 code: attendanceCode,
-                ...locationData
             });
-
-            clearCachedPosition();
             setAttendanceCompleted(true);
             setMessage('✅ 출석이 완료되었습니다!');
             setMessageType('success');

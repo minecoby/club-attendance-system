@@ -5,8 +5,6 @@ import AlertModal from "../components/AlertModal";
 import apiClient from "../utils/apiClient";
 import dataCache from "../utils/dataCache";
 import i18n from "../i18n";
-import { checkLocationPermission, requestLocationPermission } from "../utils/geolocation";
-import LocationPermissionModal from "../components/LocationPermissionModal";
 
 function formatScheduleDateTime(isoString) {
   const normalized = String(isoString || "").replace(" ", "T");
@@ -29,19 +27,10 @@ function UserPage({ language }) {
   const [scheduleList, setScheduleList] = useState([]);
   const [scheduleLoading, setScheduleLoading] = useState(false);
   const [alert, setAlert] = useState({ show: false, type: "info", message: "" });
-  const [showLocationModal, setShowLocationModal] = useState(false);
   const [clubList, setClubList] = useState([]);
   const [selectedClub, setSelectedClub] = useState("");
   const [activeTab, setActiveTab] = useState("attendance");
   const navigate = useNavigate();
-
-  useEffect(() => {
-    checkLocationPermission().then((permission) => {
-      if (permission === 'prompt' || permission === 'denied') {
-        setShowLocationModal(true);
-      }
-    });
-  }, []);
 
   useEffect(() => {
     const handlePopState = (e) => {
@@ -140,26 +129,14 @@ function UserPage({ language }) {
     localStorage.setItem("userPage_selectedClub", newClub);
   };
 
-  const handleStartQR = async () => {
+  const handleStartQR = () => {
     if (!selectedClub) {
       setAlert({ show: true, type: "error", message: i18n[language].selectClubFirst });
       return;
     }
 
-    const permission = await checkLocationPermission();
-
-    if (permission === 'denied') {
-      setAlert({ show: true, type: "error", message: i18n[language].locationPermissionRequired });
-      return;
-    }
-
     localStorage.setItem("club_code", selectedClub);
     navigate("/qr-attendance");
-  };
-
-  const handleLocationPermissionConfirm = async () => {
-    setShowLocationModal(false);
-    await requestLocationPermission();
   };
 
   const handleCloseAlert = () => {
@@ -169,12 +146,6 @@ function UserPage({ language }) {
   return (
     <div className="userpage-section">
       <AlertModal show={alert.show} type={alert.type} message={alert.message} onClose={handleCloseAlert} />
-      <LocationPermissionModal
-        show={showLocationModal}
-        onConfirm={handleLocationPermissionConfirm}
-        onCancel={() => setShowLocationModal(false)}
-        language={language}
-      />
 
       <div className="club-select-section">
         <label htmlFor="club-select" className="club-select-label">
