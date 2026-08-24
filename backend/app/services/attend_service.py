@@ -5,6 +5,7 @@ from sqlalchemy import select,delete
 from app.models import Attendance,AttendanceDate
 from datetime import datetime, date
 from zoneinfo import ZoneInfo
+from app.services.admin_service import get_active_attendance_season
 
 # 출석날짜 연동
 async def get_date_id(date, club_code: str, db: AsyncSession) -> int:
@@ -18,10 +19,12 @@ async def get_date_id(date, club_code: str, db: AsyncSession) -> int:
     else:
         date_obj = date
 
+    season = await get_active_attendance_season(club_code, db)
     result = await db.execute(
         select(AttendanceDate).where(
             AttendanceDate.date == date_obj,
-            AttendanceDate.club_code == club_code
+            AttendanceDate.club_code == club_code,
+            AttendanceDate.season_id == season.id
         )
     )
     attendance_date = result.scalar_one_or_none()
@@ -54,9 +57,13 @@ async def attend_date(user_id: str, date_id, db: AsyncSession):
     db.add(new_attendance)
     await db.commit()
 async def load_myattend(club_code, user_id: str, db: AsyncSession):
+    season = await get_active_attendance_season(club_code, db)
     result = await db.execute(
         select(AttendanceDate)
-        .where(AttendanceDate.club_code == club_code)
+        .where(
+            AttendanceDate.club_code == club_code,
+            AttendanceDate.season_id == season.id
+        )
     )
     dates = result.scalars().all()
     

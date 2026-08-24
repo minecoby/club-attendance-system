@@ -69,15 +69,47 @@ class StuClub(Base):
     club = relationship("Club", back_populates="members")
 
 
+class AttendanceSeason(Base):
+    __tablename__ = "attendance_seasons"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    club_code = Column(String(20, collation="utf8mb4_bin"), ForeignKey("clubs.club_code"), nullable=False)
+    name = Column(String(120), nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_by = Column(String(255), ForeignKey("users.user_id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    archived_at = Column(DateTime, nullable=True)
+
+
+class AttendanceSeasonMember(Base):
+    __tablename__ = "attendance_season_members"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    season_id = Column(Integer, ForeignKey("attendance_seasons.id"), nullable=False)
+    club_code = Column(String(20, collation="utf8mb4_bin"), ForeignKey("clubs.club_code"), nullable=False)
+    user_id = Column(String(255), ForeignKey("users.user_id"), nullable=False)
+    name = Column(String(100), nullable=False)
+    archived_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    season = relationship("AttendanceSeason")
+    user = relationship("User")
+
+    __table_args__ = (
+        UniqueConstraint("season_id", "user_id", name="unique_attendance_season_member"),
+    )
+
+
 class AttendanceDate(Base):
     __tablename__ = "attendance_dates"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     club_code = Column(String(20, collation="utf8mb4_bin"), ForeignKey("clubs.club_code"), nullable=False)
+    season_id = Column(Integer, ForeignKey("attendance_seasons.id"), nullable=True)
     date = Column(Date, nullable=False)
     set_by = Column(String(255), ForeignKey("users.user_id"), nullable=False)
 
     attendances = relationship("Attendance", back_populates="attendance_date")
+    season = relationship("AttendanceSeason")
 
 
 class Attendance(Base):

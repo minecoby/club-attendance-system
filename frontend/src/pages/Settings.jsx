@@ -38,6 +38,7 @@ function Settings({ theme, setTheme, language, setLanguage }) {
     // 강퇴 모달 상태
     const [showKickModal, setShowKickModal] = useState(false);
     const [kickTargetUser, setKickTargetUser] = useState(null);
+    const [showStartSeasonModal, setShowStartSeasonModal] = useState(false);
     // 회원탈퇴 모달 상태
     const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
     // 위치 설정 상태
@@ -310,6 +311,37 @@ function Settings({ theme, setTheme, language, setLanguage }) {
         setKickTargetUser(null);
     };
 
+    const handleConfirmStartSeason = async () => {
+        try {
+            const today = new Date().toISOString().slice(0, 10);
+            const seasonName = window.prompt('아카이브에 표시할 출석부 이름을 입력하세요.', `${today} 출석부`);
+            if (seasonName === null) {
+                setShowStartSeasonModal(false);
+                return;
+            }
+
+            setLoading(true);
+            const res = await apiClient.post('/admin/attendance_seasons/start', { name: seasonName });
+            dataCache.clearCache('members');
+            setMembers([]);
+            setMembersPage(1);
+            setAlert({
+                show: true,
+                type: 'success',
+                message: `새 출석부를 시작했습니다.\n기존 출석부는 아카이브되었고, ${res.data?.removed_member_count || 0}명의 동아리원이 탈퇴 처리되었습니다.`
+            });
+        } catch (err) {
+            setAlert({
+                show: true,
+                type: 'error',
+                message: '새 출석부 시작 중 오류가 발생했습니다.'
+            });
+        } finally {
+            setLoading(false);
+            setShowStartSeasonModal(false);
+        }
+    };
+
     const handleCloseAlert = () => {
         setAlert({ ...alert, show: false });
     };
@@ -352,6 +384,14 @@ function Settings({ theme, setTheme, language, setLanguage }) {
                 confirm={true}
                 onConfirm={handleConfirmKick}
                 onClose={handleCancelKick}
+            />
+            <AlertModal
+                show={showStartSeasonModal}
+                type="warning"
+                message={"새 출석부를 시작하시겠습니까?\n현재 출석부는 아카이브되고, 현재 가입된 동아리원은 모두 동아리에서 탈퇴 처리됩니다.\n탈퇴된 동아리원은 다시 동아리 코드로 가입해야 합니다."}
+                confirm={true}
+                onConfirm={handleConfirmStartSeason}
+                onClose={() => setShowStartSeasonModal(false)}
             />
             {/* 회원탈퇴 확인 모달 */}
             <AlertModal
@@ -552,6 +592,21 @@ function Settings({ theme, setTheme, language, setLanguage }) {
                     <div className="settings-card settings-card-full-row">
                         <div className="settings-card-title">유저 목록 관리</div>
                         <div className="settings-card-content">
+                            <div className="season-reset-panel">
+                                <div className="season-reset-copy">
+                                    <div className="season-reset-title">새 출석부 시작</div>
+                                    <div className="season-reset-text">
+                                        현재 출석부를 아카이브하고 가입된 동아리원을 모두 탈퇴 처리합니다.
+                                    </div>
+                                </div>
+                                <button
+                                    className="settings-btn danger season-reset-btn"
+                                    onClick={() => setShowStartSeasonModal(true)}
+                                    disabled={loading}
+                                >
+                                    {loading ? '처리 중...' : '시작하기'}
+                                </button>
+                            </div>
                             <div className="settings-club-list">
                                 <div className="settings-club-list-title">동아리 멤버 목록</div>
                                 {members.length === 0 && <div className="settings-empty">멤버가 없습니다.</div>}

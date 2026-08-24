@@ -15,6 +15,7 @@ from fastapi_limiter import FastAPILimiter
 from redis.asyncio import Redis
 from app.models import Base
 from app.db import engine
+from app.schema_migrations import ensure_attendance_season_schema
 from app.utils.request_ip import get_client_ip
 import base64
 
@@ -219,6 +220,7 @@ app.add_middleware(
 async def startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        await ensure_attendance_season_schema(conn)
     redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
     redis = Redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
     await FastAPILimiter.init(redis)

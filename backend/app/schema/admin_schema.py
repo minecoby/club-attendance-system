@@ -6,6 +6,10 @@ class DateRequest(BaseModel):
     date: str
 
 
+class SeasonCreateRequest(BaseModel):
+    name: Optional[str] = None
+
+
 class KickForm(BaseModel):
     user_id: str
 

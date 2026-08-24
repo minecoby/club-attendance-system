@@ -36,6 +36,9 @@ function LeaderPage({ language, setLanguage }) {
     const [editAttendanceList, setEditAttendanceList] = useState([]);
     const [showInlineCalendar, setShowInlineCalendar] = useState(false);
     const [isCalendarClosing, setIsCalendarClosing] = useState(false);
+    const [seasonList, setSeasonList] = useState([]);
+    const [selectedSeasonId, setSelectedSeasonId] = useState(null);
+    const [showArchivePanel, setShowArchivePanel] = useState(false);
 
     // 뒤로가기 방지
     useEffect(() => {
@@ -80,28 +83,57 @@ function LeaderPage({ language, setLanguage }) {
         setSelectedDate(todayStr);
     }, []);
 
+    const selectedSeason = seasonList.find(season => String(season.id) === String(selectedSeasonId));
+    const isActiveSeason = !selectedSeason || selectedSeason.is_active;
+    const activeSeason = seasonList.find(season => season.is_active);
+    const archivedSeasons = seasonList.filter(season => !season.is_active);
+
+    const buildSeasonParams = () => (
+        selectedSeasonId ? { season_id: selectedSeasonId } : undefined
+    );
+
+    const fetchSeasons = async () => {
+        const response = await apiClient.get(`/admin/attendance_seasons`);
+        const seasons = Array.isArray(response.data) ? response.data : [];
+        setSeasonList(seasons);
+        const activeSeason = seasons.find(season => season.is_active) || seasons[0];
+        setSelectedSeasonId(prev => prev || activeSeason?.id || null);
+        return seasons;
+    };
+
+    useEffect(() => {
+        fetchSeasons().catch(() => {
+            setError("출석 시즌 목록을 불러오는 중 오류가 발생했습니다.");
+        });
+    }, []);
+
     // 날짜 목록 불러오기
     useEffect(() => {
         const fetchDateList = async () => {
             try {
                 // apiClient 사용으로 자동 토큰 갱신
-                const response = await apiClient.get(`/admin/show_attendance/None`);
+                const response = await apiClient.get(`/admin/show_attendance/None`, {
+                    params: buildSeasonParams()
+                });
                 // response.data: [출석데이터, 날짜리스트]
                 if (Array.isArray(response.data) && response.data.length === 2) {
                     const dates = response.data[1];
-                    if (!dates.includes(today)) {
+                    if (isActiveSeason && !dates.includes(today)) {
                         dates.push(today); // 오늘 날짜 추가
                     }
                     setDateList(dates);
+                    if (!isActiveSeason && dates.length > 0 && !dates.includes(selectedDate)) {
+                        setSelectedDate(dates[0]);
+                    }
                 }
             } catch (err) {
                 setError("날짜 목록을 불러오는 중 오류가 발생했습니다.");
             }
         };
-        if (today) {
+        if (today && selectedSeasonId) {
             fetchDateList();
         }
-    }, [today]);
+    }, [today, selectedSeasonId]);
 
     // 출석부 불러오기 함수 (useEffect 밖으로 분리)
     const fetchAttendance = async (date = selectedDate) => {
@@ -109,7 +141,9 @@ function LeaderPage({ language, setLanguage }) {
         setError(null);
         try {
             // apiClient 사용으로 자동 토큰 갱신
-            const response = await apiClient.get(`/admin/show_attendance/${date}`);
+            const response = await apiClient.get(`/admin/show_attendance/${date}`, {
+                params: buildSeasonParams()
+            });
             
             // club_code가 응답에 있으면 저장
             if (response.data && response.data.club_code) {
@@ -142,10 +176,22 @@ function LeaderPage({ language, setLanguage }) {
     // 출석부 불러오기 useEffect
     useEffect(() => {
         if (selectedDate === undefined || selectedDate === "") return;
+        if (!selectedSeasonId) return;
         fetchAttendance(selectedDate);
-    }, [selectedDate]);
+    }, [selectedDate, selectedSeasonId]);
 
     const handleStartQR = async () => {
+        if (!isActiveSeason) {
+            setAlert({
+                show: true,
+                type: 'info',
+                message: '아카이브된 시즌에서는 새 출석을 시작할 수 없습니다. 현재 시즌을 선택해주세요.',
+                confirm: false,
+                onConfirm: null
+            });
+            return;
+        }
+
         if (selectedDate === "" || selectedDate === undefined) {
             setAlert({
                 show: true,
@@ -227,7 +273,9 @@ function LeaderPage({ language, setLanguage }) {
         setLoading(true);
         setError(null);
         try {
-            const response = await apiClient.get(`/admin/show_attendance/None`);
+            const response = await apiClient.get(`/admin/show_attendance/None`, {
+                params: buildSeasonParams()
+            });
             // response.data: [출석데이터, 날짜리스트]
             setAttendanceList(response.data[0]);
             setDateList(response.data[1]);
@@ -243,6 +291,25 @@ function LeaderPage({ language, setLanguage }) {
     // 오늘로 돌아가기 핸들러
     const handleGoToday = () => {
         setSelectedDate(today);
+        setDropdownOpen(false);
+    };
+
+    const handleArchiveSelect = (nextSeasonId) => {
+        const nextSeason = seasonList.find(season => String(season.id) === String(nextSeasonId));
+        setSelectedSeasonId(nextSeasonId);
+        setSelectedDate(nextSeason?.is_active ? today : "");
+        setAttendanceList([]);
+        setEditMode(false);
+        setDropdownOpen(false);
+        setShowArchivePanel(false);
+    };
+
+    const handleBackToCurrentSeason = () => {
+        const nextSeasonId = activeSeason?.id || null;
+        setSelectedSeasonId(nextSeasonId);
+        setSelectedDate(today);
+        setAttendanceList([]);
+        setEditMode(false);
         setDropdownOpen(false);
     };
 
@@ -355,6 +422,7 @@ function LeaderPage({ language, setLanguage }) {
                 `/admin/export_attendance`,
                 {
                     responseType: 'blob', // 파일 다운로드를 위해 blob 타입으로 받기
+                    params: buildSeasonParams()
                 }
             );
             // 파일명 추출 (Content-Disposition 헤더에서)
@@ -382,6 +450,10 @@ function LeaderPage({ language, setLanguage }) {
 
     // 날짜별 출석 기록 삭제 핸들러
     const handleDeleteDate = () => {
+        if (!isActiveSeason) {
+            setAlert({ show: true, type: 'info', message: '아카이브된 시즌의 출석 기록은 삭제할 수 없습니다.' });
+            return;
+        }
         setAlert({
             show: true,
             type: 'warning',
@@ -404,6 +476,10 @@ function LeaderPage({ language, setLanguage }) {
 
     // 전체 출석 기록 삭제 핸들러
     const handleDeleteAllAttendance = () => {
+        if (!isActiveSeason) {
+            setAlert({ show: true, type: 'info', message: '아카이브된 시즌의 출석 기록은 삭제할 수 없습니다.' });
+            return;
+        }
         setAlert({
             show: true,
             type: 'warning',
@@ -430,6 +506,10 @@ function LeaderPage({ language, setLanguage }) {
 
     // 수정모드 진입
     const handleEditClick = () => {
+        if (!isActiveSeason) {
+            setAlert({ show: true, type: 'info', message: '아카이브된 시즌의 출석 기록은 수정할 수 없습니다.' });
+            return;
+        }
         setEditAttendanceList(attendanceList.map(user => ({ ...user })));
         setEditMode(true);
     };
@@ -531,6 +611,13 @@ function LeaderPage({ language, setLanguage }) {
                         <button className="today-btn" onClick={handleGoToday} disabled={selectedDate === today}>
                             {i18n[language].goToday || '오늘로 돌아가기'}
                         </button>
+                        <button
+                            className="archive-open-btn"
+                            onClick={() => setShowArchivePanel(true)}
+                            disabled={archivedSeasons.length === 0}
+                        >
+                            아카이브
+                        </button>
                     </div>
                     {showInlineCalendar && (
                         <div className={`inline-calendar-container ${isCalendarClosing ? 'closing' : ''}`}>
@@ -543,11 +630,53 @@ function LeaderPage({ language, setLanguage }) {
                         </div>
                     )}
                 </div>
-                <button onClick={handleStartQR} className="startQR-button leader-qr-btn">
+                <button onClick={handleStartQR} className="startQR-button leader-qr-btn" disabled={!isActiveSeason}>
                     {i18n[language].startAttendanceQR || '출석 시작 (QR 생성)'}
                 </button>
             </div>
             <div className="attendance-section">
+                {!isActiveSeason && selectedSeason && (
+                    <div className="archive-view-banner">
+                        <div>
+                            <div className="archive-view-title">아카이브 출석부</div>
+                            <div className="archive-view-meta">{selectedSeason.name}</div>
+                        </div>
+                        <button className="archive-return-btn" onClick={handleBackToCurrentSeason}>
+                            현재 출석부로 돌아가기
+                        </button>
+                    </div>
+                )}
+                {showArchivePanel && (
+                    <div className="archive-panel-bg" onClick={() => setShowArchivePanel(false)}>
+                        <div className="archive-panel" onClick={(e) => e.stopPropagation()}>
+                            <div className="archive-panel-head">
+                                <div>
+                                    <div className="archive-panel-title">아카이브</div>
+                                    <div className="archive-panel-subtitle">이전 출석부 기록을 선택하세요.</div>
+                                </div>
+                                <button className="archive-panel-close" onClick={() => setShowArchivePanel(false)}>
+                                    닫기
+                                </button>
+                            </div>
+                            <div className="archive-season-list">
+                                {archivedSeasons.length === 0 ? (
+                                    <div className="archive-empty">아카이브된 출석부가 없습니다.</div>
+                                ) : (
+                                    archivedSeasons.map(season => (
+                                        <button
+                                            key={season.id}
+                                            className="archive-season-item"
+                                            onClick={() => handleArchiveSelect(season.id)}
+                                        >
+                                            <span>{season.name}</span>
+                                            <span>{season.archived_at ? new Date(season.archived_at).toLocaleDateString() : '보관됨'}</span>
+                                        </button>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
                 {/* 제목(h2)과 버튼은 아래 테이블 위 flex row에서만 렌더링 */}
                 {/* QR/코드 모달 (하나의 모달에서 분기) */}
                 {showQR && (
@@ -589,7 +718,7 @@ function LeaderPage({ language, setLanguage }) {
                                 <button className="download-excel-btn" onClick={handleDownloadExcel}>
                                     {i18n[language].downloadAttendance || '출석부 다운로드'}
                                 </button>
-                                <button className="delete-all-attendance-btn" onClick={handleDeleteAllAttendance}>
+                                <button className="delete-all-attendance-btn" onClick={handleDeleteAllAttendance} disabled={!isActiveSeason}>
                                     {i18n[language].deleteAllAttendance || '전체 삭제'}
                                 </button>
                             </div>
@@ -626,7 +755,7 @@ function LeaderPage({ language, setLanguage }) {
                             <h2 className="attendance-title">
                                 {selectedDate ? `${selectedDate} ${i18n[language].attendanceList || '출석부'}` : (i18n[language].allAttendance || '전체 출석부')}
                             </h2>
-                            <button className="save-attendance-btn" onClick={handleSaveAttendance}>
+                            <button className="save-attendance-btn" onClick={handleSaveAttendance} disabled={!isActiveSeason}>
                                 {i18n[language].saveAttendance || '저장하기'}
                             </button>
                         </div>
@@ -668,10 +797,10 @@ function LeaderPage({ language, setLanguage }) {
                                 {selectedDate ? `${selectedDate} ${i18n[language].attendanceList || '출석부'}` : (i18n[language].allAttendance || '전체 출석부')}
                             </h2>
                             <div className="attendance-topbar-actions">
-                                <button className="edit-attendance-btn" onClick={handleEditClick}>
+                                <button className="edit-attendance-btn" onClick={handleEditClick} disabled={!isActiveSeason}>
                                     {i18n[language].editAttendance || '수정하기'}
                                 </button>
-                                <button className="delete-attendance-btn" onClick={handleDeleteDate}>
+                                <button className="delete-attendance-btn" onClick={handleDeleteDate} disabled={!isActiveSeason}>
                                     {i18n[language].deleteDate || '삭제하기'}
                                 </button>
                             </div>

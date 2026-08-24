@@ -1,45 +1,53 @@
-﻿from fastapi import APIRouter, Depends,WebSocket, Security, Path, WebSocketDisconnect, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import asyncio
+import random
+from collections import deque
 from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Security, WebSocket, WebSocketDisconnect
+from fastapi.responses import StreamingResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.db import get_db
-from app.variable import *
-from app.schema.admin_schema import *
-from app.services.admin_service import *
+from app.logger import get_admin_logger
+from app.schema.admin_schema import DateRequest, KickForm, LocationSettingRequest, SeasonCreateRequest
+from app.schema.schedule_schema import ScheduleCreateRequest, ScheduleResponse, ScheduleUpdateRequest
+from app.services.admin_service import (
+    check_date,
+    date_add,
+    delete_all_attendance_from_club,
+    delete_date_from_club,
+    export_excel,
+    get_active_attendance_season,
+    get_leader_club_code,
+    kick_user_from_club,
+    list_attendance_seasons,
+    load_attendance,
+    load_full_attendance,
+    start_new_attendance_season,
+)
 from app.services.club_service import get_club_admin
 from app.services.location_service import get_club_location_settings, update_club_location
 from app.services.schedule_service import (
     create_schedule,
-    list_schedules_by_club,
     delete_schedule_for_club,
+    list_schedules_by_club,
     update_schedule_for_club,
 )
-from app.services.service import *
-from app.schema.schedule_schema import ScheduleCreateRequest, ScheduleUpdateRequest, ScheduleResponse
-from app.logger import get_admin_logger
-from datetime import datetime
-from app.models import AttendanceDate
-import asyncio
-import random
-from collections import deque
+from app.services.service import get_access_token_from_request, get_current_user
 
 admin_logger = get_admin_logger()
-
-
-
 security = HTTPBearer(auto_error=False)
 
-router = APIRouter(
-    prefix="/admin",
-)
+router = APIRouter(prefix="/admin")
+
 
 class AttendanceWebSocketManager:
     def __init__(self):
         self.attendance_codes = {}
 
     def generate_random_code(self, club_code: str) -> str:
-        random_number = random.randint(100, 999)
-        return f"{random_number}"
+        return f"{random.randint(100, 999)}"
 
     async def handle_connection(self, websocket: WebSocket, date: str):
         await websocket.accept()
@@ -65,14 +73,15 @@ class AttendanceWebSocketManager:
                     return
 
                 club_code = await get_club_admin(user_info.user_id, db)
-                if not await check_date(club_code,date):
+                if not await check_date(club_code, date, db):
                     await websocket.send_text("존재하지않는 출석 날짜입니다.")
                     await websocket.close()
                     return
+
             self.attendance_codes[club_code] = {
                 "valid_codes": deque(maxlen=5),
                 "accepted": False,
-                "date": date
+                "date": date,
             }
 
             async def generate_loop():
@@ -86,11 +95,9 @@ class AttendanceWebSocketManager:
                         break
 
                     new_code = self.generate_random_code(club_code)
-                    full_code = f'{club_code}:{new_code}'
-
+                    full_code = f"{club_code}:{new_code}"
                     self.attendance_codes[club_code]["valid_codes"].append(full_code)
                     self.attendance_codes[club_code]["date"] = date
-
                     await websocket.send_text(full_code)
                     await asyncio.sleep(13)
 
@@ -125,113 +132,167 @@ class AttendanceWebSocketManager:
                 await websocket.close()
 
 
-
-
 attendance_ws = AttendanceWebSocketManager()
+
 
 @router.websocket("/attendance/{date}/ws")
 async def websocket_attendance(websocket: WebSocket, date: str):
     await attendance_ws.handle_connection(websocket, date)
 
 
-
-
-
 @router.post("/add_date")
-async def add_date(data: DateRequest, request: Request, credentials: Optional[HTTPAuthorizationCredentials] = Security(security), db: AsyncSession = Depends(get_db)):
+async def add_date(
+    data: DateRequest,
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
+    db: AsyncSession = Depends(get_db),
+):
     token = get_access_token_from_request(request, credentials)
     user = await get_current_user(token, db)
-
     if not user.is_leader:
         raise HTTPException(status_code=403, detail="오로지 관리자권한이 있는사람만 추가가능합니다.")
 
     club_code = await get_leader_club_code(user.user_id, db)
-    await date_add(data, club_code, user)
-    return {"message": f"데이터가 정상적으로 추가되었습니다.", "dates": data.date}
-
+    await date_add(data, club_code, user, db)
+    return {"message": "데이터가 정상적으로 추가되었습니다.", "dates": data.date}
 
 
 @router.post("/refresh_date")
-async def refresh(data: DateRequest,request: Request, credentials: Optional[HTTPAuthorizationCredentials] = Security(security), db: AsyncSession = Depends(get_db)):
+async def refresh(
+    data: DateRequest,
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
+    db: AsyncSession = Depends(get_db),
+):
     token = get_access_token_from_request(request, credentials)
     user = await get_current_user(token, db)
-
     if not user.is_leader:
         raise HTTPException(status_code=403, detail="오로지 관리자권한이 있는사람만 삭제 및 추가 가능합니다.")
 
     club_code = await get_leader_club_code(user.user_id, db)
-    await delete_date_from_club(club_code,data.date,db)
-    await date_add(data, club_code, user)
+    await delete_date_from_club(club_code, data.date, db)
+    await date_add(data, club_code, user, db)
 
 
 @router.delete("/delete_date/{date}")
-async def delete_date(date: str,request: Request, credentials: Optional[HTTPAuthorizationCredentials] = Security(security), db: AsyncSession = Depends(get_db)):
+async def delete_date(
+    date: str,
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
+    db: AsyncSession = Depends(get_db),
+):
     token = get_access_token_from_request(request, credentials)
     user = await get_current_user(token, db)
-
     if not user.is_leader:
         raise HTTPException(status_code=403, detail="오로지 관리자권한이 있는사람만 삭제 및 추가 가능합니다.")
 
     club_code = await get_leader_club_code(user.user_id, db)
-    await delete_date_from_club(club_code,date,db)
+    await delete_date_from_club(club_code, date, db)
     return {"message": f"{date} 날짜의 출석 기록이 삭제되었습니다."}
 
 
 @router.delete("/delete_all_attendance")
-async def delete_all_attendance(request: Request, credentials: Optional[HTTPAuthorizationCredentials] = Security(security), db: AsyncSession = Depends(get_db)):
+async def delete_all_attendance(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
+    db: AsyncSession = Depends(get_db),
+):
     token = get_access_token_from_request(request, credentials)
     user = await get_current_user(token, db)
-
     if not user.is_leader:
         raise HTTPException(status_code=403, detail="오로지 관리자권한이 있는사람만 삭제가능합니다.")
 
     club_code = await get_leader_club_code(user.user_id, db)
-    result = await delete_all_attendance_from_club(club_code, db)
-    return result
+    return await delete_all_attendance_from_club(club_code, db)
 
+
+@router.get("/attendance_seasons")
+async def attendance_seasons(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
+    db: AsyncSession = Depends(get_db),
+):
+    token = get_access_token_from_request(request, credentials)
+    user = await get_current_user(token, db)
+    if not user.is_leader:
+        raise HTTPException(status_code=403, detail="오로지 관리자권한이 있는사람만 조회가능합니다.")
+
+    club_code = await get_leader_club_code(user.user_id, db)
+    await get_active_attendance_season(club_code, db, user.user_id)
+    await db.commit()
+    return await list_attendance_seasons(club_code, db)
+
+
+@router.post("/attendance_seasons/start")
+async def start_attendance_season(
+    data: SeasonCreateRequest,
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
+    db: AsyncSession = Depends(get_db),
+):
+    token = get_access_token_from_request(request, credentials)
+    user = await get_current_user(token, db)
+    if not user.is_leader:
+        raise HTTPException(status_code=403, detail="오로지 관리자권한이 있는사람만 추가가능합니다.")
+
+    club_code = await get_leader_club_code(user.user_id, db)
+    return await start_new_attendance_season(club_code, data.name, user, db)
 
 
 @router.get("/show_attendance/{date}")
-async def show_attendance(date, request: Request, credentials: Optional[HTTPAuthorizationCredentials] = Security(security), db: AsyncSession = Depends(get_db)):
+async def show_attendance(
+    date,
+    request: Request,
+    season_id: Optional[int] = Query(default=None),
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
+    db: AsyncSession = Depends(get_db),
+):
     token = get_access_token_from_request(request, credentials)
     user = await get_current_user(token, db)
     if user.is_leader != True:
         raise HTTPException(status_code=400, detail="허가되지 않은 사용자입니다.")
-    if date == "None": #날짜를 지정하지않음(전체 출석부 로드) 
-        club_code = await get_leader_club_code(user.user_id,db)
-        data, date_columns = await load_full_attendance(club_code, db)
-        return [data, date_columns]  # 날짜 리스트도 함께 반환
-    else:
-        data = await load_attendance(user, date, db)
-        return data
 
+    if date == "None":
+        club_code = await get_leader_club_code(user.user_id, db)
+        data, date_columns = await load_full_attendance(club_code, db, season_id)
+        return [data, date_columns]
+
+    return await load_attendance(user, date, db, season_id)
 
 
 @router.delete("/kick_user")
-async def kick_user(data: KickForm, request: Request, credentials: Optional[HTTPAuthorizationCredentials] = Security(security), db: AsyncSession = Depends(get_db)):
+async def kick_user(
+    data: KickForm,
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
+    db: AsyncSession = Depends(get_db),
+):
     token = get_access_token_from_request(request, credentials)
     user = await get_current_user(token, db)
     if user.is_leader != True:
         raise HTTPException(status_code=400, detail="허가되지 않은 사용자입니다.")
     club_code = await get_leader_club_code(user.user_id, db)
-    await kick_user_from_club(data.user_id,club_code, db)
+    await kick_user_from_club(data.user_id, club_code, db)
 
-#?묒??뚯씪濡?蹂??
+
 @router.get("/export_attendance")
-async def export_attendance_excel(request: Request, credentials: Optional[HTTPAuthorizationCredentials] = Security(security),db: AsyncSession = Depends(get_db)):
+async def export_attendance_excel(
+    request: Request,
+    season_id: Optional[int] = Query(default=None),
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
+    db: AsyncSession = Depends(get_db),
+):
     token = get_access_token_from_request(request, credentials)
     user = await get_current_user(token, db)
     if user.is_leader != True:
         raise HTTPException(status_code=400, detail="허가되지 않은 사용자입니다.")
-    club_code = await get_leader_club_code(user.user_id,db)
-    data, date_columns = await load_full_attendance(club_code, db)
-    output,encoded_filename = await export_excel(data,date_columns,club_code)
+    club_code = await get_leader_club_code(user.user_id, db)
+    data, date_columns = await load_full_attendance(club_code, db, season_id)
+    output, encoded_filename = await export_excel(data, date_columns, club_code)
     return StreamingResponse(
         output,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={
-            "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}"
-        }
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}"},
     )
 
 
@@ -258,7 +319,7 @@ async def update_location_settings(data: LocationSettingRequest, request: Reques
         data.latitude,
         data.longitude,
         data.radius_km,
-        db
+        db,
     )
 
 

@@ -107,6 +107,38 @@
   margin-top: -2px;
 }
 
+.season-reset-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 14px;
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--danger) 8%, var(--card-bg));
+}
+
+.season-reset-copy {
+  min-width: 0;
+}
+
+.season-reset-title {
+  color: var(--text);
+  font-size: 0.94rem;
+  font-weight: 800;
+  margin-bottom: 3px;
+}
+
+.season-reset-text {
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.season-reset-btn {
+  flex: 0 0 auto;
+}
+
 .settings-policy-links {
   display: flex;
   align-items: center;
@@ -266,5 +298,14 @@
 
   .members-pagination {
     flex-wrap: wrap;
+  }
+
+  .season-reset-panel {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .season-reset-btn {
+    width: 100%;
   }
 }
