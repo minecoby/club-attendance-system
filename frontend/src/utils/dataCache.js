@@ -49,6 +49,20 @@ class DataCache {
         localStorage.removeItem(timestampKey);
     }
 
+    clearCacheByPrefix(prefix) {
+        const cacheKeyPrefix = this.cachePrefix + prefix;
+        const keys = [];
+
+        for (let i = 0; i < localStorage.length; i += 1) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith(cacheKeyPrefix)) {
+                keys.push(key);
+            }
+        }
+
+        keys.forEach((key) => localStorage.removeItem(key));
+    }
+
     isDataEqual(oldData, newData) {
         return JSON.stringify(oldData) === JSON.stringify(newData);
     }

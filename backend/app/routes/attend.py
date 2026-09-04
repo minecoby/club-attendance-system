@@ -100,6 +100,7 @@ async def load_attend(
 ):
     token = get_access_token_from_request(request, credentials)
     user = await get_current_user(token, db)
+    await check_joining(user.user_id, club_code, db)
     return await load_myattend(club_code, user.user_id, db)
 
 

@@ -81,23 +81,21 @@ function UserPage({ language }) {
     if (!selectedClub) return;
 
     const fetchAttendance = async () => {
-      const res = await apiClient.get(`/attend/load_myattend/${selectedClub}`);
-      if (Array.isArray(res.data)) {
-        return res.data.sort((a, b) => new Date(a.date) - new Date(b.date));
+      try {
+        const res = await apiClient.get(`/attend/load_myattend/${selectedClub}`);
+        if (Array.isArray(res.data)) {
+          setAttendanceList(res.data.sort((a, b) => new Date(a.date) - new Date(b.date)));
+          return;
+        }
+        setAttendanceList([]);
+      } catch (error) {
+        setAttendanceList([]);
+        console.error("Failed to load attendance:", error);
       }
-      return [];
     };
 
-    dataCache
-      .loadDataWithCache(
-        `attendanceList_${selectedClub}`,
-        fetchAttendance,
-        setAttendanceList,
-        1000 * 60 * 2
-      )
-      .catch((error) => {
-        console.error("Failed to load attendance:", error);
-      });
+    setAttendanceList([]);
+    fetchAttendance();
   }, [selectedClub]);
 
   useEffect(() => {

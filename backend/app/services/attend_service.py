@@ -64,6 +64,7 @@ async def load_myattend(club_code, user_id: str, db: AsyncSession):
             AttendanceDate.club_code == club_code,
             AttendanceDate.season_id == season.id
         )
+        .order_by(AttendanceDate.date)
     )
     dates = result.scalars().all()
     

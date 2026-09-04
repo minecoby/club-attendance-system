@@ -190,6 +190,8 @@ function Settings({ theme, setTheme, language, setLanguage }) {
             await apiClient.post(`/clubs/join_club`, { club_code: clubCode });
             // 가입 후, 캐시를 무효화하고 최신 동아리 목록을 다시 불러옴
             dataCache.clearCache('userSettings');
+            dataCache.clearCache('clubList');
+            dataCache.clearCache(`attendanceList_${clubCode}`);
             const res = await apiClient.get(`/users/get_mydata`);
             const clubData = res.data.club_data && res.data.club_data.length > 0 ? res.data.club_data : [];
             setJoinedClubs(clubData);
@@ -215,6 +217,9 @@ function Settings({ theme, setTheme, language, setLanguage }) {
             await apiClient.post(`/clubs/quit_club`, { club_code: quitTargetClub });
             setAlert({ show: true, type: 'success', message: '동아리에서 탈퇴되었습니다.' });
             setJoinedClubs(prev => prev.filter(c => c.club_code !== quitTargetClub));
+            dataCache.clearCache('userSettings');
+            dataCache.clearCache('clubList');
+            dataCache.clearCache(`attendanceList_${quitTargetClub}`);
         } catch (err) {
             setAlert({ show: true, type: 'error', message: '동아리 탈퇴 실패: ' + (err.response?.data?.detail || '') });
         } finally {
@@ -254,6 +259,9 @@ function Settings({ theme, setTheme, language, setLanguage }) {
             await apiClient.delete('/users/delete_account');
             
             localStorage.removeItem('usertype');
+            dataCache.clearCache('userSettings');
+            dataCache.clearCache('clubList');
+            dataCache.clearCacheByPrefix('attendanceList_');
             
             setAlert({ 
                 show: true, 
